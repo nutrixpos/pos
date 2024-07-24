@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <Card style="width: 25rem; overflow: hidden">
+    <div :style="`display:${state == 'finished' ? 'none' : 'block'}`">
+        <Card style="width: 25rem; overflow: hidden;">
             <template #header>
                 <!-- <h1 class="m-2">#{{props.number}}</h1> -->
                 <!-- 2024-06-20T14:31:39.946Z -->
@@ -10,28 +10,43 @@
                         <p class="px-2"><strong>{{timePassed}}</strong></p>
                     </div>
                     <div class="col-9 flex justify-content-center align-items-center">
-                        <Button v-if="state != 'in_progress'" label="Start" class="w-full" @click="prepareOrder" severity="info" style="height:2.5rem !important;" />
-                        <ButtonGroup v-if="state == 'in_progress'">
-                            <Button  icon="pi pi-trash" severity="warning" />
-                            <Button  icon="pi pi-info-circle" aria-label="Info" label="Info" severity="secondary" iconPos="right" />
-                            <Button icon="pi pi-check" aria-label="Finish" label="Finish" severity="success" iconPos="right" />
+                        <ButtonGroup v-if="state != 'in_progress'"  class="w-full">
+                            <Button label="Start" iconPos="right" icon="pi pi-play" class="w-full" @click="prepareOrder" severity="info" />
+                        </ButtonGroup>
+                        <ButtonGroup v-if="state == 'in_progress'" class="w-full">
+                            <Button  icon="pi pi-trash" class="w-3" severity="secondary" />
+                            <ConfirmPopup></ConfirmPopup>
+                            <Button icon="pi pi-check" class="w-9" aria-label="Finish" label="Finish" @click="confirmFinish($event)" severity="success" iconPos="right" />
                         </ButtonGroup>
                     </div>
                 </div>
             </template>
             <template #content>
                 <div class="flex" v-for="(item,index) in props.order.items" :key="index">
-                    <Avatar shape="circle" image="https://girlheartfood.com/wp-content/uploads/2020/06/Crispy-Chicken-Burger-10.jpg" class="mr-2" size="xlarge" />
-                    <div class="flex flex-column w-9">
-                        <h1 class="m-0">{{item.name}}</h1>
-                        <!-- <h1 class="m-0" style="color:blue">x{{item.quantity}}</h1> -->
-                        <p>
-                            {{ item.comment }}
-                        </p>
+                    <div class="w-full flex my-1 flex-column">
+                        <Divider v-if="index > 0" />
+                        <div class="w-full flex ">
+                            <div :style="`width:.2rem;background-color:${item.comment != '' ? 'orange' : 'silver'}`" class="mr-2"></div>
+                            <div class="flex flex-column w-full justify-content-center my-2">
+                                <div class="flex justify-content-between align-items-center">
+                                    <h3 class="m-0">{{item.name}}</h3>
+                                    <Button icon="pi pi-book" severity="contrast" @click="showRecipe(item.recipe)" text rounded aria-label="Star" />
+                                </div>
+                                <!-- <h1 class="m-0" style="color:blue">x{{item.quantity}}</h1> -->
+                                <p v-if="item.comment != ''" class="mt-1 mb-0">
+                                    {{ item.comment }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </template>
         </Card>
+        <Dialog v-model:visible="recipe_visible" modal :header="`Recipe:  ${recipe.Name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+           <ul>
+              <li class="flex justify-content-between w-6 m-2" v-for="(component,index) in recipe.Components" :key="index"><strong>{{component.Name}}:</strong> &nbsp;&nbsp;&nbsp;&nbsp;{{component.Quantity}} {{component.Unit}}</li>
+           </ul>
+        </Dialog>
         <Dialog v-model:visible="visible" modal :header="`Order #${props.number}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
             <!-- <Dialog v-model:visible="visible" modal :header="props.order.items[currentItemIndex].name+` #${currentItemIndex+1}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
             <Stepper @update:activeStep="(number) => {currentItemIndex = number}">
@@ -63,7 +78,6 @@ import {ref, defineProps} from 'vue'
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import ButtonGroup from 'primevue/buttongroup';
-import Avatar from 'primevue/avatar';
 import Dialog from 'primevue/dialog'
 import moment from 'moment';
 import axios from 'axios';
@@ -72,10 +86,22 @@ import InputText from 'primevue/inputtext';
 import Stepper from 'primevue/stepper';
 import StepperPanel from 'primevue/stepperpanel';
 import Message from 'primevue/message';
+import Divider from 'primevue/divider';
+import { useConfirm } from "primevue/useconfirm";
+import ConfirmPopup from 'primevue/confirmpopup';
+import { useToast } from "primevue/usetoast";
+
+
+const toast = useToast();
+
+
+const confirm = useConfirm();
+
 
 const itemComponentEntries = ref([])
 const itemsEntrySelection = ref([[]])
 const itemsComponentQuantity = ref([[]])
+const recipe_visible= ref(false)
 
 const state = ref("pending")
 const started_at = ref("")
@@ -93,6 +119,15 @@ const props = defineProps(['order','number'])
 
 const timePassed = ref("")
 
+const recipe = ref({
+    Name:"null"
+})
+
+
+const showRecipe = (itemRecipe) => {
+    recipe.value = itemRecipe;
+    recipe_visible.value = true;
+}
 
 
 const updateElapsedTime = () => {
@@ -113,6 +148,40 @@ const formatDuration = (duration) => {
 }
 
 
+const confirmFinish = (event) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: 'Are you sure you want to finish the order ?',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Yes'
+        },
+        accept: () => {
+            finishOrder();
+            toast.add({ severity: 'success', summary: 'Order finished', detail: 'Good job 🎉', life: 3000,group:'br' });
+        },
+        reject: () => {
+            
+        }
+    });
+};
+
+
+const finishOrder = () => {
+
+    axios.post("http://localhost:8000/api/finishorder",
+        {
+            "order_id":props.order.id
+        }
+        ).then(() => {
+            state.value = "finished"
+        })
+}
 
 
 const startOrder =  () => {
@@ -126,7 +195,8 @@ const startOrder =  () => {
         item.forEach((quantity,componentIndex) => {
             ingredients[itemIndex][componentIndex] = {
                 name : itemComponentEntries.value[itemIndex].components[componentIndex].name,
-                quantity
+                quantity,
+                company: itemsEntrySelection.value[itemIndex][componentIndex] != null ? itemsEntrySelection.value[itemIndex][componentIndex].company : "null"
             }
         })
     })

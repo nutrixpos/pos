@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import ToastService from 'primevue/toastservice';
+import ConfirmationService from 'primevue/confirmationservice';
 
 
 
@@ -44,6 +45,7 @@ app
 .use(router)
 .use(PrimeVue)
 .use(ToastService)
+.use(ConfirmationService)
 .component('fa', FontAwesomeIcon)
 .mount('#app')
 

@@ -43,6 +43,7 @@ type OrderItem struct {
 type Orderitem struct {
 	Name    string `json:"name"`
 	Comment string `json:"comment"`
+	Recipe  Recipe `json:"recipe"`
 }
 
 type Order struct {
@@ -76,12 +77,17 @@ type PrepareItemResponse struct {
 type OrderStartRequestIngredient struct {
 	Name     string  `json:"name"`
 	Quantity float32 `json:"quantity"`
+	Company  string  `json:"company"`
 }
 
 type OrderStartRequest struct {
 	Id          string                          `json:"order_id"`
 	Name        string                          `json:"name"`
 	Ingredients [][]OrderStartRequestIngredient `json:"ingredients"`
+}
+
+type FinishOrderRequest struct {
+	Id string `json:"order_id"`
 }
 
 func main() {
@@ -158,6 +164,46 @@ func main() {
 			panic(err)
 		}
 
+		// decrease the ingredient component quantity from the components inventory
+
+		for _, ingredient := range order_start_request.Ingredients {
+			for _, component := range ingredient {
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				filter := bson.M{"name": component.Name, "entries.company": component.Company}
+				// Define the update operation
+				update := bson.M{
+					"$inc": bson.M{
+						"entries.$.quantity": -component.Quantity,
+					},
+				}
+
+				_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				logs_data := bson.M{
+					"type":               "component_consume",
+					"date":               time.Now(),
+					"component_name":     component.Name,
+					"component_quantity": component.Quantity,
+					"component_company":  component.Company,
+				}
+				_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+			}
+		}
+
 		var order Order
 
 		order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
@@ -179,11 +225,22 @@ func main() {
 				"started_at":  time.Now(),
 			},
 		}
+
 		_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"_id": order_id}, update)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+
+		logs_data := bson.M{
+			"type":          "order_Start",
+			"date":          time.Now(),
+			"order_details": order,
+		}
+		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -318,7 +375,11 @@ func main() {
 
 		var orders []Order
 
-		cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), bson.M{})
+		cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), bson.M{
+			"state": bson.M{
+				"$ne": "finished",
+			},
+		})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -329,6 +390,18 @@ func main() {
 			if err := cursor.Decode(&order); err != nil {
 				log.Fatal(err)
 			}
+
+			for i, item := range order.Items {
+
+				var recipe Recipe
+
+				err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"name": item.Name}).Decode(&recipe)
+				if err == nil {
+					order.Items[i].Recipe = recipe
+				}
+
+			}
+
 			orders = append(orders, order)
 		}
 
@@ -434,38 +507,43 @@ func main() {
 		fmt.Println("Connected to MongoDB!")
 
 		decoder := json.NewDecoder(r.Body)
-		var order OrderItem
-		err = decoder.Decode(&order)
+		var finish_order_request FinishOrderRequest
+		err = decoder.Decode(&finish_order_request)
 		if err != nil {
 			panic(err)
 		}
 
-		for _, component := range order.Components {
-
-			filter := bson.M{"name": component.Name, "entries.company": component.Company}
-			update := bson.M{"$inc": bson.M{"entries.$.quantity": -component.Quantity}}
-			_, err := client.Database("waha").Collection("components").UpdateOne(context.TODO(), filter, update)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			logs_data := bson.M{
-				"type":       "new_order",
-				"date":       time.Now(),
-				"order_name": order.Name,
-				"component":  component,
-			}
-			_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
-			if err != nil {
-				log.Fatal(err)
-			}
+		collection := client.Database("waha").Collection("orders")
+		Id, err := primitive.ObjectIDFromHex(finish_order_request.Id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		// _, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		filter := bson.M{"_id": Id}
+		update := bson.M{"$set": bson.M{"state": "finished"}}
+		_, err = collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			panic(err)
+		}
+
+		var order Order
+		err = collection.FindOne(ctx, filter).Decode(&order)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		logs_data := bson.M{
+			"type":          "order_finish",
+			"date":          time.Now(),
+			"order_id":      finish_order_request.Id,
+			"time_consumed": time.Since(order.SubmittedAt),
+		}
+		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		w.WriteHeader(http.StatusOK)
 
