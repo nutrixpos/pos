@@ -1,18 +1,19 @@
 <template>
     <div>
-        <Card style="overflow: hidden">
-            <template #content>
-                <div class="flex p-2">
-                    <Avatar shape="circle" image="https://girlheartfood.com/wp-content/uploads/2020/06/Crispy-Chicken-Burger-10.jpg" class="mr-2" size="xlarge" />
-                    <div class="flex align-items-center justify-content-center">
-                        <h3>{{props.name}}</h3>
+        <Card style="overflow: hidden;height:10rem;cursor: pointer;" @click="$emit('add')">
+            <template #header>
+                <div class="flex flex-column" style="position:relative;">
+                    <Button icon="pi pi-ellipsis-h" @click.stop="toggle" severity="secondary" aria-label="Save" style="width: 2rem; height: 2rem; position:absolute;top:0;right:0;" size="small" class="m-1" />
+                    <div id='logo' style='background:url(https://girlheartfood.com/wp-content/uploads/2020/06/Crispy-Chicken-Burger-10.jpg) ;height:7rem;background-size:cover;background-position:center;' class="w-full"></div>
+                    <div class="flex align-items-center justify-content-center" style="height: 3rem;">
+                        <h4 class="m-0 p-1">{{props.name}}</h4>
                     </div>
-                </div>
-            </template>
-            <template #footer>
-                <div class="flex gap-4 mt-1">
-                    <Button class="w-full" label="+Comment" severity="primary" outlined @click="$emit('addwithcomment')" />
-                    <Button class="w-full" label="Add" @click="$emit('add')"/>
+
+                    <OverlayPanel ref="op">
+                        <div class="flex flex-column gap-3 w-25rem">
+                            <Button label="Add with comment" @click="$emit('addwithcomment')"   icon="pi pi-comment" />
+                        </div>
+                    </OverlayPanel>
                 </div>
             </template>
         </Card>
@@ -39,10 +40,21 @@ import {ref, defineProps} from 'vue'
 
 import Card from 'primevue/card';
 import Button from 'primevue/button';
-import Avatar from 'primevue/avatar';
 import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+
+import OverlayPanel from 'primevue/overlaypanel';
+
+
+const op = ref();
+
 
 const props = defineProps(['name'])
+
+
+const toggle = (event) => {
+    op.value.toggle(event);
+}
 
 const visible = ref(false)
 </script>

@@ -2,7 +2,7 @@
     <Menubar :model="items" />
     <div class="grid">
       <div class="col-2">
-          <Listbox  v-model="selectedCategory" :options="categories" optionLabel="category" class="w-full mt-2">
+          <Listbox  v-model="selectedCategory" :options="categories" optionLabel="name" class="w-full mt-2" filter>
               <template #option="slotProps">
                   <div class="flex align-items-center">
                       <fa :icon="slotProps.option.icon" class="mr-2" />
@@ -12,10 +12,10 @@
           </Listbox>
       </div>
       <div class="col-8 flex pt-3">
-          <Panel header="Meals" style="width:100%;">
+          <Panel header="Recipes" style="width:100%;">
                 <InputText v-model="searchtext" placeholder="Search" class="mb-4" />
-                <div class="flex flex-wrap justify-content-center">
-                    <MealCard  v-for="(item,index) in products" :key="index" :name="item.name" class="m-2 w-5" @addwithcomment="visible=true;namewithcomment=item.name" @add="orderItems.push({name:item.name,comment})"/>
+                <div class="flex flex-wrap">
+                    <MealCard  v-for="(item,index) in products" :key="index" :name="item.name" class="m-2" style="width:9rem;" @addwithcomment="visible=true;namewithcomment=item.name" @add="orderItems.push({name:item.name,comment})"/>
                 </div>
           </Panel>
       </div>
@@ -33,17 +33,17 @@
             </div>
         </Panel>
       </div>
-        <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
-            <InputText v-model="comment" placeholder="Comment" class="mb-4" />
-            <div class="flex justify-content-end gap-2">
-                <Button type="button" label="Close" severity="secondary"></Button>
-                <Button type="button" label="Add" @click="addWithComment()"></Button>
+      <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
+          <InputText v-model="comment" placeholder="Comment" class="mb-4" />
+          <div class="flex justify-content-end gap-2">
+              <Button type="button" label="Close" severity="secondary"></Button>
+              <Button type="button" label="Add" @click="addWithComment()"></Button>
             </div>
         </Dialog>
     </div>
-  </template>
-  
-  <script setup>
+</template>
+
+<script setup>
   import Menubar from 'primevue/menubar';
   import Dialog from 'primevue/dialog';
   import Listbox from 'primevue/listbox';
@@ -60,19 +60,32 @@
   import MealCard from '@/components/MealCard.vue';
   
   import { ref,watch } from "vue";
-
-
+  
+  
   const comment = ref("")
   const namewithcomment = ref("")
   const visible = ref(false)
+  const selectedCategory = ref();
 
 
 const searchtext = ref("")
+const categories = ref([])
 
 const addWithComment = () => {
-    orderItems.value.push({name:namewithcomment,comment})
+    orderItems.value.push({name:namewithcomment,comment:comment.value})
     visible.value=false
+    comment.value = ""
 }
+
+
+const getCategories = async () => {
+    const response = await axios.get("http://localhost:8000/api/categories")
+    categories.value = categories.value.concat(response.data)
+    selectedCategory.value = categories.value[0]
+}
+
+getCategories();
+
 
 const goOrder = () => {
 
@@ -98,16 +111,31 @@ const orderItems = ref([
 ])
   
 const products = ref([
-    {name: "Fried Chicken Single"},
-    {name: "Fried chicken double"},
-    {name: "Fried chicken triple"},
-    {name: "Burger single"},
-    {name: "Burger double"},
-    {name: "Burger triple"},
-    {name: "Crepe Mix Chicken"},
-    {name: "Crepe Kofta"},
-    {name: "Crepe Pane"},
 ])
+
+
+// const showAllItems = () => {
+//     categories.value.forEach((category) => {
+//         if (category.recipes){
+//             category.recipes.forEach((recipe) => {
+//                 products.value.push({
+//                     name:recipe.Name
+//                 })
+//             })
+//         }
+//     })
+// }
+
+watch(selectedCategory, (category) => {
+    if (category != null){
+        products.value = []
+        category.recipes.forEach((recipe) => {
+            products.value.push({
+                name:recipe.Name
+            })
+        })
+    }
+})
 
 
   const items = ref([
@@ -157,15 +185,6 @@ const products = ref([
       }
   ]);
   
-  const selectedCategory = ref({ name: 'All', icon:'star-of-life' });
-  const categories = ref([
-      { name: 'All', icon:'star-of-life' },
-    //   { name: 'Towers', icon:'burger' },
-    //   { name: 'Sandwitches', icon: 'hotdog' },
-    //   { name: 'Crepe', icon: 'play' },
-    //   { name: 'Dessert', icon: 'cake-candles' },
-    //   { name: 'Pizza', icon: 'pizza-slice' },
-  ]);
   
   </script>
   

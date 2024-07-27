@@ -65,6 +65,18 @@ type RecipeComponent struct {
 type Recipe struct {
 	Name       string            `bson:"name"`
 	Components []RecipeComponent `bson:"components"`
+	Price      float32           `bson:"price"`
+	ImageURL   string            `bson:"image_url"`
+}
+
+type Category struct {
+	Name    string   `json:"name"`
+	Recipes []string `json:"recipes"`
+}
+
+type CategoriesContentRequest_Category struct {
+	Name    string   `json:"name"`
+	Recipes []Recipe `json:"recipes"`
 }
 
 type PrepareItemResponse struct {
@@ -123,6 +135,95 @@ func main() {
 	globals.Init(DBHost)
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		// Get categories from the database, decode to the Category struct
+		// and use the Recipes array of string representing the Ids of the recipes
+		// then bring those recipes and embed them into a CategoriesContentRequest_Category slice
+
+		// Define a slice to hold the categories
+		var categories []CategoriesContentRequest_Category
+
+		// Fetch categories from the database
+		cur, err := client.Database("waha").Collection("categories").Find(ctx, bson.D{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer cur.Close(ctx)
+
+		// Iterate through the categories
+		for cur.Next(ctx) {
+			var category Category
+			err := cur.Decode(&category)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Fetch the recipes for each category using the Recipe IDs
+			var recipes []Recipe
+			for _, recipeID := range category.Recipes {
+				var recipe Recipe
+				obj_id, _ := primitive.ObjectIDFromHex(recipeID)
+				filter := bson.D{{Key: "_id", Value: obj_id}}
+				err := client.Database("waha").Collection("recipes").FindOne(ctx, filter).Decode(&recipe)
+				if err != nil {
+					log.Fatal(err)
+				}
+				recipes = append(recipes, recipe)
+			}
+
+			// Create a CategoriesContentRequest_Category with embedded recipes
+			contentCategory := CategoriesContentRequest_Category{
+				Name:    category.Name,
+				Recipes: recipes,
+			}
+
+			// Append the contentCategory to the categories slice
+			categories = append(categories, contentCategory)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(categories); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	}).Methods("GET")
 
 	router.HandleFunc("/api/startorder", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
