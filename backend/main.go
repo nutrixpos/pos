@@ -23,8 +23,22 @@ type ComponentEntry struct {
 	Unit     string  `json:"unit"`
 }
 
+type ComponentConsumeLogs struct {
+	Id       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Date     time.Time          `json:"date" bson:"date"`
+	Name     string             `json:"component_name" bson:"name"`
+	Quantity float32            `json:"quantity" bson:"quantity"`
+	Company  string             `json:"company" bson:"company"`
+	OrderId  string             `json:"order_id" bson:"order_id"`
+}
+
+type GetComponentConsumeLogsRequest struct {
+	Name string `json:"name"`
+}
+
 type DBComponent struct {
 	Name    string           `json:"name"`
+	Unit    string           `json:"unit"`
 	Entries []ComponentEntry `json:"entries"`
 }
 
@@ -65,7 +79,7 @@ type RecipeComponent struct {
 type Recipe struct {
 	Name       string            `bson:"name"`
 	Components []RecipeComponent `bson:"components"`
-	Price      float32           `bson:"price"`
+	Price      float64           `bson:"price"`
 	ImageURL   string            `bson:"image_url"`
 }
 
@@ -135,6 +149,196 @@ func main() {
 	globals.Init(DBHost)
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/api/order", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			http.Error(w, "id quert string is required", http.StatusBadRequest)
+			return
+		}
+
+		coll := client.Database("waha").Collection("orders")
+		var order Order
+
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&order)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		jsonOrder, err := json.Marshal(order)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Write the JSON to the response
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonOrder)
+	})
+
+	router.HandleFunc("/api/componentlogs", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+
+		filter := bson.M{"type": "component_consume", "name": name}
+		cur, err := client.Database("waha").Collection("logs").Find(ctx, filter)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer cur.Close(ctx)
+
+		var logs []ComponentConsumeLogs
+		if err = cur.All(ctx, &logs); err != nil {
+			log.Fatal(err)
+		}
+
+		jsonLogs, err := json.Marshal(logs)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonLogs)
+
+	})
+
+	router.HandleFunc("/api/components", func(w http.ResponseWriter, r *http.Request) {
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		// Get the "test" collection from the database
+		cur, err := client.Database("waha").Collection("components").Find(ctx, bson.D{})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer cur.Close(ctx)
+
+		// Iterate over the documents and print them as JSON
+		var components []DBComponent
+		for cur.Next(ctx) {
+			var component DBComponent
+			err := cur.Decode(&component)
+			if err != nil {
+				log.Fatal(err)
+			}
+			components = append(components, component)
+		}
+
+		// Convert the slice to JSON
+		jsonComponents, err := json.Marshal(components)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Write the JSON to the response
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonComponents)
+	})
 
 	router.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
 
@@ -291,11 +495,12 @@ func main() {
 				}
 
 				logs_data := bson.M{
-					"type":               "component_consume",
-					"date":               time.Now(),
-					"component_name":     component.Name,
-					"component_quantity": component.Quantity,
-					"component_company":  component.Company,
+					"type":     "component_consume",
+					"date":     time.Now(),
+					"name":     component.Name,
+					"quantity": component.Quantity,
+					"company":  component.Company,
+					"order_id": order_start_request.Id,
 				}
 				_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
 				if err != nil {

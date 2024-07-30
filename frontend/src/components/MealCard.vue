@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Card style="overflow: hidden;height:10rem;cursor: pointer;" @click="$emit('add')">
+        <Card style="overflow: hidden;height:12rem;cursor: pointer;" @click="$emit('add')">
             <template #header>
                 <div class="flex flex-column" style="position:relative;">
                     <Button icon="pi pi-ellipsis-h" @click.stop="toggle" severity="secondary" aria-label="Save" style="width: 2rem; height: 2rem; position:absolute;top:0;right:0;" size="small" class="m-1" />
@@ -8,6 +8,7 @@
                     <div class="flex align-items-center justify-content-center" style="height: 3rem;">
                         <h4 class="m-0 p-1">{{props.name}}</h4>
                     </div>
+                    <p class="mx-1 my-1">{{props.price}} EGP</p>                    
 
                     <OverlayPanel ref="op">
                         <div class="flex flex-column gap-3 w-25rem">
@@ -49,7 +50,7 @@ import OverlayPanel from 'primevue/overlaypanel';
 const op = ref();
 
 
-const props = defineProps(['name'])
+const props = defineProps(['name','price'])
 
 
 const toggle = (event) => {

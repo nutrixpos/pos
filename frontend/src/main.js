@@ -24,13 +24,13 @@ library.add(fas)
 import {  createWebHistory, createRouter } from 'vue-router'
 
 import Home from '@/pages/Home.vue'
-import Queue from '@/pages/Queue.vue'
-import Inventory from '@/pages/Inventory.vue'
+import Kitchen from '@/pages/Kitchen.vue'
+import Analytics from '@/pages/Analytics.vue'
 
 const routes = [
-  { path: '/', component: Home },
-  { path: '/queue', component: Queue },
-  { path: '/inventory', component: Inventory },
+  { path: '/', alias:['/home'], component: Home },
+  { path: '/kitchen', component: Kitchen },
+  { path: '/analytics', component: Analytics },
 ]
 
 const router = createRouter({

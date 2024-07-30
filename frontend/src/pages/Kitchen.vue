@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>Queue</h1>
+        <h1 class="m-3">Kitchen</h1>
         <div class="flex flex-wrap">
             <QueueOrder v-for="(order,index) in orders" :key="index" :order="order" :number="index+1" class="queue-order"/>
         </div>
@@ -22,6 +22,7 @@ const loadOrders =  () => {
         orders.value = result.data
     })
 };
+
 
 loadOrders()
 
