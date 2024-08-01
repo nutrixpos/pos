@@ -39,6 +39,12 @@
                             <template #expansion="slotProps">
                                 <div class="p-4">
                                     <h4>Entries for {{ slotProps.data.name }}</h4>
+                                    <div class="flex justify-content-center align-items-center">
+                                        <InputText class="m-1" placeholder="Company" v-model="new_entry_company" aria-describedby="name-help" />
+                                        <InputText class="m-1" placeholder="Quantity" v-model="new_entry_quantity" aria-describedby="name-help" />
+                                        <InputText class="m-1" placeholder="Price" v-model="new_entry_price" aria-describedby="name-help" />
+                                        <Button icon="pi pi-plus" label="Add Entry" @click="addNewEntry(slotProps.data._id)" severity="info" raised />
+                                    </div>
                                     <DataTable :value="slotProps.data.entries">
                                         <Column field="company" header="Company"></Column>
                                         <Column field="quantity" header="Quantity" sortable></Column>
@@ -173,6 +179,37 @@ import { useToast } from "primevue/usetoast";
   const new_component_entry_quantity = ref("")
   const new_component_entry_price = ref("")
   const new_component_entries = ref([])
+
+  const new_entry_company = ref("")
+  const new_entry_quantity = ref("")
+  const new_entry_price = ref("")
+
+
+  const addNewEntry = (component_id) => {
+
+    var newEntry = {
+                "quantity": parseFloat(new_entry_quantity.value),
+                "price": parseFloat(new_entry_price.value),
+                "company": new_entry_company.value
+            }
+
+    axios.post('http://localhost:8000/api/componententry', {
+        component_id,
+        entries: [
+           newEntry
+        ]
+      })
+      .then(() => {
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Entry saved successfully !', life: 3000,group:'br' });
+
+        inventory_components.value.forEach((component) => {
+            if (component._id == component_id)
+            {
+                component.entries.push(newEntry)
+            }
+        })
+      });
+  }
 
 
 

@@ -40,9 +40,10 @@ type GetComponentConsumeLogsRequest struct {
 }
 
 type DBComponent struct {
-	Name    string           `json:"name"`
-	Unit    string           `json:"unit"`
-	Entries []ComponentEntry `json:"entries"`
+	Id      primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name    string             `json:"name"`
+	Unit    string             `json:"unit"`
+	Entries []ComponentEntry   `json:"entries"`
 }
 
 type HttpComponent struct {
@@ -115,6 +116,11 @@ type OrderStartRequest struct {
 	Ingredients [][]OrderStartRequestIngredient `json:"ingredients"`
 }
 
+type RequestComponentEntryAdd struct {
+	ComponentId string           `json:"component_id"`
+	Entries     []ComponentEntry `json:"entries"`
+}
+
 type FinishOrderRequest struct {
 	Id string `json:"order_id"`
 }
@@ -152,6 +158,68 @@ func main() {
 	globals.Init(DBHost)
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/api/componententry", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		var componentEntryRequest RequestComponentEntryAdd
+		err = json.NewDecoder(r.Body).Decode(&componentEntryRequest)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		objectId, err := primitive.ObjectIDFromHex(componentEntryRequest.ComponentId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		filter := bson.M{"_id": objectId}
+
+		for _, entry := range componentEntryRequest.Entries {
+			update := bson.M{"$push": bson.M{"entries": entry}}
+			opts := options.Update().SetUpsert(false)
+
+			_, err = client.Database("waha").Collection("components").UpdateOne(ctx, filter, update, opts)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+	})
 
 	router.HandleFunc("/api/component", func(w http.ResponseWriter, r *http.Request) {
 
