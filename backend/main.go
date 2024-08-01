@@ -21,15 +21,18 @@ type ComponentEntry struct {
 	Quantity float32 `json:"quantity"`
 	Company  string  `json:"company"`
 	Unit     string  `json:"unit"`
+	Price    float64 `json:"price"`
 }
 
 type ComponentConsumeLogs struct {
-	Id       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Date     time.Time          `json:"date" bson:"date"`
-	Name     string             `json:"component_name" bson:"name"`
-	Quantity float32            `json:"quantity" bson:"quantity"`
-	Company  string             `json:"company" bson:"company"`
-	OrderId  string             `json:"order_id" bson:"order_id"`
+	Id             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Date           time.Time          `json:"date" bson:"date"`
+	Name           string             `json:"component_name" bson:"name"`
+	Quantity       float32            `json:"quantity" bson:"quantity"`
+	Company        string             `json:"company" bson:"company"`
+	ItemName       string             `json:"item_name" bson:"item_name"`
+	ItemOrderIndex uint               `json:"item_order_index" bson:"item_order_index"`
+	OrderId        string             `json:"order_id" bson:"order_id"`
 }
 
 type GetComponentConsumeLogsRequest struct {
@@ -149,6 +152,76 @@ func main() {
 	globals.Init(DBHost)
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/api/component", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		// Parse the request body into a DBComponent struct
+		var dbComponent DBComponent
+		err = json.NewDecoder(r.Body).Decode(&dbComponent)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Insert the DBComponent struct into the "components" collection
+		collection := client.Database("waha").Collection("components")
+		_, err = collection.InsertOne(ctx, dbComponent)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, entry := range dbComponent.Entries {
+			logs_data := bson.M{
+				"type":     "component_add",
+				"date":     time.Now(),
+				"company":  entry.Company,
+				"quantity": entry.Quantity,
+				"price":    entry.Price,
+			}
+			_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		// Return a success response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "component adding saved successfully")
+
+	})
 
 	router.HandleFunc("/api/order", func(w http.ResponseWriter, r *http.Request) {
 
@@ -469,9 +542,23 @@ func main() {
 			panic(err)
 		}
 
+		var order Order
+
+		order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
+		if err != nil {
+			panic(err)
+		}
+
+		err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"_id": order_id}).Decode(&order)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		// decrease the ingredient component quantity from the components inventory
 
-		for _, ingredient := range order_start_request.Ingredients {
+		for itemIndex, ingredient := range order_start_request.Ingredients {
 			for _, component := range ingredient {
 				if err != nil {
 					log.Println(err)
@@ -495,12 +582,14 @@ func main() {
 				}
 
 				logs_data := bson.M{
-					"type":     "component_consume",
-					"date":     time.Now(),
-					"name":     component.Name,
-					"quantity": component.Quantity,
-					"company":  component.Company,
-					"order_id": order_start_request.Id,
+					"type":             "component_consume",
+					"date":             time.Now(),
+					"name":             component.Name,
+					"quantity":         component.Quantity,
+					"company":          component.Company,
+					"order_id":         order_start_request.Id,
+					"item_name":        order.Items[itemIndex].Name,
+					"item_order_index": itemIndex,
 				}
 				_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
 				if err != nil {
@@ -508,20 +597,6 @@ func main() {
 				}
 
 			}
-		}
-
-		var order Order
-
-		order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
-		if err != nil {
-			panic(err)
-		}
-
-		err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"_id": order_id}).Decode(&order)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusNotFound)
-			return
 		}
 
 		update := bson.M{

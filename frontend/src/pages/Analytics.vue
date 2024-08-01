@@ -19,6 +19,11 @@
                     </div>
                     <div class="col-12 flex justify-content-center align-items-center w-full">
                         <DataTable v-model:expandedRows="expandedRows" :value="inventory_components" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
+                            <template #header>
+                                <div class="flex flex-wrap items-center justify-between align-items-center gap-2">
+                                    <Button icon="pi pi-plus" label="Add Component" @click="add_component_dialog = true" rounded raised />
+                                </div>
+                            </template>
                             <Column expander style="width: 5rem" />
                             <Column field="name" header="Name"></Column>
                             <Column field="totalAmount" header="Quantity"></Column>
@@ -52,6 +57,40 @@
                     </div>
                 </div>
             </div>
+            <Dialog v-model:visible="add_component_dialog" modal :header="`Add new inventory component`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+               <div class="md:w-full">
+                    <div class="flex flex-column gap-2">
+                        <label for="name">Name</label>
+                        <InputText id="name" v-model="new_component_name" aria-describedby="name-help" />
+                        <!-- <small id="name-help">Enter the component name</small> -->
+                    </div>
+                    <div class="flex flex-column gap-2 mt-3 ">
+                        <label for="unit">Unit</label>
+                        <InputText id="unit" v-model="new_component_unit" aria-describedby="unit-help" />
+                    </div>
+                    <h4>Entries</h4>
+                    <div class="flex justify-content-center align-items-center">
+                        <InputText class="m-1" placeholder="Company" v-model="new_component_entry_company" aria-describedby="name-help" />
+                        <InputText class="m-1" placeholder="Quantity" v-model="new_component_entry_quantity" aria-describedby="name-help" />
+                        <InputText class="m-1" placeholder="Price" v-model="new_component_entry_price" aria-describedby="name-help" />
+                        <Button label="Add" @click="new_component_entries.push({company: new_component_entry_company, quantity: new_component_entry_quantity, unit: new_component_unit, price: new_component_entry_price})" />
+                    </div>
+                    <DataTable :value="new_component_entries">
+                        <Column field="company" header="Company"></Column>
+                        <Column field="quantity" header="Quantity"></Column>
+                        <Column field="unit" header="Unit">
+                            <template #body="slotProps">
+                                {{ slotProps.data.unit }}
+                            </template>
+                        </Column>
+                        <Column field="price" header="Price"></Column>
+                    </DataTable>
+
+                    <div class="flex w-full mt-5 justify-content-center align-items-center">
+                        <Button label="Submit" class="lg:w-6" @click="submitNewComponent" />
+                    </div>
+               </div>
+            </Dialog>
             <Dialog v-model:visible="component_logs_dialog" modal :header="`Consumption for  ${component_logs_name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
                 <DataTable @rowExpand="onComponentLogRowExpand"  v-model:expandedRows="expandedComponentLogsRows" :value="component_logs" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
                     <Column expander style="width: 5rem" />
@@ -59,6 +98,11 @@
                     <Column field="component_name" header="Unit"></Column>
                     <Column field="quantity" header="Quantity"></Column>
                     <Column field="company" header="Company"></Column>
+                    <Column  header="Order Item">
+                        <template #body="slotProps">
+                            [{{ slotProps.data.item_order_index }}] {{ slotProps.data.item_name }}
+                        </template>
+                    </Column>
                     <Column field="order_id" header="Order Id"></Column>
                     <template #expansion="slotProps">
                         <div class="p-4">
@@ -94,9 +138,15 @@ import axios from 'axios'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import Dialog from 'primevue/dialog'
-
+import InputText from 'primevue/inputtext'
+// import Message from 'primevue/message'
   
-  import { ref } from "vue";
+import { ref } from "vue";
+import { useToast } from "primevue/usetoast";
+
+
+
+  const toast = useToast();
   
   const selectedCategory = ref({ name: 'Inventory', icon:'inbox' });
   const categories = ref([
@@ -112,6 +162,41 @@ import Dialog from 'primevue/dialog'
   const component_logs_dialog = ref(false)
   const component_logs_name = ref("")
 
+
+  const add_component_dialog = ref(false)
+
+
+  const new_component_name = ref("")
+  const new_component_unit = ref("")
+
+  const new_component_entry_company = ref("")
+  const new_component_entry_quantity = ref("")
+  const new_component_entry_price = ref("")
+  const new_component_entries = ref([])
+
+
+
+  const submitNewComponent = () => {
+
+      var entries = []
+      new_component_entries.value.forEach((entry) => {
+          entries.push({
+            company: entry.company,
+            quantity: parseInt(entry.quantity),
+            price: parseFloat(entry.price)
+          })
+      })
+
+      axios.post('http://localhost:8000/api/component', {
+        name: new_component_name.value,
+        unit: new_component_unit.value,
+        entries: entries
+      })
+      .then(() => {
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Component saved successfully !', life: 3000,group:'br' });
+        add_component_dialog.value = false
+      });
+  }
 
 
   const onComponentLogRowExpand = (event) => {
