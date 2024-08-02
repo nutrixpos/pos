@@ -18,10 +18,11 @@ import (
 )
 
 type ComponentEntry struct {
-	Quantity float32 `json:"quantity"`
-	Company  string  `json:"company"`
-	Unit     string  `json:"unit"`
-	Price    float64 `json:"price"`
+	Id       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Quantity float32            `json:"quantity"`
+	Company  string             `json:"company"`
+	Unit     string             `json:"unit"`
+	Price    float64            `json:"price"`
 }
 
 type ComponentConsumeLogs struct {
@@ -159,6 +160,73 @@ func main() {
 
 	router := mux.NewRouter()
 
+	router.HandleFunc("/api/entry", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		// Retrieve the entry ID from the query string
+		entryIDStr := r.URL.Query().Get("entry_id")
+		entryID, err := primitive.ObjectIDFromHex(entryIDStr)
+		if err != nil {
+			http.Error(w, "Invalid entry ID", http.StatusBadRequest)
+			return
+		}
+
+		componentIdStr := r.URL.Query().Get("component_id")
+		componentId, err := primitive.ObjectIDFromHex(componentIdStr)
+		if err != nil {
+			http.Error(w, "Invalid entry ID", http.StatusBadRequest)
+			return
+		}
+
+		// Connect to the database
+		collection := client.Database("waha").Collection("components")
+
+		// Find the component document and update the entries array
+		filter := bson.M{"_id": componentId}
+		update := bson.M{"$pull": bson.M{"entries": bson.M{"_id": entryID}}}
+		_, err = collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			http.Error(w, "Failed to delete entry", http.StatusInternalServerError)
+			return
+		}
+
+		// Send a success response
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Entry deleted successfully"))
+
+	}).Methods("GET")
+
 	router.HandleFunc("/api/componententry", func(w http.ResponseWriter, r *http.Request) {
 
 		// an example API handler
@@ -209,6 +277,9 @@ func main() {
 		filter := bson.M{"_id": objectId}
 
 		for _, entry := range componentEntryRequest.Entries {
+
+			entry.Id = primitive.NewObjectID()
+
 			update := bson.M{"$push": bson.M{"entries": entry}}
 			opts := options.Update().SetUpsert(false)
 
@@ -272,6 +343,9 @@ func main() {
 		}
 
 		for _, entry := range dbComponent.Entries {
+
+			entry.Id = primitive.NewObjectID()
+
 			logs_data := bson.M{
 				"type":     "component_add",
 				"date":     time.Now(),

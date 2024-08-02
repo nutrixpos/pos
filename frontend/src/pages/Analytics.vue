@@ -18,7 +18,7 @@
                         <h3>Inventory</h3>
                     </div>
                     <div class="col-12 flex justify-content-center align-items-center w-full">
-                        <DataTable v-model:expandedRows="expandedRows" :value="inventory_components" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
+                        <DataTable v-model:expandedRows="expandedRows"  @rowExpand="componentRowExpand" :value="inventory_components" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
                             <template #header>
                                 <div class="flex flex-wrap items-center justify-between align-items-center gap-2">
                                     <Button icon="pi pi-plus" label="Add Component" @click="add_component_dialog = true" rounded raised />
@@ -32,7 +32,6 @@
                                 <template #body="slotProps">
                                     <ButtonGroup>
                                         <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data.name)" severity="secondary" aria-label="Save"  />
-                                        <Button icon="pi pi-plus" label="Add" aria-label="Add" severity="info" @click="console.log(slotProps)" />
                                     </ButtonGroup>
                                 </template>
                             </Column>
@@ -48,11 +47,11 @@
                                     <DataTable :value="slotProps.data.entries">
                                         <Column field="company" header="Company"></Column>
                                         <Column field="quantity" header="Quantity" sortable></Column>
-                                        <Column field="unit" header="Unit" sortable></Column>
+                                        <Column field="price" header="Price" sortable></Column>
                                         <Column header="Actions" style="width:30rem">
                                             <template #body="slotProps">
                                                 <ButtonGroup>
-                                                    <Button icon="pi pi-pencil" label="Edit" severity="secondary" aria-label="Edit" @click="console.log(slotProps)" />
+                                                    <Button icon="pi pi-times" label="Delete" severity="secondary" aria-label="Delete" @click="confirmDeleteEntry($event,slotProps.data._id)" />
                                                 </ButtonGroup>
                                             </template>
                                         </Column>
@@ -133,6 +132,7 @@
                 </DataTable>
             </Dialog>
         </div>
+        <ConfirmPopup></ConfirmPopup>
     </div>
 </template>
 
@@ -145,10 +145,13 @@ import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import { useConfirm } from "primevue/useconfirm";
+import ConfirmPopup from 'primevue/confirmpopup';
 // import Message from 'primevue/message'
   
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
+const confirm = useConfirm();
 
 
 
@@ -184,6 +187,48 @@ import { useToast } from "primevue/usetoast";
   const new_entry_quantity = ref("")
   const new_entry_price = ref("")
 
+  const expanded_component_id = ref("")
+
+
+  const componentRowExpand = (event) => {
+    expanded_component_id.value = event.data._id
+  }
+
+
+  const confirmDeleteEntry = (event,entry_id) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: 'Are you sure you want to delete this entry ?',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Yes'
+        },
+        accept: () => {
+
+
+
+
+            axios.get(`http://localhost:8000/api/entry?entry_id=${entry_id}&component_id=`+expanded_component_id.value)
+            .then(() => {
+                    toast.add({ severity: 'success', summary: 'Done', detail: "Entry deleted !",life: 3000,group:'br' });
+                    inventory_components.value.forEach((component) => {
+                        if (component._id == expanded_component_id.value){
+                            component.entries.splice(component.entries.findIndex(el => el._id == entry_id), 1)
+                        }
+                    })
+            })
+        },
+        reject: () => {
+            toast.add({ severity: 'error', summary: 'Transaction failed !', detail: event.data.name, life: 3000,group:'br' });
+        }
+    });
+  }
+
 
   const addNewEntry = (component_id) => {
 
@@ -208,6 +253,13 @@ import { useToast } from "primevue/usetoast";
                 component.entries.push(newEntry)
             }
         })
+
+
+        new_entry_company.value = ""
+        new_entry_quantity.value = ""
+        new_entry_price.value = ""
+
+
       });
   }
 
