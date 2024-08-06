@@ -18,11 +18,12 @@ import (
 )
 
 type ComponentEntry struct {
-	Id       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Quantity float32            `json:"quantity"`
-	Company  string             `json:"company"`
-	Unit     string             `json:"unit"`
-	Price    float64            `json:"price"`
+	Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	PurchaseQuantity float32            `json:"purchase_quantity" bson:"purchase_quantity"`
+	Quantity         float32            `json:"quantity"`
+	Company          string             `json:"company"`
+	Unit             string             `json:"unit"`
+	Price            float64            `json:"price"`
 }
 
 type ComponentConsumeLogs struct {
@@ -41,10 +42,10 @@ type GetComponentConsumeLogsRequest struct {
 }
 
 type DBComponent struct {
-	Id      primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name    string             `json:"name"`
-	Unit    string             `json:"unit"`
-	Entries []ComponentEntry   `json:"entries"`
+	Id      string           `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name    string           `json:"name"`
+	Unit    string           `json:"unit"`
+	Entries []ComponentEntry `json:"entries"`
 }
 
 type HttpComponent struct {
@@ -60,6 +61,7 @@ type OrderItem struct {
 }
 
 type Orderitem struct {
+	Id      string `json:"id"`
 	Name    string `json:"name"`
 	Comment string `json:"comment"`
 	Recipe  Recipe `json:"recipe"`
@@ -75,13 +77,15 @@ type Order struct {
 }
 
 type RecipeComponent struct {
-	Name     string  `bson:"name"`
-	Quantity float32 `bson:"quantity"`
-	Unit     string  `bson:"unit"`
-	Type     string  `bson:"type"`
+	ComponentId string  `bson:"component_id"`
+	Name        string  `bson:"name"`
+	Quantity    float32 `bson:"quantity"`
+	Unit        string  `bson:"unit"`
+	Type        string  `bson:"type"`
 }
 
 type Recipe struct {
+	Id         string            `bson:"_id,omitempty"`
 	Name       string            `bson:"name"`
 	Components []RecipeComponent `bson:"components"`
 	Price      float64           `bson:"price"`
@@ -99,6 +103,7 @@ type CategoriesContentRequest_Category struct {
 }
 
 type PrepareItemResponse struct {
+	ComponentId     string           `json:"component_id"`
 	Name            string           `json:"name"`
 	DefaultQuantity float32          `json:"defaultquantity"`
 	Unit            string           `json:"unit"`
@@ -106,9 +111,11 @@ type PrepareItemResponse struct {
 }
 
 type OrderStartRequestIngredient struct {
-	Name     string  `json:"name"`
-	Quantity float32 `json:"quantity"`
-	Company  string  `json:"company"`
+	ComponentId string  `json:"component_id" bson:"component_id"`
+	EntryId     string  `json:"entry_id" bson:"entry_id"`
+	Name        string  `json:"name"`
+	Quantity    float32 `json:"quantity"`
+	Company     string  `json:"company"`
 }
 
 type OrderStartRequest struct {
@@ -160,6 +167,7 @@ func main() {
 
 	router := mux.NewRouter()
 
+	// deleting an entry from a component
 	router.HandleFunc("/api/entry", func(w http.ResponseWriter, r *http.Request) {
 
 		// an example API handler
@@ -280,6 +288,8 @@ func main() {
 
 			entry.Id = primitive.NewObjectID()
 
+			entry.PurchaseQuantity = entry.Quantity
+
 			update := bson.M{"$push": bson.M{"entries": entry}}
 			opts := options.Update().SetUpsert(false)
 
@@ -332,6 +342,10 @@ func main() {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		for index, entry := range dbComponent.Entries {
+			dbComponent.Entries[index].PurchaseQuantity = entry.Quantity
 		}
 
 		// Insert the DBComponent struct into the "components" collection
@@ -659,7 +673,7 @@ func main() {
 		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
 
 		// Create a context with a timeout (optional)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 		defer cancel()
 
 		// Connect to MongoDB
@@ -701,7 +715,7 @@ func main() {
 		// decrease the ingredient component quantity from the components inventory
 
 		for itemIndex, ingredient := range order_start_request.Ingredients {
-			for _, component := range ingredient {
+			for componentIndex, component := range ingredient {
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -716,12 +730,33 @@ func main() {
 					},
 				}
 
+				var db_component DBComponent
+
+				for _, entry := range db_component.Entries {
+					if entry.Company == component.Company {
+						component.EntryId = entry.Id.Hex()
+					}
+				}
+
+				err = client.Database("waha").Collection("components").FindOne(context.Background(), filter).Decode(&db_component)
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				component.ComponentId = db_component.Id
+				order_start_request.Ingredients[itemIndex][componentIndex] = component
+
 				_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
+
+				// upsertedId := fmt.Sprintf("%s", result.UpsertedID)
+				// updatedId, _ := primitive.ObjectIDFromHex(upsertedId)
 
 				logs_data := bson.M{
 					"type":             "component_consume",
@@ -839,6 +874,7 @@ func main() {
 			}
 
 			res := PrepareItemResponse{
+				ComponentId:     db_component.Id,
 				Name:            component.Name,
 				DefaultQuantity: component.Quantity,
 				Unit:            component.Unit,
@@ -984,7 +1020,6 @@ func main() {
 
 		order_data := bson.M{
 			"items":        order.Items,
-			"id":           order.Id,
 			"submitted_at": time.Now(),
 		}
 		_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order_data)
@@ -1057,9 +1092,84 @@ func main() {
 			return
 		}
 
+		totalCost := 0.0
+		totalSalePrice := 0.0
+
+		itemsCost := []struct {
+			ItemName   string
+			Cost       float64
+			SalePrice  float64
+			Components []struct {
+				ComponentName string
+				Cost          float64
+			}
+		}{}
+
+		for itemIndex, itemIngredients := range order.Ingredients {
+
+			itemCost := struct {
+				ItemName   string
+				Cost       float64
+				SalePrice  float64
+				Components []struct {
+					ComponentName string
+					Cost          float64
+				}
+			}{
+				ItemName: order.Items[itemIndex].Name,
+				Cost:     0.0,
+			}
+
+			for _, ingredient := range itemIngredients {
+
+				itemComponent := struct {
+					ComponentName string
+					Cost          float64
+				}{
+					ComponentName: ingredient.Name,
+				}
+
+				var component_with_specific_entry DBComponent
+
+				component_id, _ := primitive.ObjectIDFromHex(ingredient.ComponentId)
+				entry_id, _ := primitive.ObjectIDFromHex(ingredient.EntryId)
+
+				err = client.Database("waha").Collection("components").FindOne(
+					context.Background(), bson.M{"_id": component_id, "entries._id": entry_id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+
+				if err == nil {
+					quantity_cost := (component_with_specific_entry.Entries[0].Price / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(ingredient.Quantity)
+					totalCost += quantity_cost
+					itemCost.Cost += quantity_cost
+					itemComponent.Cost = quantity_cost
+				}
+
+				itemCost.Components = append(itemCost.Components, itemComponent)
+
+			}
+
+			var recipe Recipe
+
+			recipeID, _ := primitive.ObjectIDFromHex(order.Items[itemIndex].Id)
+
+			err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipeID}).Decode(&recipe)
+
+			if err != nil {
+				panic(err)
+			}
+
+			itemCost.SalePrice = recipe.Price
+			totalSalePrice += recipe.Price
+
+			itemsCost = append(itemsCost, itemCost)
+		}
+
 		logs_data := bson.M{
 			"type":          "order_finish",
 			"date":          time.Now(),
+			"cost":          totalCost,
+			"sale_price":    totalSalePrice,
+			"items":         itemsCost,
 			"order_id":      finish_order_request.Id,
 			"time_consumed": time.Since(order.SubmittedAt),
 		}

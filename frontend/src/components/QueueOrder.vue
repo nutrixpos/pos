@@ -196,6 +196,7 @@ const startOrder =  () => {
             ingredients[itemIndex][componentIndex] = {
                 name : itemComponentEntries.value[itemIndex].components[componentIndex].name,
                 quantity,
+                entry_id: itemsEntrySelection.value[itemIndex][componentIndex] != null ? itemsEntrySelection.value[itemIndex][componentIndex]._id : "null", 
                 company: itemsEntrySelection.value[itemIndex][componentIndex] != null ? itemsEntrySelection.value[itemIndex][componentIndex].company : "null"
             }
         })

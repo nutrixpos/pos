@@ -27,6 +27,7 @@ import Home from '@/pages/Home.vue'
 import Kitchen from '@/pages/Kitchen.vue'
 import Admin from '@/pages/Admin.vue'
 import Inventory from '@/pages/Inventory.vue'
+import Sales from '@/pages/Sales.vue'
 
 const routes = [
   { path: '/', alias:['/home'], component: Home },
@@ -35,12 +36,8 @@ const routes = [
     path: '/admin', 
     component: Admin,
     children: [
-      {
-        // UserProfile will be rendered inside User's <router-view>
-        // when /user/:id/profile is matched
-        path: 'inventory',
-        component: Inventory,
-      },
+      {path: 'inventory', component: Inventory,},
+      {path: 'sales', component: Sales,},
     ],
   },
 ]

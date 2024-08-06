@@ -23,7 +23,7 @@
                 <Panel header="Recipes" style="width:100%;">
                     <InputText v-model="searchtext" placeholder="Search" class="mb-4" />
                     <div class="flex flex-wrap">
-                        <MealCard  v-for="(item,index) in products" :key="index" :name="item.name" :price="item.price" class="m-2" style="width:9rem;" @addwithcomment="visible=true;namewithcomment=item.name" @add="orderItems.push({name:item.name,comment})"/>
+                        <MealCard  v-for="(item,index) in products" :key="index" :item="item" class="m-2" style="width:9rem;" @addwithcomment="visible=true;idwithcomment=item.id; namewithcomment=item.name" @add="orderItems.push({name:item.name,id:item.id,comment})"/>
                     </div>
                 </Panel>
             </div>
@@ -73,6 +73,7 @@
   
   const comment = ref("")
   const namewithcomment = ref("")
+  const idwithcomment = ref("")
   const visible = ref(false)
   const selectedCategory = ref();
   
@@ -84,9 +85,10 @@ const orderItems = ref([
 ])
 
 const addWithComment = () => {
-    orderItems.value.push({name:namewithcomment,comment:comment.value})
+    orderItems.value.push({name:namewithcomment,comment:comment.value,id:idwithcomment.value})
     visible.value=false
     comment.value = ""
+    idwithcomment.value = ""
 }
 
 
@@ -143,6 +145,7 @@ watch(selectedCategory, (category) => {
         products.value = []
         category.recipes.forEach((recipe) => {
             products.value.push({
+                id: recipe.Id,
                 name:recipe.Name,
                 price:recipe.Price
             })
@@ -163,9 +166,9 @@ watch(selectedCategory, (category) => {
           link:'kitchen'
       },
       {
-          label: 'Analytics',
-          icon: 'pi pi-search',
-          link: 'analytics',
+          label: 'Admin',
+          icon: 'pi pi-cog',
+          link: 'admin',
       }
   ]);
   
