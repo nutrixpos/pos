@@ -14,6 +14,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "axios": "^1.7.2",
+    "chart.js": "^3.9.1",
     "core-js": "^3.6.5",
     "moment": "^2.30.1",
     "primeflex": "^3.3.1",

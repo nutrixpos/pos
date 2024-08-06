@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"time"
@@ -134,23 +135,58 @@ type FinishOrderRequest struct {
 }
 
 type SalesLogs struct {
-	Id        string  `json:"_id" bson:"_id,omitempty"`
-	SalePrice float64 `json:"sale_price" bson:"sale_price"`
+	Id        string    `json:"_id" bson:"_id,omitempty"`
+	SalePrice JSONFloat `json:"sale_price" bson:"sale_price"`
 	Items     []struct {
-		ItemName   string  `json:"itemname"`
-		Cost       float64 `json:"cost"`
-		SalePrice  float64 `json:"sale_price"`
+		ItemName   string    `json:"itemname"`
+		Cost       JSONFloat `json:"cost"`
+		SalePrice  JSONFloat `json:"sale_price"`
 		Components []struct {
-			ComponentName string  `json:"componentname"`
-			Cost          float64 `json:"cost"`
+			ComponentName string    `json:"componentname"`
+			Cost          JSONFloat `json:"cost"`
 		}
 	}
 	OrderId      string    `json:"order_id"`
 	TimeConsumed time.Time `json:"time_consumed"`
 	Type         string    `json:"type"`
 	Date         time.Time `json:"date"`
-	Cost         float64   `json:"cost"`
+	Cost         JSONFloat `json:"cost"`
 }
+
+type JSONFloat float64
+
+func (j JSONFloat) MarshalJSON() ([]byte, error) {
+	v := float64(j)
+	if math.IsInf(v, 0) {
+		// handle infinity, assign desired value to v
+		// or say +/- indicates infinity
+		s := -1
+		if math.IsInf(v, -1) {
+			s = -1
+		}
+		return json.Marshal(s)
+	}
+	return json.Marshal(v) // marshal result as standard float64
+}
+
+// func (j *JSONFloat) UnsmarshalJSON(v []byte) error {
+// 	if s := string(v); s == "+" || s == "-" {
+// 		// if +/- indiciates infinity
+// 		if s == "+" {
+// 			*j = JSONFloat(math.Inf(1))
+// 			return nil
+// 		}
+// 		*j = JSONFloat(math.Inf(-1))
+// 		return nil
+// 	}
+// 	// just a regular float value
+// 	var fv float64
+// 	if err := json.Unmarshal(v, &fv); err != nil {
+// 		return err
+// 	}
+// 	*j = JSONFloat(fv)
+// 	return nil
+// }
 
 func main() {
 
@@ -1217,6 +1253,12 @@ func main() {
 
 				if err == nil {
 					quantity_cost := (component_with_specific_entry.Entries[0].Price / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(ingredient.Quantity)
+
+					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+					if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
+						quantity_cost = 0
+					}
+
 					totalCost += quantity_cost
 					itemCost.Cost += quantity_cost
 					itemComponent.Cost = quantity_cost
