@@ -133,6 +133,25 @@ type FinishOrderRequest struct {
 	Id string `json:"order_id"`
 }
 
+type SalesLogs struct {
+	Id        string  `json:"_id" bson:"_id,omitempty"`
+	SalePrice float64 `json:"sale_price" bson:"sale_price"`
+	Items     []struct {
+		ItemName   string  `json:"itemname"`
+		Cost       float64 `json:"cost"`
+		SalePrice  float64 `json:"sale_price"`
+		Components []struct {
+			ComponentName string  `json:"componentname"`
+			Cost          float64 `json:"cost"`
+		}
+	}
+	OrderId      string    `json:"order_id"`
+	TimeConsumed time.Time `json:"time_consumed"`
+	Type         string    `json:"type"`
+	Date         time.Time `json:"date"`
+	Cost         float64   `json:"cost"`
+}
+
 func main() {
 
 	const defaultPort = "8000"
@@ -166,6 +185,65 @@ func main() {
 	globals.Init(DBHost)
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/api/sales_logs", func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Connected successfully
+		fmt.Println("Connected to MongoDB!")
+
+		// find all documents from db of logs collection filter on type = order_finished
+		collection := client.Database("waha").Collection("logs")
+		filter := bson.M{"type": "order_finish"}
+		cursor, err := collection.Find(ctx, filter)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer cursor.Close(ctx)
+
+		sales_logs := []SalesLogs{}
+		if err = cursor.All(ctx, &sales_logs); err != nil {
+			log.Fatal(err)
+		}
+
+		jsonLogs, err := json.Marshal(sales_logs)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Write the JSON to the response
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonLogs)
+
+	})
 
 	// deleting an entry from a component
 	router.HandleFunc("/api/entry", func(w http.ResponseWriter, r *http.Request) {
