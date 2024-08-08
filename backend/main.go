@@ -739,16 +739,19 @@ func main() {
 				log.Fatal(err)
 			}
 
+			recipes := []Recipe{}
+
 			// Fetch the recipes for each category using the Recipe IDs
-			var recipes []Recipe
 			for _, recipeID := range category.Recipes {
 				var recipe Recipe
 				obj_id, _ := primitive.ObjectIDFromHex(recipeID)
 				filter := bson.D{{Key: "_id", Value: obj_id}}
 				err := client.Database("waha").Collection("recipes").FindOne(ctx, filter).Decode(&recipe)
 				if err != nil {
-					log.Fatal(err)
+					log.Printf(`\nERROR: Recipe doesn't exist id: ${%v}`, recipeID)
+					continue
 				}
+
 				recipes = append(recipes, recipe)
 			}
 

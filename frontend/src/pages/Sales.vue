@@ -8,10 +8,15 @@
                     </div>
                     <div class="col-12 flex justify-content-center align-items-center w-full">
                         <div class="flex flex-column w-full">
-                            <div class="gird">
-                                <div class="col-4">
+                            <div class="grid">
+                                <div class="col-8">
                                     <div class="card">
-                                        <Chart style="min-height: 25vh;" type="line" :data="chartData" :options="chartOptions" />
+                                        <Chart style="min-height: 20rem;" type="line" :data="chartData" :options="chartOptions" />
+                                    </div>
+                                </div>
+                                <div class="col-4 flex justify-content-center align-items-center">
+                                    <div class="card">
+                                        <Chart type="pie" class="w-20rem" :data="productPiechartData" :options="productPiechartOptions" />
                                     </div>
                                 </div>
                             </div>
@@ -85,6 +90,49 @@ const chartOptions = ref();
 
 const chartLabels = ref([])
 const chartSales = ref([])
+const chartCost = ref([])
+
+
+
+
+const productPiechartData = ref();
+const productPiechartOptions = ref();
+const productPieChartLabels = ref([])
+const productPieChartSales = ref([])
+
+const setProductPieChartData = () => {
+    const documentStyle = getComputedStyle(document.body);
+
+    return {
+        labels: productPieChartLabels,
+        datasets: [
+            {
+                data: productPieChartSales,
+                backgroundColor: [documentStyle.getPropertyValue('--cyan-500'), documentStyle.getPropertyValue('--orange-500'), documentStyle.getPropertyValue('--gray-500')],
+                hoverBackgroundColor: [documentStyle.getPropertyValue('--cyan-400'), documentStyle.getPropertyValue('--orange-400'), documentStyle.getPropertyValue('--gray-400')]
+            }
+        ]
+    };
+};
+
+const setProductPieChartOptions = () => {
+    const documentStyle = getComputedStyle(document.documentElement);
+    const textColor = documentStyle.getPropertyValue('--text-color');
+
+    return {
+        plugins: {
+            legend: {
+                labels: {
+                    usePointStyle: true,
+                    color: textColor
+                }
+            }
+        }
+    };
+};
+
+
+
         
 const setChartData = () => {
     const documentStyle = getComputedStyle(document.documentElement);
@@ -97,7 +145,14 @@ const setChartData = () => {
                 data: chartSales.value,
                 fill: false,
                 tension: 0.4,
-                borderColor: documentStyle.getPropertyValue('--cyan-500')
+                borderColor: documentStyle.getPropertyValue('--cyan-500'),
+            },
+            {
+                label: 'Cost',
+                data: chartCost.value,
+                fill: false,
+                tension: 0.4,
+                borderColor: documentStyle.getPropertyValue('--orange-300'),
             },
         ]
     };
@@ -144,6 +199,8 @@ const loadSales = () => {
     axios.get('http://localhost:8000/api/sales_logs')
     .then(response => {
         var per_day_log = {}
+        var product_sale_count = {}
+
 
         response.data.forEach((log) => {
 
@@ -165,6 +222,17 @@ const loadSales = () => {
 
                 chartLabels.value.push(`${year}-${month}-${day}`)
             }
+
+
+            log.Items.forEach((component) => {
+                if (!product_sale_count[component.itemname]){
+                    product_sale_count[component.itemname] = 0
+                }
+                
+                product_sale_count[component.itemname] ++;
+            })
+
+
             per_day_log[`${year}-${month}-${day}`].orders.push(log)
             per_day_log[`${year}-${month}-${day}`].cost += log.cost
             per_day_log[`${year}-${month}-${day}`].sales += log.sale_price
@@ -174,11 +242,22 @@ const loadSales = () => {
         for (var day in per_day_log){
             sales_log.value.push(per_day_log[day])
             chartSales.value.push(per_day_log[day].sales)
+            chartCost.value.push(per_day_log[day].cost)
+        }
+
+        for (var product in product_sale_count){
+            productPieChartLabels.value.push(product)
+            productPieChartSales.value.push(product_sale_count[product])
         }
 
 
         chartData.value = setChartData();
         chartOptions.value = setChartOptions();
+
+        setTimeout(() => {            
+            productPiechartData.value = setProductPieChartData();
+            productPiechartOptions.value = setProductPieChartOptions();
+        }, 2000);
     })
     .catch(error => {
         console.log(error)
