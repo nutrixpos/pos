@@ -1,0 +1,11 @@
+databases:
+  - name: core
+    type: mongo
+    host: 127.0.0.1
+    port: 27017
+    database: waha
+    username: 
+    password: 
+timezone: Africa/Cairo
+jwt_secret_key: "my_secret_key"
+env: dev

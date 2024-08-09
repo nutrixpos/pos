@@ -7,10 +7,10 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/elmawardy/waha-backend/globals"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -189,36 +189,8 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 // }
 
 func main() {
-
-	const defaultPort = "8000"
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	DBHost := os.Getenv("SWP_DB_HOST")
-	if DBHost == "" {
-		DBHost = "localhost"
-		// panic("SWP_DB_HOST env var not set.")
-	}
-
-	// ADMIN_EMAIL := os.Getenv("SWP_ADMIN_EMAIL")
-	// if ADMIN_EMAIL == "" {
-	// 	panic("SWP_ADMIN_EMAIL env var not set.")
-	// }
-
-	// SMTP_FROM := os.Getenv("SWP_SMTP_FROM")
-	// if SMTP_FROM == "" {
-	// 	panic("SWP_SMTP_FROM env var not set.")
-	// }
-
-	// SMTP_PASSWORD := os.Getenv("SWP_SMTP_PASSWORD")
-	// if SMTP_PASSWORD == "" {
-	// 	panic("SWP_SMTP_PASSWORD env var not set.")
-	// }
-
-	globals.Init(DBHost)
+	logger := logger.NewZeroLog()
+	config := config.ConfigFactory("viper", "config.yaml", &logger)
 
 	router := mux.NewRouter()
 
@@ -235,7 +207,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -295,7 +267,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -362,7 +334,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -429,7 +401,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -506,7 +478,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -571,7 +543,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -632,7 +604,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -696,7 +668,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -787,7 +759,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
@@ -940,7 +912,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -1028,7 +1000,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -1107,7 +1079,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -1160,7 +1132,7 @@ func main() {
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", globals.DBHost))
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
 		// Create a context with a timeout (optional)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
