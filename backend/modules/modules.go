@@ -30,7 +30,7 @@ func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger
 		manager.Modules = make(map[string]IModule)
 	}
 
-	msg := fmt.Sprintf("Registering module %s: ", name)
+	msg := fmt.Sprintf("Registering module : %s", name)
 	logger.Info(msg)
 
 	if _, ok := manager.Modules[name]; ok {
