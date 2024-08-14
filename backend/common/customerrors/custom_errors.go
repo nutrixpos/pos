@@ -1,6 +1,13 @@
 package customerrors
 
-const (
-	ResourceNotFound    = "resource-not-found"
-	TypeAssertionFailed = "type-assertion-failed"
-)
+type ModuleNameAlreadyExists struct{}
+
+func (e ModuleNameAlreadyExists) Error() string {
+	return "Module name already exists!"
+}
+
+type TypeAssersionFailed struct{}
+
+func (e TypeAssersionFailed) Error() string {
+	return "Type assertion failed!"
+}
