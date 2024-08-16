@@ -20,6 +20,53 @@ type ComponentService struct {
 	Config config.Config
 }
 
+func (cs *ComponentService) GetComponentAvailability(componentid string) (amount float32, err error) {
+
+	amount = 0.0
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// Connected successfully
+	fmt.Println("Connected to MongoDB!")
+
+	// Get the "test" collection from the database
+	collection := client.Database("waha").Collection("components")
+	objectID, err := primitive.ObjectIDFromHex(componentid)
+	if err != nil {
+		return 0.0, err
+	}
+
+	filter := bson.M{"_id": objectID}
+	var component models.Component
+	err = collection.FindOne(ctx, filter).Decode(&component)
+	if err != nil {
+		return 0.0, err
+	}
+
+	for _, entry := range component.Entries {
+		amount += entry.Quantity
+	}
+
+	return amount, nil
+
+}
+
 func (cs *ComponentService) GetComponents() (components []models.Component, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
