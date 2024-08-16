@@ -128,6 +128,21 @@ const products = ref([
 ])
 
 
+setInterval(() => {
+    var product_ids = ""
+    products.value.forEach((product,index) => {
+        product_ids += index > 0 ? "," +product.id : product.id
+    })
+
+    axios.get("http://localhost:8000/api/recipeavailability?ids="+product_ids)
+    .then((response) => {
+        products.value.forEach((_,index) => {
+            products.value[index].availability = response.data[products.value[index].id]
+        })
+    })
+}, 3000);
+
+
 // const showAllItems = () => {
 //     categories.value.forEach((category) => {
 //         if (category.recipes){

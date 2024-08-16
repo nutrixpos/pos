@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Card style="overflow: hidden;height:12rem;cursor: pointer;" @click="$emit('add')">
+        <Card style="overflow: hidden;height:13rem;cursor: pointer;" @click="$emit('add')">
             <template #header>
                 <div class="flex flex-column" style="position:relative;">
                     <Button icon="pi pi-ellipsis-h" @click.stop="toggle" severity="secondary" aria-label="Save" style="width: 2rem; height: 2rem; position:absolute;top:0;right:0;" size="small" class="m-1" />
@@ -8,7 +8,11 @@
                     <div class="flex align-items-center justify-content-center" style="height: 3rem;">
                         <h4 class="m-0 p-1">{{props.item.name}}</h4>
                     </div>
-                    <p class="mx-1 my-1">{{props.item.price}} EGP</p>                    
+                    <p class="mx-1 my-1" style="color:green"><strong>{{props.item.price}} EGP</strong></p>   
+
+                    <div class="text-center flex align-items-center justify-content-center" style="background-color:#ffd589;">
+                        <p class="m-0" style="font-size:0.9rem;">{{ props.item.availability || "..." }} left</p>
+                    </div>
 
                     <OverlayPanel ref="op">
                         <div class="flex flex-column gap-3 w-25rem">
