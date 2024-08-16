@@ -14,6 +14,7 @@ import {ref} from 'vue';
 
 
 const orders = ref([])
+const openedDialogs = ref(0)
 
 
 const loadOrders =  () => {
@@ -22,6 +23,12 @@ const loadOrders =  () => {
         orders.value = result.data
     })
 };
+
+
+setInterval(() => {
+    if (openedDialogs.value == 0)
+        loadOrders()
+}, 3000);
 
 
 loadOrders()
