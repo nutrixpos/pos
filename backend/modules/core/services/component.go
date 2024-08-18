@@ -43,7 +43,7 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 	}
 
 	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
+	cs.Logger.Info("Connected to MongoDB!")
 
 	// Get the "test" collection from the database
 	collection := client.Database("waha").Collection("components")

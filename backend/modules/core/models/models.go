@@ -85,6 +85,7 @@ type Recipe struct {
 	Components []RecipeComponent `bson:"components"`
 	Price      float64           `bson:"price"`
 	ImageURL   string            `bson:"image_url"`
+	Ready      float64           `bson:"ready"`
 }
 
 type SalesLogs struct {

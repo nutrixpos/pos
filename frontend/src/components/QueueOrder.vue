@@ -1,6 +1,6 @@
 <template>
     <div :style="`display:${state == 'finished' ? 'none' : 'block'}`">
-        <Card style="width: 25rem; overflow: hidden;">
+        <Card style="width: 20rem; overflow: hidden;">
             <template #header>
                 <!-- <h1 class="m-2">#{{props.number}}</h1> -->
                 <!-- 2024-06-20T14:31:39.946Z -->

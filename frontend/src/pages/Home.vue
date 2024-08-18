@@ -136,8 +136,8 @@ setInterval(() => {
 
     axios.get("http://localhost:8000/api/recipeavailability?ids="+product_ids)
     .then((response) => {
-        products.value.forEach((_,index) => {
-            products.value[index].availability = response.data[products.value[index].id]
+        products.value.forEach((product,index) => {
+            products.value[index].availability = Math.round(response.data.filter((x) => x.recipe_id == product.id)[0].available * 100) / 100
         })
     })
 }, 3000);
