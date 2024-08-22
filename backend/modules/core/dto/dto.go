@@ -22,11 +22,15 @@ type Category struct {
 }
 
 type PrepareItemResponse struct {
-	ComponentId     string                  `json:"component_id"`
-	Name            string                  `json:"name"`
-	DefaultQuantity float32                 `json:"defaultquantity"`
-	Unit            string                  `json:"unit"`
-	Entries         []models.ComponentEntry `json:"entries"`
+	ComponentId         string                  `json:"component_id"`
+	Name                string                  `json:"name"`
+	DefaultQuantity     float32                 `json:"defaultquantity"`
+	Unit                string                  `json:"unit"`
+	Entries             []models.ComponentEntry `json:"entries"`
+	Type                string                  `json:"type"`      // recipe or component
+	SubRecipe           models.Recipe           `json:"subrecipe"` // the subrecipe data in the type is recipe
+	Ready               float64                 `json:"ready"`     // Subrecipes ready number if the type is recipe
+	SubRecipeComponents []PrepareItemResponse   `json:"subrecipe_components"`
 }
 
 type OrderStartRequestIngredient struct {

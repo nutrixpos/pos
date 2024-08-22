@@ -80,12 +80,14 @@ type RecipeComponent struct {
 }
 
 type Recipe struct {
-	Id         string            `bson:"_id,omitempty"`
-	Name       string            `bson:"name"`
-	Components []RecipeComponent `bson:"components"`
-	Price      float64           `bson:"price"`
-	ImageURL   string            `bson:"image_url"`
-	Ready      float64           `bson:"ready"`
+	Id              string            `bson:"_id,omitempty"`
+	Name            string            `bson:"name"`
+	Components      []RecipeComponent `bson:"components"`
+	Price           float64           `bson:"price"`
+	ImageURL        string            `bson:"image_url"`
+	Ready           float64           `bson:"ready"`
+	MeasuringUnit   string            `bson:"unit"`
+	QuantityPerUnit float64           `bson:"quantity_per_unit"`
 }
 
 type SalesLogs struct {

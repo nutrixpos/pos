@@ -22,6 +22,44 @@ type RecipeService struct {
 	Config config.Config
 }
 
+func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []models.RecipeComponent, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Connected successfully
+	rs.Logger.Info("Connected to MongoDB!")
+
+	var recipe models.Recipe
+
+	subRecipeID, err := primitive.ObjectIDFromHex(recipe_id)
+	if err != nil {
+		return components, err
+	}
+
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": subRecipeID}).Decode(&recipe)
+	if err != nil {
+		return components, err
+	}
+
+	return recipe.Components, nil
+}
+
 //TODO - Continue
 
 func (rs *RecipeService) ConsumeRecipe(recipes_id string) (err error) {
@@ -100,32 +138,131 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 				return
 			}
 
+			var recipeAvailability dto.RecipeAvailability
+			recipeAvailability.ComponentRequirements = make(map[string]float64)
+
+			self_component_requirements := make(map[string]float64)
+			components_inventory := make(map[string]float64)
+
 			var lowest_available float64
 
-			for index, component := range recipe.Components {
-				componentService := ComponentService{
-					Logger: rs.Logger,
-					Config: rs.Config,
-				}
+			// subrecipes_components_requirements := make(map[string]float64)
+			// subrecipes_components_consumption := make(map[string]float64)
 
-				component_amount, err := componentService.GetComponentAvailability(component.ComponentId)
-				if err != nil {
-					errorChan <- err
-					return
-				}
+			subrecipe_availability := []dto.RecipeAvailability{}
 
-				if index == 0 {
-					lowest_available = float64(component_amount / component.Quantity)
-				}
+			for _, component := range recipe.Components {
 
-				if float64(component_amount/component.Quantity) < lowest_available {
-					lowest_available = float64(component_amount / component.Quantity)
+				self_component_requirements[component.ComponentId] = float64(component.Quantity)
+				recipeAvailability.ComponentRequirements[component.ComponentId] += self_component_requirements[component.ComponentId]
+
+				if component.Type == "recipe" {
+					// get sub recipes availability and component consumption to reduce it from the available component quantities.
+
+					subrecipe_available, err := rs.CheckRecipesAvailability([]string{component.ComponentId})
+
+					if err != nil {
+						errorChan <- err
+						return
+					}
+
+					subrecipe_availability = append(subrecipe_availability, dto.RecipeAvailability{
+						RecipeId:              component.ComponentId,
+						Ready:                 subrecipe_available[0].Ready,
+						ComponentRequirements: subrecipe_available[0].ComponentRequirements,
+					})
+
+				} else {
+					componentService := ComponentService{
+						Logger: rs.Logger,
+						Config: rs.Config,
+					}
+
+					component_amount, err := componentService.GetComponentAvailability(component.ComponentId)
+					if err != nil {
+						errorChan <- err
+						return
+					}
+
+					components_inventory[component.ComponentId] = float64(component_amount)
 				}
 			}
 
-			var recipeAvailability dto.RecipeAvailability
+			satisfied := false
+			for _, sra := range subrecipe_availability {
+				for k, v := range sra.ComponentRequirements {
+					recipeAvailability.ComponentRequirements[k] += v * self_component_requirements[sra.RecipeId]
+				}
+			}
+
+			for !satisfied {
+				satisfied = true
+				temp_component_requirements := make(map[string]float64)
+				temp_component_inventory := make(map[string]float64)
+
+				for k, v := range recipeAvailability.ComponentRequirements {
+					temp_component_requirements[k] = v
+				}
+
+				for k, v := range components_inventory {
+					temp_component_inventory[k] = v
+				}
+
+				for index, subrecipe := range subrecipe_availability {
+					if subrecipe.Ready > 0 {
+						satisfied = false
+
+						subrecipe_reminder := 0.0
+
+						if self_component_requirements[subrecipe.RecipeId] > subrecipe.Ready {
+							subrecipe_reminder = self_component_requirements[subrecipe.RecipeId] - subrecipe.Ready
+						}
+
+						for component_id, value := range subrecipe.ComponentRequirements {
+							if _, ok := temp_component_requirements[component_id]; ok {
+								temp_component_requirements[component_id] -= value * (self_component_requirements[subrecipe.RecipeId] - subrecipe_reminder)
+							}
+						}
+
+						subrecipe_availability[index].Ready -= self_component_requirements[subrecipe.RecipeId] - subrecipe_reminder
+					}
+				}
+
+				increase_availability := false
+				for k, v := range temp_component_requirements {
+					if temp_component_inventory[k] >= v {
+						temp_component_inventory[k] -= v
+						increase_availability = true
+					}
+				}
+
+				if increase_availability && !satisfied {
+					recipeAvailability.Available += 1
+					for k, v := range temp_component_inventory {
+						components_inventory[k] = v
+					}
+				}
+
+			}
+
+			for index, component := range recipe.Components {
+
+				if component.Type != "recipe" {
+					// subrecipes_components_requirements[component.ComponentId] += float64(component.Quantity)
+
+					if index == 0 {
+						lowest_available = components_inventory[component.ComponentId] / recipeAvailability.ComponentRequirements[component.ComponentId]
+					}
+
+					if components_inventory[component.ComponentId]/recipeAvailability.ComponentRequirements[component.ComponentId] < lowest_available {
+						lowest_available = components_inventory[component.ComponentId] / recipeAvailability.ComponentRequirements[component.ComponentId]
+					}
+				}
+			}
+
 			recipeAvailability.RecipeId = recipe_id
-			recipeAvailability.Available = lowest_available
+			recipeAvailability.Available += lowest_available + recipe.Ready
+			recipeAvailability.Ready = recipe.Ready
 
 			availabilitiesChan <- recipeAvailability
 
@@ -145,11 +282,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 				return availabilities, err
 			}
 
-			availabilities = append(availabilities, dto.RecipeAvailability{
-				RecipeId:  availability.RecipeId,
-				Available: availability.Available,
-				Ready:     availability.Ready,
-			})
+			availabilities = append(availabilities, availability)
 		case err := <-errorChan:
 			return availabilities, err
 		}

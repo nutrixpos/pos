@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -289,25 +290,52 @@ func (os *OrderService) PrepareItem(orderitem dto.OrderItem) (prepare_item_respo
 	for _, component := range recipe.Components {
 
 		var db_component models.Component
-
-		if component.Type != "recipe" {
-			err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"name": component.Name}).Decode(&db_component)
-			if err != nil {
-				return prepare_item_responses, err
-			}
-		}
-
 		res := dto.PrepareItemResponse{
-			ComponentId:     db_component.Id,
 			Name:            component.Name,
 			DefaultQuantity: component.Quantity,
 			Unit:            component.Unit,
 		}
 
 		if component.Type != "recipe" {
+			err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"name": component.Name}).Decode(&db_component)
+			if err != nil {
+				return prepare_item_responses, err
+			}
+
+			res.ComponentId = db_component.Id
 			res.Entries = db_component.Entries
-		} else {
-			res.Entries = []models.ComponentEntry{}
+			res.Type = "component"
+
+		} else if component.Type == "recipe" {
+
+			recipeService := RecipeService{
+				Logger: os.Logger,
+				Config: os.Config,
+			}
+
+			subrecipe_availability, err := recipeService.CheckRecipesAvailability([]string{component.ComponentId})
+			if err != nil {
+				return prepare_item_responses, err
+			}
+
+			if subrecipe_availability[0].Available > 0 {
+				if subrecipe_availability[0].Ready > 0 {
+					res.SubRecipe.Id = component.ComponentId
+					res.SubRecipe.Ready = subrecipe_availability[0].Ready
+					continue
+				}
+
+				subrecipe_components, err := recipeService.GetRecipeComponents(component.ComponentId)
+				if err != nil {
+					return prepare_item_responses, err
+				}
+
+				res.SubRecipe.Components = append(res.SubRecipe.Components, subrecipe_components...)
+
+			} else {
+				return prepare_item_responses, errors.New("subrecipe not available")
+			}
+
 		}
 
 		prepare_item_responses = append(prepare_item_responses, res)
