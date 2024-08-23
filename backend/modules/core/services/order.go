@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -257,93 +256,6 @@ func (os *OrderService) GetOrders() (orders []dto.Order, err error) {
 
 }
 
-func (os *OrderService) PrepareItem(orderitem dto.OrderItem) (prepare_item_responses []dto.PrepareItemResponse, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return prepare_item_responses, err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return prepare_item_responses, err
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
-
-	var recipe models.Recipe
-
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"name": orderitem.Name}).Decode(&recipe)
-	if err != nil {
-		return prepare_item_responses, err
-	}
-
-	for _, component := range recipe.Components {
-
-		var db_component models.Component
-		res := dto.PrepareItemResponse{
-			Name:            component.Name,
-			DefaultQuantity: component.Quantity,
-			Unit:            component.Unit,
-		}
-
-		if component.Type != "recipe" {
-			err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"name": component.Name}).Decode(&db_component)
-			if err != nil {
-				return prepare_item_responses, err
-			}
-
-			res.ComponentId = db_component.Id
-			res.Entries = db_component.Entries
-			res.Type = "component"
-
-		} else if component.Type == "recipe" {
-
-			recipeService := RecipeService{
-				Logger: os.Logger,
-				Config: os.Config,
-			}
-
-			subrecipe_availability, err := recipeService.CheckRecipesAvailability([]string{component.ComponentId})
-			if err != nil {
-				return prepare_item_responses, err
-			}
-
-			if subrecipe_availability[0].Available > 0 {
-				if subrecipe_availability[0].Ready > 0 {
-					res.SubRecipe.Id = component.ComponentId
-					res.SubRecipe.Ready = subrecipe_availability[0].Ready
-					continue
-				}
-
-				subrecipe_components, err := recipeService.GetRecipeComponents(component.ComponentId)
-				if err != nil {
-					return prepare_item_responses, err
-				}
-
-				res.SubRecipe.Components = append(res.SubRecipe.Components, subrecipe_components...)
-
-			} else {
-				return prepare_item_responses, errors.New("subrecipe not available")
-			}
-
-		}
-
-		prepare_item_responses = append(prepare_item_responses, res)
-	}
-
-	return prepare_item_responses, nil
-
-}
 func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 

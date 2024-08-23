@@ -60,6 +60,83 @@ func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []mod
 	return recipe.Components, nil
 }
 
+func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, err error) {
+
+	self_components := []dto.PrepareItemResponse{}
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Connected successfully
+	rs.Logger.Info("Connected to MongoDB!")
+
+	var recipe models.Recipe
+
+	subRecipeID, err := primitive.ObjectIDFromHex(recipe_id)
+	if err != nil {
+		return tree, err
+	}
+
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": subRecipeID}).Decode(&recipe)
+	if err != nil {
+		return tree, err
+	}
+
+	for _, component := range recipe.Components {
+
+		if component.Type != "recipe" {
+			component_id, err := primitive.ObjectIDFromHex(component.ComponentId)
+			if err != nil {
+				return tree, err
+			}
+
+			var db_component models.Component
+			err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"_id": component_id}).Decode(&db_component)
+			if err != nil {
+				return tree, err
+			}
+			self_components = append(self_components, dto.PrepareItemResponse{
+				ComponentId:     component.ComponentId,
+				Name:            db_component.Name,
+				DefaultQuantity: component.Quantity,
+				Unit:            db_component.Unit,
+				Entries:         db_component.Entries,
+				Type:            component.Type,
+			})
+
+		} else {
+
+			sub_recipe_tree, err := rs.GetRecipeTree(component.ComponentId)
+			if err != nil {
+				return tree, err
+			}
+			tree.SubRecipes = append(tree.SubRecipes, sub_recipe_tree)
+		}
+
+	}
+
+	tree.Components = self_components
+	tree.RecipeId = recipe_id
+	tree.RecipeName = recipe.Name
+
+	return tree, nil
+}
+
 //TODO - Continue
 
 func (rs *RecipeService) ConsumeRecipe(recipes_id string) (err error) {

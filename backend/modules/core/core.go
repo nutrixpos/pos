@@ -41,11 +41,11 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.I
 	router.Handle("/api/components", handlers.GetComponents(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/categories", handlers.GetCategories(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/startorder", handlers.StartOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/prepareitem", handlers.PrepareItem(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/orders", handlers.GetOrders(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/submitorder", handlers.SubmitOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle("/api/recipetree", handlers.GetRecipeTree(cmb.Config, cmb.Logger)).Methods("GET")
 
 	return cmb
 }

@@ -131,52 +131,6 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 }
 
-func PrepareItem(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		decoder := json.NewDecoder(r.Body)
-		var orderitem dto.OrderItem
-		err := decoder.Decode(&orderitem)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
-		prepare_item_responses, err := orderService.PrepareItem(orderitem)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(prepare_item_responses); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-
-	}
-
-}
-
 func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

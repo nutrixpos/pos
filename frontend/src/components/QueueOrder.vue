@@ -228,14 +228,10 @@ const prepareOrder = () => {
 
     props.order.items.forEach((item) => {
 
-        axios.post("http://localhost:8000/api/prepareitem",
-        {
-            name:item.name
-        }
-        ).then((response) => {
+        axios.get("http://localhost:8000/api/recipetree?id="+item.id,).then((response) => {
             var components = []
 
-            response.data.forEach((component) => {
+            response.data.components.forEach((component) => {
 
 
                 var entries = component.entries.map(entry => {
