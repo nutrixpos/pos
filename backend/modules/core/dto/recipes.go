@@ -8,8 +8,8 @@ type RecipeAvailability struct {
 }
 
 type RecipeTree struct {
-	RecipeId   string                `json:"recipe_id"`
-	RecipeName string                `json:"recipe_name"`
-	Components []PrepareItemResponse `json:"components"`
-	SubRecipes []RecipeTree          `json:"sub_recipes"`
+	RecipeId   string                    `json:"recipe_id"`
+	RecipeName string                    `json:"recipe_name"`
+	Components []RecipeComponentResponse `json:"components"`
+	SubRecipes []RecipeTree              `json:"sub_recipes"`
 }

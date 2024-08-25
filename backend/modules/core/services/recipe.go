@@ -62,7 +62,7 @@ func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []mod
 
 func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, err error) {
 
-	self_components := []dto.PrepareItemResponse{}
+	self_components := []dto.RecipeComponentResponse{}
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -110,7 +110,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, e
 			if err != nil {
 				return tree, err
 			}
-			self_components = append(self_components, dto.PrepareItemResponse{
+			self_components = append(self_components, dto.RecipeComponentResponse{
 				ComponentId:     component.ComponentId,
 				Name:            db_component.Name,
 				DefaultQuantity: component.Quantity,

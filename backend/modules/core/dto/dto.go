@@ -21,7 +21,7 @@ type Category struct {
 	Recipes []models.Recipe `json:"recipes"`
 }
 
-type PrepareItemResponse struct {
+type RecipeComponentResponse struct {
 	ComponentId     string                  `json:"component_id"`
 	Name            string                  `json:"name"`
 	DefaultQuantity float32                 `json:"defaultquantity"`

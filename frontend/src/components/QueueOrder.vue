@@ -61,6 +61,7 @@
                             </div>
                             <Dropdown v-if="itemComponentEntries[currentItemIndex].components[index].entries != null && itemComponentEntries[currentItemIndex].components[index].entries.length > 0" v-model="itemsEntrySelection[currentItemIndex][index]"  :options="itemComponentEntries[currentItemIndex].components[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
                         </div>
+                        <ItemSelection v-for="(subrecipe,index) in itemComponentEntries[currentItemIndex].subrecipes" :key="index" :item="subrecipe" />
                         <div class="flex pt-4 justify-content-between">
                             <Button label="Back" severity="secondary" :disabled="currentItemIndex==0" icon="pi pi-arrow-left" @click="prevCallback" />
                             <Button :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
@@ -90,6 +91,7 @@ import Divider from 'primevue/divider';
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useToast } from "primevue/usetoast";
+import ItemSelection from "./ItemSelection.vue";
 
 
 const toast = useToast();
@@ -230,6 +232,7 @@ const prepareOrder = () => {
 
         axios.get("http://localhost:8000/api/recipetree?id="+item.id,).then((response) => {
             var components = []
+            var subrecipes = []
 
             response.data.components.forEach((component) => {
 
@@ -261,8 +264,11 @@ const prepareOrder = () => {
 
                 
             })
+
+
             
-            itemComponentEntries.value.push({name:item.name,components})
+            subrecipes = response.data.sub_recipes
+            itemComponentEntries.value.push({name:item.name,components,subrecipes})
             counter.value++
             visible.value = true
         })  
