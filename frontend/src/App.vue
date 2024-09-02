@@ -1,8 +1,8 @@
 <template>
-    <main style="height:100%;">
-        <RouterView />
-        <Toast  group="br" position="bottom-right" />
-    </main>
+  <main style="height:100%;">
+      <RouterView />
+      <Toast  group="br" position="bottom-right" />
+  </main>
 </template>
 
 <script setup>
@@ -11,6 +11,6 @@ import Toast from 'primevue/toast';
 
 <style>
 #app{
-    height: 100vh;
+  height: 100vh;
 }
 </style>

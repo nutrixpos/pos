@@ -20,6 +20,80 @@ type ComponentService struct {
 	Config config.Config
 }
 
+func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.RecipeSelections, order_id string, item_order_index int) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+	cs.Logger.Info("Connected to MongoDB!")
+
+	for _, selection := range rs.Selections {
+		if err != nil {
+			return err
+		}
+
+		component_ob_id, err := primitive.ObjectIDFromHex(selection.ComponentId)
+		if err != nil {
+			return err
+		}
+
+		filter := bson.M{"_id": component_ob_id, "entries._id": selection.Entry.Id}
+		// Define the update operation
+		update := bson.M{
+			"$inc": bson.M{
+				"entries.$.quantity": -selection.Quantity,
+			},
+		}
+
+		_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
+		if err != nil {
+			return err
+		}
+
+		logs_data := bson.M{
+			"type":             "component_consume",
+			"date":             time.Now(),
+			"component_id":     selection.ComponentId,
+			"quantity":         selection.Quantity,
+			"entry_id":         selection.Entry.Id,
+			"order_id":         order_id,
+			"recipe_id":        rs.Id,
+			"item_order_index": item_order_index,
+		}
+		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	for _, subrecipe := range rs.SubRecipes {
+
+		err = cs.ConsumeItemComponentsForOrder(subrecipe, order_id, item_order_index)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (cs *ComponentService) GetComponentAvailability(componentid string) (amount float32, err error) {
 
 	amount = 0.0

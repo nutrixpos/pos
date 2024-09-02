@@ -63,6 +63,47 @@ type Category struct {
 	Recipes []string `json:"recipes"`
 }
 
+type ComponentEntrySelection struct {
+	Name        string         `json:"Name"`
+	ComponentId string         `json:"ComponentId"`
+	Entry       ComponentEntry `json:"Entry"`
+	Unit        string         `json:"Unit"`
+	Quantity    float64        `json:"Quantity"`
+}
+
+type ItemCost struct {
+	RecipeId   string
+	ItemName   string
+	Cost       float64
+	SalePrice  float64
+	Components []struct {
+		ComponentName string
+		ComponentId   string
+		EntryId       string
+		Quantity      float64
+		Cost          float64
+	}
+}
+
+type RecipeSelections struct {
+	RecipeName         string                    `json:"recipe_name"`
+	Id                 string                    `json:"Id"`
+	Ready              float64                   `json:"Ready"`
+	Components         []Component               `json:"Components" bson:"-"`
+	IsConsumeFromReady bool                      `json:"isConsumeFromReady"`
+	Selections         []ComponentEntrySelection `json:"Selections"`
+	SubRecipes         []RecipeSelections        `json:"SubRecipes"`
+	Quantity           float64                   `json:"Quantity"`
+}
+
+type Order2 struct {
+	SubmittedAt time.Time          `json:"submitted_at" bson:"submitted_at"`
+	Id          string             `json:"id" bson:"_id,omitempty"`
+	Items       []RecipeSelections `json:"items" bson:"items"`
+	State       string             `json:"state" bson:"state"`
+	StartedAt   time.Time          `json:"started_at" bson:"started_at"`
+}
+
 type Order struct {
 	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`
 	Id          string      `json:"id" bson:"_id,omitempty"`
