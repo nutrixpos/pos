@@ -257,7 +257,7 @@ const prepareOrder = () => {
                 components.push(new_component)
             })
 
-            response.data.sub_recipes.forEach((subrecipe: Recipe) => {
+            response.data.sub_recipes?.forEach((subrecipe: Recipe) => {
 
                 let new_subrecipe = new RecipeSelections(subrecipe)
                 subrecipes.push(new_subrecipe)

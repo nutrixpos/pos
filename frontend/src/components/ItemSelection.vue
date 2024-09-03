@@ -20,8 +20,10 @@
             <Dropdown v-if="model.Components[index].entries != null && model.Components[index].entries.length > 0" v-model="model.Selections[index].Entry"  :options="model.Components[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
         </div>
     </div>
-    <div v-for="(subrecipe,index) in model.SubRecipes" :key="index" class="m-0">
-        <ItemSelection v-model="model.SubRecipes[index]" />
+    <div v-if="model.SubRecipes != null">
+        <div v-for="(subrecipe,index) in model.SubRecipes" :key="index" class="m-0">
+            <ItemSelection v-model="model.SubRecipes[index]" />
+        </div>
     </div>
 </template>
 
