@@ -12,4 +12,6 @@ type RecipeTree struct {
 	RecipeName string                    `json:"recipe_name"`
 	Components []RecipeComponentResponse `json:"components"`
 	SubRecipes []RecipeTree              `json:"sub_recipes"`
+	Ready      float64                   `json:"ready"`
+	Quantity   float64                   `json:"quantity"`
 }

@@ -125,6 +125,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, e
 			if err != nil {
 				return tree, err
 			}
+			sub_recipe_tree.Quantity = float64(component.Quantity)
 			tree.SubRecipes = append(tree.SubRecipes, sub_recipe_tree)
 		}
 
@@ -133,6 +134,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, e
 	tree.Components = self_components
 	tree.RecipeId = recipe_id
 	tree.RecipeName = recipe.Name
+	tree.Ready = recipe.Ready
 
 	return tree, nil
 }

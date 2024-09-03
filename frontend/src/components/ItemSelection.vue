@@ -1,79 +1,58 @@
 <template>
-    <h4>{{ props.item.recipe_name }}</h4>
-    <div class="flex my-3 py-2 justify-content-between" style="border-bottom:1px solid gray" v-for="(component,index) in props.item.components" :key="index">
-        {{ component.name }}
-        <div class="flex">
-            <InputText type="text" v-model="itemsComponentQuantity[index]"  size="small"/>
-            <span class="ml-2 mt-2">{{ component.unit }}</span>
+    <div class="flex justify-content-between align-items-center">
+        <h4>{{ model.recipe_name }}</h4>
+        <InputText :disabled="!model.isConsumeFromReady" type="number" v-model="model.Quantity"  size="small"/>
+        <div class="flex align-items-center justify-content-center">
+            <span class="mx-2">From Ready</span>
+            <InputSwitch v-model="model.isConsumeFromReady" :disabled="!model.canChangeReadyToggle" />
+            <span class="mx-2">
+                <p style="font-size: 0.9rem;">{{model.Ready}} Ready</p>
+            </span>
         </div>
-        <Dropdown v-if="props.item.components[index].entries != null && props.item.components[index].entries.length > 0" v-model="itemsEntrySelection[index]"  :options="props.item.components[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
     </div>
-    <div v-for="(subrecipe,index) in props.item.subrecipes" :key="index" class="m-0">
-        <ItemSelection :item="subrecipe" />
+    <div v-if="!model.isConsumeFromReady">
+        <div class="flex my-3 py-2 justify-content-between" style="border-bottom:1px solid gray" v-for="(component,index) in model.Components" :key="index">
+            {{ component.name }}
+            <div class="flex">
+                <InputText type="number" v-model="model.Selections[index].Quantity"  size="small"/>
+                <span class="ml-2 mt-2">{{ component.unit }}</span>
+            </div>
+            <Dropdown v-if="model.Components[index].entries != null && model.Components[index].entries.length > 0" v-model="model.Selections[index].Entry"  :options="model.Components[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
+        </div>
+    </div>
+    <div v-for="(subrecipe,index) in model.SubRecipes" :key="index" class="m-0">
+        <ItemSelection v-model="model.SubRecipes[index]" />
     </div>
 </template>
 
 <script setup lang="ts">
-import {ref, defineProps, defineEmits, watch,PropType} from 'vue'
+import {defineModel} from 'vue'
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
+import InputSwitch from 'primevue/inputswitch';
+import { RecipeSelections, ComponentSelection} from '@/classes/ItemSelection'
 
-interface Component {
-    name: string,
-    unit: string,
-    defaultquantity: number,
-    entries: Array<any>,
-}
-
-interface ItemSelection {
-    name: string,
-    Id: string,
-    components: Array<Component>,
-    subrecipes: Array<ItemSelection>,
-}
-
-const props = defineProps({
-    item :{
-        type: Object as PropType<ItemSelection>,
-        required: true
-    }
-})
-
-const itemsEntrySelection = ref([])
-const itemsComponentQuantity = ref([])
-
-const subRecipesEntriesSelection = ref([[]])
-const subRecipesComponentQuantity = ref([[]])
-
-const emit = defineEmits(['update:itemsEntrySelection','update:itemsComponentQuantity'])
+const model = defineModel<RecipeSelections>({
+    required: true})
 
 
 const init = () => {
-    props.item.components.forEach((component,) => {
-        itemsComponentQuantity.value.push(component.defaultquantity)
-        var entries = component.entries.map(entry => {
-                    return {
-                        ...entry,
-                        label:entry.company + " - " + entry.quantity + " " + entry.unit
-                    }
-                })
-        component.entries = entries
-        itemsEntrySelection.value.push(component.entries.length > 0 ? component.entries[0] : null)
-    })
 
+    model.value.Selections = []
 
-    props.item.subrecipes.forEach(() => {
-        subRecipesEntriesSelection.value.push([])
-        subRecipesComponentQuantity.value.push([])
+    model.value.Components.forEach((component) => {
+        const selection = new ComponentSelection()
+        selection.ComponentId = component.component_id
+        selection.Quantity = component.defaultquantity
+        selection.Name = component.name
+        selection.Unit = component.unit
+        selection.Entry = component.entries[0]
+
+        model.value.Selections.push(selection)
     })
 }
 
-init();
 
-watch(itemsEntrySelection, () => {
-    emit('update:itemsEntrySelection',itemsEntrySelection.value)
-    emit('update:itemsComponentQuantity',itemsComponentQuantity.value)
-})
-
+init()
 
 </script>

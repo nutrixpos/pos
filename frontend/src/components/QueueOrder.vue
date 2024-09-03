@@ -53,15 +53,7 @@
                 <StepperPanel v-for="item,index in props.order.items" :key="index" :header="item.name">
                     <template #content="{ prevCallback, nextCallback }">
                         <Message v-if="props.order.items[currentItemIndex].comment != ''" severity="warn">{{ props.order.items[currentItemIndex].comment }}</Message>
-                        <div class="flex my-3 py-2 justify-content-between" style="border-bottom:1px solid gray" v-for="(component,index) in itemComponentEntries[currentItemIndex].components" :key="index">
-                            {{ component.name }}
-                            <div class="flex">
-                                <InputText type="text" v-model="itemsComponentQuantity[currentItemIndex][index]"  size="small"/>
-                                <span class="ml-2 mt-2">{{ component.unit }}</span>
-                            </div>
-                            <Dropdown v-if="itemComponentEntries[currentItemIndex].components[index].entries != null && itemComponentEntries[currentItemIndex].components[index].entries.length > 0" v-model="itemsEntrySelection[currentItemIndex][index]"  :options="itemComponentEntries[currentItemIndex].components[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
-                        </div>
-                        <ItemSelection v-for="(subrecipe,index) in itemComponentEntries[currentItemIndex].subrecipes" :key="index" :item="subrecipe" />
+                        <ItemSelection v-model="items[index]"  v-for="(item,index) in items" :key="index" />
                         <div class="flex pt-4 justify-content-between">
                             <Button label="Back" severity="secondary" :disabled="currentItemIndex==0" icon="pi pi-arrow-left" @click="prevCallback" />
                             <Button :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
@@ -73,8 +65,8 @@
     </div>
 </template>
 
-<script setup>
-import {ref, defineProps} from 'vue'
+<script setup lang="ts">
+import {ref, defineProps, watch, defineEmits} from 'vue'
 
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -82,8 +74,6 @@ import ButtonGroup from 'primevue/buttongroup';
 import Dialog from 'primevue/dialog'
 import moment from 'moment';
 import axios from 'axios';
-import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
 import Stepper from 'primevue/stepper';
 import StepperPanel from 'primevue/stepperpanel';
 import Message from 'primevue/message';
@@ -92,17 +82,15 @@ import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useToast } from "primevue/usetoast";
 import ItemSelection from "./ItemSelection.vue";
+import {Component, ComponentEntry, RecipeSelections, Recipe} from '@/classes/ItemSelection'
 
 
 const toast = useToast();
 
+const items = ref<RecipeSelections[]>([])
+
 
 const confirm = useConfirm();
-
-
-const itemComponentEntries = ref([])
-const itemsEntrySelection = ref([[]])
-const itemsComponentQuantity = ref([[]])
 const recipe_visible= ref(false)
 
 const state = ref("pending")
@@ -112,7 +100,6 @@ const started_at = ref("")
 // const orderItemSelectedOptions = ref({})
 
 const currentItemIndex = ref(0)
-const counter = ref(0)
 
 
 
@@ -123,6 +110,34 @@ const timePassed = ref("")
 
 const recipe = ref({
     Name:"null"
+})
+
+const emit = defineEmits(['openedDialog', 'closedDialog']);
+
+watch(visible, (newVal) => {
+  if (newVal){
+    if (!recipe_visible.value){
+        emit('openedDialog');
+    }
+  }
+  if (!newVal){
+    if (!recipe_visible.value){
+        emit('closedDialog');
+    }
+  }
+})
+
+watch(recipe_visible, (newVal) => {
+  if (newVal){
+    if (!visible.value){
+        emit('openedDialog');
+    }
+  }
+  if (!newVal){
+    if (!visible.value){
+        emit('closedDialog');
+    }
+  }
 })
 
 
@@ -176,7 +191,7 @@ const confirmFinish = (event) => {
 
 const finishOrder = () => {
 
-    axios.post("http://localhost:8000/api/finishorder",
+    axios.post("http://localhost:8000/api/finishorder2",
         {
             "order_id":props.order.id
         }
@@ -186,29 +201,13 @@ const finishOrder = () => {
 }
 
 
+
 const startOrder =  () => {
 
-    var ingredients = []
-
-    itemsComponentQuantity.value.forEach((item,itemIndex) => {
-
-        ingredients.push([])
-
-        item.forEach((quantity,componentIndex) => {
-            ingredients[itemIndex][componentIndex] = {
-                name : itemComponentEntries.value[itemIndex].components[componentIndex].name,
-                quantity,
-                entry_id: itemsEntrySelection.value[itemIndex][componentIndex] != null ? itemsEntrySelection.value[itemIndex][componentIndex]._id : "null", 
-                company: itemsEntrySelection.value[itemIndex][componentIndex] != null ? itemsEntrySelection.value[itemIndex][componentIndex].company : "null"
-            }
-        })
-    })
-
-
-    axios.post("http://localhost:8000/api/startorder",
+    axios.post("http://localhost:8000/api/startorder2",
         {
             "order_id":props.order.id,
-            "ingredients" : ingredients
+            "items" : items.value
         }
         ).then((response) => {
             state.value = "in_progress"
@@ -220,56 +219,57 @@ const startOrder =  () => {
 
 const prepareOrder = () => {
 
-
-    itemsComponentQuantity.value = [[]]
-    itemsEntrySelection.value = [[]]
-    itemComponentEntries.value = []
     currentItemIndex.value = 0
-    counter.value = 0 ;
+    items.value = []
 
 
     props.order.items.forEach((item) => {
 
         axios.get("http://localhost:8000/api/recipetree?id="+item.id,).then((response) => {
-            var components = []
-            var subrecipes = []
+
+            let item: RecipeSelections = new RecipeSelections()
+            let components : Component[] = []
+            let subrecipes: RecipeSelections[] = []
+            item.Id = response.data.recipe_id
+            item.recipe_name = response.data.recipe_name
 
             response.data.components.forEach((component) => {
 
+                let new_component = new Component()
+                new_component.component_id = component.component_id
+                new_component.defaultquantity = component.defaultquantity
+                new_component.name = component.name
+                new_component.unit = component.unit
 
-                var entries = component.entries.map(entry => {
-                    return {
-                        ...entry,
-                        label:entry.company + " - " + entry.quantity + " " + entry.unit
-                    }
+                component.entries.forEach(entry => {
+
+                    let new_entry: ComponentEntry = new ComponentEntry()
+                    new_entry._id = entry._id
+                    new_entry.company = entry.company
+                    new_entry.label = entry.company + " - " + entry.quantity + " " + entry.unit
+                    new_entry.price = entry.price
+                    new_entry.quantity = entry.quantity
+                    new_entry.unit = entry.unit
+                    new_entry.PurchaseQuantity = entry.purchase_quantity
+                    new_component.entries.push(new_entry)
                 })
-
-                components.push({
-                    index: counter.value,
-                    name: component.name,
-                    defaultquantity: component.defaultquantity,
-                    unit: component.unit,
-                    entries
-                })
-
-
-                if (itemsEntrySelection.value.length < (counter.value+1)){
-                    itemsEntrySelection.value.push([])
-                    itemsComponentQuantity.value.push([])
-                }
                 
-                itemsEntrySelection.value[counter.value].push(entries.length > 0 ? entries[0] : null)
-                itemsComponentQuantity.value[counter.value].push(component.defaultquantity)
-                
-
-                
+                components.push(new_component)
             })
+
+            response.data.sub_recipes.forEach((subrecipe: Recipe) => {
+
+                let new_subrecipe = new RecipeSelections(subrecipe)
+                subrecipes.push(new_subrecipe)
+            })
+
+            item.Components = components
+            item.SubRecipes = subrecipes
 
 
             
             subrecipes = response.data.sub_recipes
-            itemComponentEntries.value.push({name:item.name,components,subrecipes})
-            counter.value++
+            items.value.push(item)
             visible.value = true
         })  
     })

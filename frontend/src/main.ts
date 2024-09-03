@@ -10,14 +10,14 @@ import 'primeicons/primeicons.css'
 
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { library } from "@fortawesome/fontawesome-svg-core";
+// import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import ToastService from 'primevue/toastservice';
 import ConfirmationService from 'primevue/confirmationservice';
 
 
 
-library.add(fas)
+// library.add(fas)
 
 
 
