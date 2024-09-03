@@ -116,8 +116,10 @@ export class RecipeSelections {
                 this.Quantity = recipe.quantity
                 
                 if (this.Ready >= recipe.quantity ){
-                    this.isConsumeFromReady = true
-                    this.canChangeReadyToggle = true
+
+                    // allow user to edit the ready toggle and add enable the toggle so that it consumes from the ready quantity
+                    this.isConsumeFromReady = false
+                    this.canChangeReadyToggle = false
 
                 }else {
                     this.canChangeReadyToggle = false
