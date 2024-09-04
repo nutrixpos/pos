@@ -50,10 +50,10 @@
         <Dialog v-model:visible="visible" modal :header="`Order #${props.number}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
             <!-- <Dialog v-model:visible="visible" modal :header="props.order.items[currentItemIndex].name+` #${currentItemIndex+1}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
             <Stepper @update:activeStep="(number) => {currentItemIndex = number}">
-                <StepperPanel v-for="item,index in props.order.items" :key="index" :header="item.name">
+                <StepperPanel v-for="item,index in items" :key="index" :header="item.recipe_name">
                     <template #content="{ prevCallback, nextCallback }">
                         <Message v-if="props.order.items[currentItemIndex].comment != ''" severity="warn">{{ props.order.items[currentItemIndex].comment }}</Message>
-                        <ItemSelection v-model="items[index]"  v-for="(item,index) in items" :key="index" />
+                        <ItemSelection v-model="items[index]" />
                         <div class="flex pt-4 justify-content-between">
                             <Button label="Back" severity="secondary" :disabled="currentItemIndex==0" icon="pi pi-arrow-left" @click="prevCallback" />
                             <Button :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
