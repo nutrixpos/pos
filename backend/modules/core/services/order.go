@@ -110,6 +110,7 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 
 			for _, subrecipe_cost := range total_cost {
 				itemCost.Cost += subrecipe_cost.Cost * float64(subrecipe.Quantity)
+				subrecipe_cost.Quantity = subrecipe.Quantity
 				itemCost.DownstreamCost = append(itemCost.DownstreamCost, subrecipe_cost)
 			}
 		}

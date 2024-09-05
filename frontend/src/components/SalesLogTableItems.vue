@@ -3,6 +3,10 @@
         <Column expander style="width: 5rem" />
         <Column sortable field="ItemName" header="Name"></Column>
         <Column sortable field="Cost" header="Cost"></Column>
+        <Column sortable field="Quantity" header="Quantity">
+            <template #body="slotProps">
+                <div>{{ slotProps.data.Quantity != "0" ? slotProps.data.Quantity : "1" }}</div>
+            </template></Column>
         <Column sortable field="SalePrice" header="Sale"></Column>
         <Column sortable field="profit" header="Profit">
             <template #body="slotProps">

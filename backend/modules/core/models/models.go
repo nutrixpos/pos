@@ -76,6 +76,7 @@ type ItemCost struct {
 	ItemName   string
 	Cost       float64
 	SalePrice  float64
+	Quantity   float64
 	Components []struct {
 		ComponentName string
 		ComponentId   string
