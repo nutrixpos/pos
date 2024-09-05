@@ -23,7 +23,7 @@
                 <Panel header="Recipes" style="width:100%;">
                     <InputText v-model="searchtext" placeholder="Search" class="mb-4" />
                     <div class="flex flex-wrap">
-                        <MealCard  v-for="(item,index) in products" :key="index" :item="item" class="m-2" style="width:9rem;" @addwithcomment="visible=true;idwithcomment=item.id; namewithcomment=item.name" @add="orderItems.push({name:item.name,id:item.id,comment})"/>
+                        <MealCard  v-for="(item,index) in products" :key="index" :item="item" class="m-2" style="width:9rem;" @addwithcomment="visible=true;idwithcomment=item.id; namewithcomment=item.name" @add="orderItems.push({recipe_name:item.name,id:item.id,comment})"/>
                     </div>
                 </Panel>
             </div>
@@ -33,7 +33,7 @@
                         <Button label="Go" @click="goOrder" />
                         <div v-for="(item,index) in orderItems" :key="index">
                             <div class="flex justify-content-between align-items-center">
-                                <p><strong>{{ item.name }}</strong></p>
+                                <p><strong>{{ item.recipe_name }}</strong></p>
                                 <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="orderItems.splice(index,1)" />
                             </div>
                             <p class="m-0">{{ item.comment }}</p>
@@ -85,7 +85,7 @@ const orderItems = ref([
 ])
 
 const addWithComment = () => {
-    orderItems.value.push({name:namewithcomment,comment:comment.value,id:idwithcomment.value})
+    orderItems.value.push({recipe_name:namewithcomment,comment:comment.value,id:idwithcomment.value})
     visible.value=false
     comment.value = ""
     idwithcomment.value = ""

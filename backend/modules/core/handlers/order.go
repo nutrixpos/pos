@@ -8,49 +8,9 @@ import (
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/modules/core/dto"
+	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
-
-func FinishOrder2(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		decoder := json.NewDecoder(r.Body)
-		var finish_order_request dto.FinishOrderRequest
-		err := decoder.Decode(&finish_order_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
-		err = orderService.FinishOrder2(finish_order_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-
-	}
-
-}
 
 func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
@@ -90,7 +50,6 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 
 	}
-
 }
 
 func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
@@ -108,7 +67,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		decoder := json.NewDecoder(r.Body)
-		var order dto.Order
+		var order models.Order
 		err := decoder.Decode(&order)
 		if err != nil {
 			logger.Error(err.Error())
@@ -172,7 +131,7 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 }
 
-func StartOrder2(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		header := w.Header()
@@ -199,47 +158,6 @@ func StartOrder2(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			Config: config,
 		}
 
-		err = orderService.StartOrder2(order_start_request)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-	}
-}
-
-func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		decoder := json.NewDecoder(r.Body)
-		var order_start_request dto.OrderStartRequest
-		err := decoder.Decode(&order_start_request)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
 		err = orderService.StartOrder(order_start_request)
 		if err != nil {
 			logger.Error(err.Error())
@@ -249,8 +167,8 @@ func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-	}
 
+	}
 }
 
 func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {

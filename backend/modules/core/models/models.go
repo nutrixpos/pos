@@ -51,13 +51,6 @@ type Component struct {
 	Entries []ComponentEntry `json:"entries"`
 }
 
-type Orderitem struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Comment string `json:"comment"`
-	Recipe  Recipe `json:"recipe"`
-}
-
 type Category struct {
 	Name    string   `json:"name"`
 	Recipes []string `json:"recipes"`
@@ -96,22 +89,16 @@ type RecipeSelections struct {
 	Selections         []ComponentEntrySelection `json:"Selections"`
 	SubRecipes         []RecipeSelections        `json:"SubRecipes"`
 	Quantity           float64                   `json:"Quantity"`
+	Recipe             Recipe                    `json:"Recipe"`
+	Comment            string                    `json:"comment" bson:"comment"`
 }
 
-type Order2 struct {
+type Order struct {
 	SubmittedAt time.Time          `json:"submitted_at" bson:"submitted_at"`
 	Id          string             `json:"id" bson:"_id,omitempty"`
 	Items       []RecipeSelections `json:"items" bson:"items"`
 	State       string             `json:"state" bson:"state"`
 	StartedAt   time.Time          `json:"started_at" bson:"started_at"`
-}
-
-type Order struct {
-	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`
-	Id          string      `json:"id" bson:"_id,omitempty"`
-	Items       []Orderitem `json:"items" bson:"items"`
-	State       string      `json:"state" bson:"state"`
-	StartedAt   time.Time   `json:"started_at" bson:"started_at"`
 }
 
 type RecipeComponent struct {

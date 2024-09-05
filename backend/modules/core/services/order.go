@@ -122,7 +122,7 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 	return cost, err
 }
 
-func (os *OrderService) FinishOrder2(finish_order_request dto.FinishOrderRequest) (err error) {
+func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -158,7 +158,7 @@ func (os *OrderService) FinishOrder2(finish_order_request dto.FinishOrderRequest
 		return err
 	}
 
-	var order models.Order2
+	var order models.Order
 	err = collection.FindOne(ctx, filter).Decode(&order)
 	if err != nil {
 		return err
@@ -194,144 +194,7 @@ func (os *OrderService) FinishOrder2(finish_order_request dto.FinishOrderRequest
 	return err
 }
 
-func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
-
-	collection := client.Database("waha").Collection("orders")
-	Id, err := primitive.ObjectIDFromHex(finish_order_request.Id)
-	if err != nil {
-		return err
-	}
-
-	filter := bson.M{"_id": Id}
-	update := bson.M{"$set": bson.M{"state": "finished"}}
-	_, err = collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	var order dto.Order
-	err = collection.FindOne(ctx, filter).Decode(&order)
-	if err != nil {
-		return err
-	}
-
-	totalCost := 0.0
-	totalSalePrice := 0.0
-
-	itemsCost := []struct {
-		ItemName   string
-		Cost       float64
-		SalePrice  float64
-		Components []struct {
-			ComponentName string
-			Cost          float64
-		}
-	}{}
-
-	for itemIndex, itemIngredients := range order.Ingredients {
-
-		itemCost := struct {
-			ItemName   string
-			Cost       float64
-			SalePrice  float64
-			Components []struct {
-				ComponentName string
-				Cost          float64
-			}
-		}{
-			ItemName: order.Items[itemIndex].Name,
-			Cost:     0.0,
-		}
-
-		for _, ingredient := range itemIngredients {
-
-			itemComponent := struct {
-				ComponentName string
-				Cost          float64
-			}{
-				ComponentName: ingredient.Name,
-			}
-
-			var component_with_specific_entry models.Component
-
-			component_id, _ := primitive.ObjectIDFromHex(ingredient.ComponentId)
-			entry_id, _ := primitive.ObjectIDFromHex(ingredient.EntryId)
-
-			err = client.Database("waha").Collection("components").FindOne(
-				context.Background(), bson.M{"_id": component_id, "entries._id": entry_id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
-
-			if err == nil {
-				quantity_cost := (component_with_specific_entry.Entries[0].Price / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(ingredient.Quantity)
-
-				// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
-				if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
-					quantity_cost = 0
-				}
-
-				totalCost += quantity_cost
-				itemCost.Cost += quantity_cost
-				itemComponent.Cost = quantity_cost
-			}
-
-			itemCost.Components = append(itemCost.Components, itemComponent)
-
-		}
-
-		var recipe models.Recipe
-
-		recipeID, _ := primitive.ObjectIDFromHex(order.Items[itemIndex].Id)
-
-		err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipeID}).Decode(&recipe)
-
-		if err != nil {
-			panic(err)
-		}
-
-		itemCost.SalePrice = recipe.Price
-		totalSalePrice += recipe.Price
-
-		itemsCost = append(itemsCost, itemCost)
-	}
-
-	logs_data := bson.M{
-		"type":          "order_finish",
-		"date":          time.Now(),
-		"cost":          totalCost,
-		"sale_price":    totalSalePrice,
-		"items":         itemsCost,
-		"order_id":      finish_order_request.Id,
-		"time_consumed": time.Since(order.SubmittedAt),
-	}
-	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return err
-}
-
-func (os *OrderService) SubmitOrder(order dto.Order) (err error) {
+func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -366,7 +229,7 @@ func (os *OrderService) SubmitOrder(order dto.Order) (err error) {
 	return err
 }
 
-func (os *OrderService) GetOrders() (orders []dto.Order, err error) {
+func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -400,7 +263,7 @@ func (os *OrderService) GetOrders() (orders []dto.Order, err error) {
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var order dto.Order
+		var order models.Order
 		if err := cursor.Decode(&order); err != nil {
 			return orders, err
 		}
@@ -409,7 +272,7 @@ func (os *OrderService) GetOrders() (orders []dto.Order, err error) {
 
 			var recipe models.Recipe
 
-			err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"name": item.Name}).Decode(&recipe)
+			err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"name": item.RecipeName}).Decode(&recipe)
 			if err == nil {
 				order.Items[i].Recipe = recipe
 			}
@@ -428,7 +291,7 @@ func (os *OrderService) GetOrders() (orders []dto.Order, err error) {
 
 }
 
-func (os *OrderService) StartOrder2(order_start_request dto.OrderStartRequest2) error {
+func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest2) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -450,7 +313,7 @@ func (os *OrderService) StartOrder2(order_start_request dto.OrderStartRequest2) 
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
 
-	var order models.Order2
+	var order models.Order
 
 	order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
 	if err != nil {
@@ -502,125 +365,7 @@ func (os *OrderService) StartOrder2(order_start_request dto.OrderStartRequest2) 
 	return nil
 }
 
-func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
-
-	var order dto.Order
-
-	order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
-	if err != nil {
-		panic(err)
-	}
-
-	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"_id": order_id}).Decode(&order)
-	if err != nil {
-		return err
-	}
-
-	// decrease the ingredient component quantity from the components inventory
-
-	for itemIndex, ingredient := range order_start_request.Ingredients {
-		for componentIndex, component := range ingredient {
-			if err != nil {
-				return err
-			}
-
-			filter := bson.M{"name": component.Name, "entries.company": component.Company}
-			// Define the update operation
-			update := bson.M{
-				"$inc": bson.M{
-					"entries.$.quantity": -component.Quantity,
-				},
-			}
-
-			var db_component models.Component
-
-			for _, entry := range db_component.Entries {
-				if entry.Company == component.Company {
-					component.EntryId = entry.Id.Hex()
-				}
-			}
-
-			err = client.Database("waha").Collection("components").FindOne(context.Background(), filter).Decode(&db_component)
-			if err != nil {
-				return err
-			}
-
-			component.ComponentId = db_component.Id
-			order_start_request.Ingredients[itemIndex][componentIndex] = component
-
-			_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
-			if err != nil {
-				return err
-			}
-
-			// upsertedId := fmt.Sprintf("%s", result.UpsertedID)
-			// updatedId, _ := primitive.ObjectIDFromHex(upsertedId)
-
-			logs_data := bson.M{
-				"type":             "component_consume",
-				"date":             time.Now(),
-				"name":             component.Name,
-				"quantity":         component.Quantity,
-				"company":          component.Company,
-				"order_id":         order_start_request.Id,
-				"item_name":        order.Items[itemIndex].Name,
-				"item_order_index": itemIndex,
-			}
-			_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
-			if err != nil {
-				return err
-			}
-
-		}
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"ingredients": order_start_request.Ingredients,
-			"state":       "in_progress",
-			"started_at":  time.Now(),
-		},
-	}
-
-	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"_id": order_id}, update)
-	if err != nil {
-		return err
-	}
-
-	logs_data := bson.M{
-		"type":          "order_Start",
-		"date":          time.Now(),
-		"order_details": order,
-	}
-	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (os *OrderService) GetOrder(order_id string) (dto.Order, error) {
+func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -643,7 +388,7 @@ func (os *OrderService) GetOrder(order_id string) (dto.Order, error) {
 	fmt.Println("Connected to MongoDB!")
 
 	coll := client.Database("waha").Collection("orders")
-	var order dto.Order
+	var order models.Order
 
 	objID, err := primitive.ObjectIDFromHex(order_id)
 	if err != nil {

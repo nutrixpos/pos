@@ -29,11 +29,11 @@
                             <div :style="`width:.2rem;background-color:${item.comment != '' ? 'orange' : 'silver'}`" class="mr-2"></div>
                             <div class="flex flex-column w-full justify-content-center my-2">
                                 <div class="flex justify-content-between align-items-center">
-                                    <h3 class="m-0">{{item.name}}</h3>
-                                    <Button icon="pi pi-book" severity="contrast" @click="showRecipe(item.recipe)" text rounded aria-label="Star" />
+                                    <h3 class="m-0">{{item.recipe_name}}</h3>
+                                    <Button icon="pi pi-book" severity="contrast" @click="showRecipe(item.Recipe)" text rounded aria-label="Star" />
                                 </div>
                                 <!-- <h1 class="m-0" style="color:blue">x{{item.quantity}}</h1> -->
-                                <p v-if="item.comment != ''" class="mt-1 mb-0">
+                                <p v-if="item.comment && item.comment != ''" class="mt-1 mb-0">
                                     {{ item.comment }}
                                 </p>
                             </div>
@@ -191,7 +191,7 @@ const confirmFinish = (event) => {
 
 const finishOrder = () => {
 
-    axios.post("http://localhost:8000/api/finishorder2",
+    axios.post("http://localhost:8000/api/finishorder",
         {
             "order_id":props.order.id
         }
@@ -204,7 +204,7 @@ const finishOrder = () => {
 
 const startOrder =  () => {
 
-    axios.post("http://localhost:8000/api/startorder2",
+    axios.post("http://localhost:8000/api/startorder",
         {
             "order_id":props.order.id,
             "items" : items.value
@@ -225,7 +225,7 @@ const prepareOrder = () => {
 
     props.order.items.forEach((item) => {
 
-        axios.get("http://localhost:8000/api/recipetree?id="+item.id,).then((response) => {
+        axios.get("http://localhost:8000/api/recipetree?id="+item.Id,).then((response) => {
 
             let item: RecipeSelections = new RecipeSelections()
             let components : Component[] = []
