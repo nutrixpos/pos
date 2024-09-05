@@ -83,6 +83,7 @@ type ItemCost struct {
 		Quantity      float64
 		Cost          float64
 	}
+	DownstreamCost []ItemCost
 }
 
 type RecipeSelections struct {
@@ -132,17 +133,9 @@ type Recipe struct {
 }
 
 type SalesLogs struct {
-	Id        string    `json:"_id" bson:"_id,omitempty"`
-	SalePrice JSONFloat `json:"sale_price" bson:"sale_price"`
-	Items     []struct {
-		ItemName   string    `json:"itemname"`
-		Cost       JSONFloat `json:"cost"`
-		SalePrice  JSONFloat `json:"sale_price"`
-		Components []struct {
-			ComponentName string    `json:"componentname"`
-			Cost          JSONFloat `json:"cost"`
-		}
-	}
+	Id           string    `json:"_id" bson:"_id,omitempty"`
+	SalePrice    JSONFloat `json:"sale_price" bson:"sale_price"`
+	Items        []ItemCost
 	OrderId      string    `json:"order_id"`
 	TimeConsumed time.Time `json:"time_consumed"`
 	Type         string    `json:"type"`

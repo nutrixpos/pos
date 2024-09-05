@@ -110,7 +110,7 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 
 			for _, subrecipe_cost := range total_cost {
 				itemCost.Cost += subrecipe_cost.Cost * float64(subrecipe.Quantity)
-				cost = append(cost, subrecipe_cost)
+				itemCost.DownstreamCost = append(itemCost.DownstreamCost, subrecipe_cost)
 			}
 		}
 
@@ -181,7 +181,7 @@ func (os *OrderService) FinishOrder2(finish_order_request dto.FinishOrderRequest
 		"date":          time.Now(),
 		"cost":          totalCost,
 		"sale_price":    totalSalePrice,
-		"items":         []models.ItemCost{recipes_cost[0]},
+		"items":         recipes_cost,
 		"order_id":      finish_order_request.Id,
 		"time_consumed": time.Since(order.SubmittedAt),
 	}

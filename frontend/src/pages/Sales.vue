@@ -44,18 +44,20 @@
                                             <template #expansion="slotProps">
                                                 <DataTable v-model:expandedRows="expandedSalesLogOrderItemComponents" :value="slotProps.data.Items">
                                                     <Column expander style="width: 5rem" />
-                                                    <Column sortable field="itemname" header="Name"></Column>
-                                                    <Column sortable field="cost" header="Cost"></Column>
-                                                    <Column sortable field="sale_price" header="Sale"></Column>
+                                                    <Column sortable field="ItemName" header="Name"></Column>
+                                                    <Column sortable field="Cost" header="Cost"></Column>
+                                                    <Column sortable field="SalePrice" header="Sale"></Column>
                                                     <Column sortable field="profit" header="Profit">
                                                         <template #body="slotProps">
-                                                            <div :style="`${ (slotProps.data.sale_price - slotProps.data.cost) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.sale_price - slotProps.data.cost }}</div>
+                                                            <div :style="`${ (slotProps.data.SalePrice - slotProps.data.Cost) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.SalePrice - slotProps.data.Cost }}</div>
                                                         </template>
                                                     </Column>
                                                     <template #expansion="slotProps">
                                                         <DataTable :value="slotProps.data.Components">
-                                                            <Column sortable field="componentname" header="Component Name"></Column>
-                                                            <Column sortable field="cost" header="Cost"></Column>
+                                                            <Column sortable field="ComponentName" header="Component Name"></Column>
+                                                            <Column sortable field="Cost" header="Cost"></Column>
+                                                            <Column sortable field="Quantity" header="Quantity"></Column>
+                                                            <Column sortable field="EntryId" header="Entry"></Column>
                                                         </DataTable>        
                                                     </template>
                                                 </DataTable>
@@ -225,11 +227,11 @@ const loadSales = () => {
 
 
             log.Items.forEach((component) => {
-                if (!product_sale_count[component.itemname]){
-                    product_sale_count[component.itemname] = 0
+                if (!product_sale_count[component.ItemName]){
+                    product_sale_count[component.ItemName] = 0
                 }
                 
-                product_sale_count[component.itemname] ++;
+                product_sale_count[component.ItemName]++;
             })
 
 
