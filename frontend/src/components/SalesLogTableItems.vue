@@ -20,7 +20,7 @@
                 <Column sortable field="Quantity" header="Quantity"></Column>
                 <Column sortable field="EntryId" header="Entry"></Column>
             </DataTable>
-            <SalesLogTableItems :items="slotProps.data.DownstreamCost" />    
+            <SalesLogTableItems v-if="slotProps.data.DownstreamCost != null" :items="slotProps.data.DownstreamCost" />    
         </template>
     </DataTable>
 </template>

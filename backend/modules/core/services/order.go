@@ -22,7 +22,7 @@ type OrderService struct {
 	Config config.Config
 }
 
-func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []models.ItemCost, err error) {
+func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.ItemCost, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 	// Create a context with a timeout (optional)
@@ -47,12 +47,12 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 	for itemIndex, item := range items {
 
 		itemCost := models.ItemCost{
-			ItemName: items[itemIndex].RecipeName,
+			ItemName: items[itemIndex].Product.Name,
 			Cost:     0.0,
-			RecipeId: items[itemIndex].Id,
+			RecipeId: items[itemIndex].Product.Id,
 		}
 
-		for _, selection := range item.Selections {
+		for _, component := range item.Materials {
 
 			itemComponent := struct {
 				ComponentName string
@@ -61,22 +61,22 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 				Quantity      float64
 				Cost          float64
 			}{
-				ComponentName: selection.Name,
-				ComponentId:   selection.ComponentId,
-				EntryId:       selection.Entry.Id.Hex(),
-				Quantity:      selection.Quantity,
+				ComponentName: component.Material.Name,
+				ComponentId:   component.Material.Id,
+				EntryId:       component.Entry.Id,
+				Quantity:      component.Quantity,
 			}
 
-			var component_with_specific_entry models.Component
+			var component_with_specific_entry models.Material
 
-			component_id, _ := primitive.ObjectIDFromHex(selection.ComponentId)
-			entry_id := selection.Entry.Id
+			component_id, _ := primitive.ObjectIDFromHex(component.Material.Id)
+			entry_id, _ := primitive.ObjectIDFromHex(component.Entry.Id)
 
 			err = client.Database("waha").Collection("components").FindOne(
 				context.Background(), bson.M{"_id": component_id, "entries._id": entry_id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
 
 			if err == nil {
-				quantity_cost := (component_with_specific_entry.Entries[0].Price / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(selection.Quantity)
+				quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity)
 
 				// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
 				if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
@@ -86,15 +86,17 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 				itemCost.Cost += quantity_cost
 				itemComponent.Cost = quantity_cost
 
+			} else {
+				return cost, err
 			}
 
 			itemCost.Components = append(itemCost.Components, itemComponent)
 
 		}
 
-		var recipe models.Recipe
+		var recipe models.Product
 
-		recipeID, _ := primitive.ObjectIDFromHex(items[itemIndex].Id)
+		recipeID, _ := primitive.ObjectIDFromHex(items[itemIndex].Product.Id)
 
 		err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipeID}).Decode(&recipe)
 
@@ -102,8 +104,8 @@ func (os *OrderService) CalculateCost(items []models.RecipeSelections) (cost []m
 			panic(err)
 		}
 
-		for _, subrecipe := range item.SubRecipes {
-			total_cost, err := os.CalculateCost([]models.RecipeSelections{subrecipe})
+		for _, subrecipe := range item.SubItems {
+			total_cost, err := os.CalculateCost([]models.OrderItem{subrecipe})
 			if err != nil {
 				return cost, err
 			}
@@ -199,7 +201,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -216,6 +218,18 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
+
+	// recipe_service := RecipeService{
+	// 	Logger: os.Logger,
+	// 	Config: os.Config,
+	// }
+
+	// for i, item := range order.Items {
+	// 	order.Items[i], err = recipe_service.FillRecipeDesign(item)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	order_data := bson.M{
 		"items":        order.Items,
@@ -234,7 +248,7 @@ func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -268,17 +282,6 @@ func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 			return orders, err
 		}
 
-		for i, item := range order.Items {
-
-			var recipe models.Recipe
-
-			err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"name": item.RecipeName}).Decode(&recipe)
-			if err == nil {
-				order.Items[i].Recipe = recipe
-			}
-
-		}
-
 		orders = append(orders, order)
 	}
 
@@ -291,7 +294,7 @@ func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 
 }
 
-func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest2) error {
+func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -369,7 +372,7 @@ func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB

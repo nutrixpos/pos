@@ -22,52 +22,33 @@ type RecipeService struct {
 	Config config.Config
 }
 
-func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []models.RecipeComponent, err error) {
+func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderItem, error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	self_recipe, err := rs.GetRecipeTree(item.Product.Id)
 	if err != nil {
-		log.Fatal(err)
+		return item, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
+	item.Product = self_recipe
+
+	for i, subrecipe := range item.SubItems {
+		sub_item_recipe, err := rs.FillRecipeDesign(subrecipe)
+		if err != nil {
+			return item, err
+		}
+		item.SubItems[i] = sub_item_recipe
 	}
 
-	// Connected successfully
-	rs.Logger.Info("Connected to MongoDB!")
+	return item, err
 
-	var recipe models.Recipe
-
-	subRecipeID, err := primitive.ObjectIDFromHex(recipe_id)
-	if err != nil {
-		return components, err
-	}
-
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": subRecipeID}).Decode(&recipe)
-	if err != nil {
-		return components, err
-	}
-
-	return recipe.Components, nil
 }
 
-func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, err error) {
-
-	self_components := []dto.RecipeComponentResponse{}
+func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []models.Material, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -85,56 +66,96 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree dto.RecipeTree, e
 	// Connected successfully
 	rs.Logger.Info("Connected to MongoDB!")
 
-	var recipe models.Recipe
+	var recipe models.Product
 
 	subRecipeID, err := primitive.ObjectIDFromHex(recipe_id)
 	if err != nil {
-		return tree, err
+		return components, err
 	}
 
 	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": subRecipeID}).Decode(&recipe)
 	if err != nil {
+		return components, err
+	}
+
+	return recipe.Materials, nil
+}
+
+func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, err error) {
+
+	self_components := []models.Material{}
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Connected successfully
+	rs.Logger.Info("Connected to MongoDB!")
+
+	var recipe models.Product
+
+	recipe_id_hex, err := primitive.ObjectIDFromHex(recipe_id)
+	if err != nil {
+		rs.Logger.Error(err.Error())
 		return tree, err
 	}
 
-	for _, component := range recipe.Components {
-
-		if component.Type != "recipe" {
-			component_id, err := primitive.ObjectIDFromHex(component.ComponentId)
-			if err != nil {
-				return tree, err
-			}
-
-			var db_component models.Component
-			err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"_id": component_id}).Decode(&db_component)
-			if err != nil {
-				return tree, err
-			}
-			self_components = append(self_components, dto.RecipeComponentResponse{
-				ComponentId:     component.ComponentId,
-				Name:            db_component.Name,
-				DefaultQuantity: component.Quantity,
-				Unit:            db_component.Unit,
-				Entries:         db_component.Entries,
-				Type:            component.Type,
-			})
-
-		} else {
-
-			sub_recipe_tree, err := rs.GetRecipeTree(component.ComponentId)
-			if err != nil {
-				return tree, err
-			}
-			sub_recipe_tree.Quantity = float64(component.Quantity)
-			tree.SubRecipes = append(tree.SubRecipes, sub_recipe_tree)
-		}
-
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipe_id_hex}).Decode(&recipe)
+	if err != nil {
+		rs.Logger.Error("GetRecipeTree@getting recipe" + err.Error())
+		return tree, err
 	}
 
-	tree.Components = self_components
-	tree.RecipeId = recipe_id
-	tree.RecipeName = recipe.Name
-	tree.Ready = recipe.Ready
+	for _, material := range recipe.Materials {
+
+		component_id, err := primitive.ObjectIDFromHex(material.Id)
+		if err != nil {
+			return tree, err
+		}
+
+		var db_component models.Material
+		err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"_id": component_id}).Decode(&db_component)
+		if err != nil {
+			return tree, err
+		}
+		self_components = append(self_components, models.Material{
+			Id:       material.Id,
+			Name:     db_component.Name,
+			Quantity: material.Quantity,
+			Entries:  db_component.Entries,
+			Unit:     db_component.Unit,
+		})
+	}
+
+	for _, sub_product := range recipe.SubProducts {
+		sub_recipe, err := rs.GetRecipeTree(sub_product.Id)
+		if err != nil {
+			return tree, err
+		}
+
+		//TODO - Fix Quantity vs Ready from Product
+		sub_recipe.Quantity = float64(sub_product.Quantity)
+		tree.SubProducts = append(tree.SubProducts, sub_recipe)
+	}
+
+	tree.Materials = self_components
+	tree.Id = recipe_id
+	tree.Name = recipe.Name
+	tree.Quantity = recipe.Quantity
 
 	return tree, nil
 }
@@ -146,7 +167,7 @@ func (rs *RecipeService) ConsumeRecipe(recipes_id string) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -172,7 +193,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -205,7 +226,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 
 			defer wg.Done()
 
-			var recipe models.Recipe
+			var recipe models.Product
 			objID, err := primitive.ObjectIDFromHex(recipe_id)
 			if err != nil {
 				errorChan <- err
@@ -230,41 +251,40 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 
 			subrecipe_availability := []dto.RecipeAvailability{}
 
-			for _, component := range recipe.Components {
+			for _, material := range recipe.Materials {
 
-				self_component_requirements[component.ComponentId] = float64(component.Quantity)
-				recipeAvailability.ComponentRequirements[component.ComponentId] += self_component_requirements[component.ComponentId]
+				self_component_requirements[material.Id] = float64(material.Quantity)
+				recipeAvailability.ComponentRequirements[material.Id] += self_component_requirements[material.Id]
 
-				if component.Type == "recipe" {
-					// get sub recipes availability and component consumption to reduce it from the available component quantities.
-
-					subrecipe_available, err := rs.CheckRecipesAvailability([]string{component.ComponentId})
-
-					if err != nil {
-						errorChan <- err
-						return
-					}
-
-					subrecipe_availability = append(subrecipe_availability, dto.RecipeAvailability{
-						RecipeId:              component.ComponentId,
-						Ready:                 subrecipe_available[0].Ready,
-						ComponentRequirements: subrecipe_available[0].ComponentRequirements,
-					})
-
-				} else {
-					componentService := ComponentService{
-						Logger: rs.Logger,
-						Config: rs.Config,
-					}
-
-					component_amount, err := componentService.GetComponentAvailability(component.ComponentId)
-					if err != nil {
-						errorChan <- err
-						return
-					}
-
-					components_inventory[component.ComponentId] = float64(component_amount)
+				componentService := ComponentService{
+					Logger: rs.Logger,
+					Config: rs.Config,
 				}
+
+				component_amount, err := componentService.GetComponentAvailability(material.Id)
+				if err != nil {
+					errorChan <- err
+					return
+				}
+
+				components_inventory[material.Id] = float64(component_amount)
+			}
+
+			for _, product := range recipe.SubProducts {
+
+				self_component_requirements[product.Id] = float64(product.Quantity)
+				subrecipe_available, err := rs.CheckRecipesAvailability([]string{product.Id})
+
+				if err != nil {
+					errorChan <- err
+					return
+				}
+
+				subrecipe_availability = append(subrecipe_availability, dto.RecipeAvailability{
+					RecipeId:              product.Id,
+					Ready:                 subrecipe_available[0].Ready,
+					ComponentRequirements: subrecipe_available[0].ComponentRequirements,
+				})
 			}
 
 			satisfied := false
@@ -324,24 +344,20 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 
 			}
 
-			for index, component := range recipe.Components {
+			for index, ingredient := range recipe.Materials {
 
-				if component.Type != "recipe" {
-					// subrecipes_components_requirements[component.ComponentId] += float64(component.Quantity)
+				if index == 0 {
+					lowest_available = components_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
+				}
 
-					if index == 0 {
-						lowest_available = components_inventory[component.ComponentId] / recipeAvailability.ComponentRequirements[component.ComponentId]
-					}
-
-					if components_inventory[component.ComponentId]/recipeAvailability.ComponentRequirements[component.ComponentId] < lowest_available {
-						lowest_available = components_inventory[component.ComponentId] / recipeAvailability.ComponentRequirements[component.ComponentId]
-					}
+				if components_inventory[ingredient.Id]/recipeAvailability.ComponentRequirements[ingredient.Id] < lowest_available {
+					lowest_available = components_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
 				}
 			}
 
 			recipeAvailability.RecipeId = recipe_id
-			recipeAvailability.Available += lowest_available + recipe.Ready
-			recipeAvailability.Ready = recipe.Ready
+			recipeAvailability.Available += lowest_available + recipe.Quantity
+			recipeAvailability.Ready = recipe.Quantity
 
 			availabilitiesChan <- recipeAvailability
 

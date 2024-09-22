@@ -29,8 +29,8 @@
                             <div :style="`width:.2rem;background-color:${item.comment != '' ? 'orange' : 'silver'}`" class="mr-2"></div>
                             <div class="flex flex-column w-full justify-content-center my-2">
                                 <div class="flex justify-content-between align-items-center">
-                                    <h3 class="m-0">{{item.recipe_name}}</h3>
-                                    <Button icon="pi pi-book" severity="contrast" @click="showRecipe(item.Recipe)" text rounded aria-label="Star" />
+                                    <h3 class="m-0">{{item.product.name}}</h3>
+                                    <Button icon="pi pi-book" severity="contrast" @click="showProductDetails(item.product)" text rounded aria-label="Star" />
                                 </div>
                                 <!-- <h1 class="m-0" style="color:blue">x{{item.quantity}}</h1> -->
                                 <p v-if="item.comment && item.comment != ''" class="mt-1 mb-0">
@@ -42,18 +42,18 @@
                 </div>
             </template>
         </Card>
-        <Dialog v-model:visible="recipe_visible" modal :header="`Recipe:  ${recipe.Name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+        <Dialog v-model:visible="product_details_visible" modal :header="`Product:  (${product_for_details?.name}) details`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
            <ul>
-              <li class="flex justify-content-between w-6 m-2" v-for="(component,index) in recipe.Components" :key="index"><strong>{{component.Name}}:</strong> &nbsp;&nbsp;&nbsp;&nbsp;{{component.Quantity}} {{component.Unit}}</li>
+              <li class="flex justify-content-between w-6 m-2" v-for="(material,index) in product_for_details?.materials" :key="index"><strong>{{material.name}}:</strong> &nbsp;&nbsp;&nbsp;&nbsp;{{material.quantity}} {{material.unit}}</li>
            </ul>
         </Dialog>
         <Dialog v-model:visible="visible" modal :header="`Order #${props.number}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
             <!-- <Dialog v-model:visible="visible" modal :header="props.order.items[currentItemIndex].name+` #${currentItemIndex+1}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
             <Stepper @update:activeStep="(number) => {currentItemIndex = number}">
-                <StepperPanel v-for="item,index in items" :key="index" :header="item.recipe_name">
+                <StepperPanel v-for="item,index in items" :key="index" :header="item.product.name">
                     <template #content="{ prevCallback, nextCallback }">
                         <Message v-if="props.order.items[currentItemIndex].comment != ''" severity="warn">{{ props.order.items[currentItemIndex].comment }}</Message>
-                        <ItemSelection v-model="items[index]" />
+                        <OrderItemView v-model="items[index]" />
                         <div class="flex pt-4 justify-content-between">
                             <Button label="Back" severity="secondary" :disabled="currentItemIndex==0" icon="pi pi-arrow-left" @click="prevCallback" />
                             <Button :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
@@ -81,17 +81,18 @@ import Divider from 'primevue/divider';
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useToast } from "primevue/usetoast";
-import ItemSelection from "./ItemSelection.vue";
-import {Component, ComponentEntry, RecipeSelections, Recipe} from '@/classes/ItemSelection'
+import OrderItemView from "./OrderItemView.vue";
+import {OrderItem, Product} from '@/classes/OrderItem'
 
 
 const toast = useToast();
 
-const items = ref<RecipeSelections[]>([])
+const items = ref<OrderItem[]>([])
 
 
 const confirm = useConfirm();
-const recipe_visible= ref(false)
+const product_details_visible= ref(false)
+const product_for_details = ref<Product>()
 
 const state = ref("pending")
 const started_at = ref("")
@@ -108,26 +109,23 @@ const props = defineProps(['order','number'])
 
 const timePassed = ref("")
 
-const recipe = ref({
-    Name:"null"
-})
 
 const emit = defineEmits(['openedDialog', 'closedDialog']);
 
 watch(visible, (newVal) => {
   if (newVal){
-    if (!recipe_visible.value){
+    if (!product_details_visible.value){
         emit('openedDialog');
     }
   }
   if (!newVal){
-    if (!recipe_visible.value){
+    if (!product_details_visible.value){
         emit('closedDialog');
     }
   }
 })
 
-watch(recipe_visible, (newVal) => {
+watch(product_details_visible, (newVal) => {
   if (newVal){
     if (!visible.value){
         emit('openedDialog');
@@ -141,9 +139,9 @@ watch(recipe_visible, (newVal) => {
 })
 
 
-const showRecipe = (itemRecipe) => {
-    recipe.value = itemRecipe;
-    recipe_visible.value = true;
+const showProductDetails = (itemRecipe) => {
+    product_for_details.value = itemRecipe;
+    product_details_visible.value = true;
 }
 
 
@@ -223,55 +221,12 @@ const prepareOrder = () => {
     items.value = []
 
 
-    props.order.items.forEach((item) => {
-
-        axios.get("http://localhost:8000/api/recipetree?id="+item.Id,).then((response) => {
-
-            let item: RecipeSelections = new RecipeSelections()
-            let components : Component[] = []
-            let subrecipes: RecipeSelections[] = []
-            item.Id = response.data.recipe_id
-            item.recipe_name = response.data.recipe_name
-
-            response.data.components.forEach((component) => {
-
-                let new_component = new Component()
-                new_component.component_id = component.component_id
-                new_component.defaultquantity = component.defaultquantity
-                new_component.name = component.name
-                new_component.unit = component.unit
-
-                component.entries.forEach(entry => {
-
-                    let new_entry: ComponentEntry = new ComponentEntry()
-                    new_entry._id = entry._id
-                    new_entry.company = entry.company
-                    new_entry.label = entry.company + " - " + entry.quantity + " " + entry.unit
-                    new_entry.price = entry.price
-                    new_entry.quantity = entry.quantity
-                    new_entry.unit = entry.unit
-                    new_entry.PurchaseQuantity = entry.purchase_quantity
-                    new_component.entries.push(new_entry)
-                })
-                
-                components.push(new_component)
-            })
-
-            response.data.sub_recipes?.forEach((subrecipe: Recipe) => {
-
-                let new_subrecipe = new RecipeSelections(subrecipe)
-                subrecipes.push(new_subrecipe)
-            })
-
-            item.Components = components
-            item.SubRecipes = subrecipes
-
-
-            
-            subrecipes = response.data.sub_recipes
-            items.value.push(item)
-            visible.value = true
-        })  
+    props.order.items.forEach(async (orderItem: OrderItem) => {
+        const item = new OrderItem()
+        item.FromItemData(orderItem)// const item = new OrderItem(orderItem.product)
+        await item.RefreshProductData()
+        items.value.push(item)
+        visible.value = true
     })
 }
 

@@ -25,7 +25,7 @@ func (cs *CategoryService) GetCategories() (categories []dto.Category, err error
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -58,11 +58,11 @@ func (cs *CategoryService) GetCategories() (categories []dto.Category, err error
 			return categories, err
 		}
 
-		recipes := []models.Recipe{}
+		recipes := []models.Product{}
 
 		// Fetch the recipes for each category using the Recipe IDs
 		for _, recipeID := range category.Recipes {
-			var recipe models.Recipe
+			var recipe models.Product
 			obj_id, _ := primitive.ObjectIDFromHex(recipeID)
 			filter := bson.D{{Key: "_id", Value: obj_id}}
 			err := client.Database("waha").Collection("recipes").FindOne(ctx, filter).Decode(&recipe)

@@ -83,13 +83,11 @@ func GetRecipeAvailability(config config.Config, logger logger.ILogger) http.Han
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(availabilities); err != nil {
+			w.Header().Set("Content-Type", "application/json")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 
 	}
 

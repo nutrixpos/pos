@@ -18,11 +18,11 @@ type Log struct {
 	Config config.Config
 }
 
-func (l *Log) GetComponentLogs(name string) (logs []models.ComponentConsumeLogs, err error) {
+func (l *Log) GetComponentLogs(component_id string) (logs []models.ComponentConsumeLogs, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -42,7 +42,7 @@ func (l *Log) GetComponentLogs(name string) (logs []models.ComponentConsumeLogs,
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	filter := bson.M{"type": "component_consume", "name": name}
+	filter := bson.M{"type": "component_consume", "component_id": component_id}
 	cur, err := client.Database("waha").Collection("logs").Find(ctx, filter)
 	if err != nil {
 		l.Logger.Error(err.Error())
@@ -62,7 +62,7 @@ func (l *Log) GetSalesLogs() []models.SalesLogs {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB

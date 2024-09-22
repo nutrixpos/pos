@@ -23,7 +23,7 @@
                 <Panel header="Recipes" style="width:100%;">
                     <InputText v-model="searchtext" placeholder="Search" class="mb-4" />
                     <div class="flex flex-wrap">
-                        <MealCard  v-for="(item,index) in products" :key="index" :item="item" class="m-2" style="width:9rem;" @addwithcomment="visible=true;idwithcomment=item.id; namewithcomment=item.name" @add="orderItems.push({recipe_name:item.name,id:item.id,comment})"/>
+                        <MealCard  v-for="(item,index) in products" :key="index" :item="item" class="m-2" style="width:9rem;" @addwithcomment="visible=true;idwithcomment=item.id; namewithcomment=item.name" @add="addItem(item)"/>
                     </div>
                 </Panel>
             </div>
@@ -33,14 +33,20 @@
                         <Button label="Go" @click="goOrder" />
                         <div v-for="(item,index) in orderItems" :key="index">
                             <div class="flex justify-content-between align-items-center">
-                                <p><strong>{{ item.recipe_name }}</strong></p>
-                                <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="orderItems.splice(index,1)" />
+                                <p><strong>{{ item.product.name }}</strong></p>
+                                <div>
+                                    <Button icon="pi pi-pencil" size="small" style="width:2rem;height: 2rem;" aria-label="Edit" severity="secondary" @click="itemToEditIndex = index; edit_item_dialog=true" class="mr-1"/>
+                                    <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="orderItems.splice(index,1)" />
+                                </div>
                             </div>
                             <p class="m-0">{{ item.comment }}</p>
                         </div>
                     </div>
                 </Panel>
             </div>
+            <Dialog v-model:visible="edit_item_dialog" modal header="Edit item" class="xs:w-12 lg:w-6">
+                <OrderItemView v-model="orderItems[itemToEditIndex]"  />
+            </Dialog>
             <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
                 <InputText v-model="comment" placeholder="Comment" class="mb-4" />
                 <div class="flex justify-content-end gap-2">
@@ -52,7 +58,7 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import Menubar from 'primevue/menubar';
   import Dialog from 'primevue/dialog';
   import Listbox from 'primevue/listbox';
@@ -61,9 +67,13 @@
   import Button from 'primevue/button';
   import { useToast } from "primevue/usetoast";
   import axios from 'axios'
+  import OrderItemView from '@/components/OrderItemView.vue'
+  import {OrderItem} from '@/classes/OrderItem'
 
 
   const toast = useToast();
+  const itemToEditIndex = ref(0)
+  const edit_item_dialog = ref(false)
 
   
   import MealCard from '@/components/MealCard.vue';
@@ -81,11 +91,29 @@
 const searchtext = ref("")
 const categories = ref([])
 
-const orderItems = ref([
-])
+const orderItems = ref<OrderItem[]>([])
+
+
+const addItem = (item) => {
+
+    const new_item = new OrderItem()
+    new_item.product.name = item.name
+    new_item.product.id = item.id
+    new_item.ReloadDefaults()
+
+
+    orderItems.value.push(new_item)
+}
 
 const addWithComment = () => {
-    orderItems.value.push({recipe_name:namewithcomment,comment:comment.value,id:idwithcomment.value})
+
+    const new_item = new OrderItem()
+    new_item.product.name = namewithcomment.value
+    new_item.comment = comment.value
+    new_item.product.id = idwithcomment.value
+    new_item.ReloadDefaults()
+
+    orderItems.value.push(new_item)
     visible.value=false
     comment.value = ""
     idwithcomment.value = ""
@@ -160,9 +188,9 @@ watch(selectedCategory, (category) => {
         products.value = []
         category.recipes.forEach((recipe) => {
             products.value.push({
-                id: recipe.Id,
-                name:recipe.Name,
-                price:recipe.Price
+                id: recipe.id,
+                name:recipe.name,
+                price:recipe.price
             })
         })
     }

@@ -23,9 +23,9 @@ func GetComponentLogs(config config.Config, logger logger.ILogger) http.HandlerF
 			return
 		}
 
-		name := r.URL.Query().Get("name")
-		if name == "" {
-			http.Error(w, "name is required", http.StatusBadRequest)
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			http.Error(w, "id query string is required", http.StatusBadRequest)
 			return
 		}
 
@@ -34,7 +34,7 @@ func GetComponentLogs(config config.Config, logger logger.ILogger) http.HandlerF
 			Config: config,
 		}
 
-		logs, err := logService.GetComponentLogs(name)
+		logs, err := logService.GetComponentLogs(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -20,7 +20,7 @@ type ComponentService struct {
 	Config config.Config
 }
 
-func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.RecipeSelections, order_id string, item_order_index int) (err error) {
+func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, order_id string, item_order_index int) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -43,21 +43,21 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.RecipeSelect
 	// Connected successfully
 	cs.Logger.Info("Connected to MongoDB!")
 
-	for _, selection := range rs.Selections {
+	for _, component := range rs.Materials {
 		if err != nil {
 			return err
 		}
 
-		component_ob_id, err := primitive.ObjectIDFromHex(selection.ComponentId)
+		component_ob_id, err := primitive.ObjectIDFromHex(component.Material.Id)
 		if err != nil {
 			return err
 		}
 
-		filter := bson.M{"_id": component_ob_id, "entries._id": selection.Entry.Id}
+		filter := bson.M{"_id": component_ob_id, "entries._id": component.Entry.Id}
 		// Define the update operation
 		update := bson.M{
 			"$inc": bson.M{
-				"entries.$.quantity": -selection.Quantity,
+				"entries.$.quantity": -component.Quantity,
 			},
 		}
 
@@ -69,11 +69,11 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.RecipeSelect
 		logs_data := bson.M{
 			"type":             "component_consume",
 			"date":             time.Now(),
-			"component_id":     selection.ComponentId,
-			"quantity":         selection.Quantity,
-			"entry_id":         selection.Entry.Id,
+			"component_id":     component.Material.Id,
+			"quantity":         component.Quantity,
+			"entry_id":         component.Entry.Id,
 			"order_id":         order_id,
-			"recipe_id":        rs.Id,
+			"recipe_id":        rs.Product.Id,
 			"item_order_index": item_order_index,
 		}
 		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
@@ -83,7 +83,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.RecipeSelect
 
 	}
 
-	for _, subrecipe := range rs.SubRecipes {
+	for _, subrecipe := range rs.SubItems {
 
 		err = cs.ConsumeItemComponentsForOrder(subrecipe, order_id, item_order_index)
 		if err != nil {
@@ -101,7 +101,7 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -127,7 +127,7 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 	}
 
 	filter := bson.M{"_id": objectID}
-	var component models.Component
+	var component models.Material
 	err = collection.FindOne(ctx, filter).Decode(&component)
 	if err != nil {
 		return 0.0, err
@@ -141,11 +141,11 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 
 }
 
-func (cs *ComponentService) GetComponents() (components []models.Component, err error) {
+func (cs *ComponentService) GetComponents() (components []models.Material, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -176,7 +176,7 @@ func (cs *ComponentService) GetComponents() (components []models.Component, err 
 
 	// Iterate over the documents and print them as JSON
 	for cur.Next(ctx) {
-		var component models.Component
+		var component models.Material
 		err := cur.Decode(&component)
 		if err != nil {
 			cs.Logger.Error(err.Error())
@@ -189,12 +189,12 @@ func (cs *ComponentService) GetComponents() (components []models.Component, err 
 
 }
 
-func (cs *ComponentService) AddComponent(component models.Component) error {
+func (cs *ComponentService) AddComponent(component models.Material) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -222,14 +222,12 @@ func (cs *ComponentService) AddComponent(component models.Component) error {
 
 	for _, entry := range component.Entries {
 
-		entry.Id = primitive.NewObjectID()
-
 		logs_data := bson.M{
 			"type":     "component_add",
 			"date":     time.Now(),
 			"company":  entry.Company,
 			"quantity": entry.Quantity,
-			"price":    entry.Price,
+			"price":    entry.PurchasePrice,
 		}
 		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
@@ -241,12 +239,12 @@ func (cs *ComponentService) AddComponent(component models.Component) error {
 	return nil
 }
 
-func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, entries []models.ComponentEntry) error {
+func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, entries []models.MaterialEntry) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB
@@ -268,11 +266,18 @@ func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, e
 
 	for _, entry := range entries {
 
-		entry.Id = primitive.NewObjectID()
-
 		entry.PurchaseQuantity = entry.Quantity
 
-		update := bson.M{"$push": bson.M{"entries": entry}}
+		entry_data := bson.M{
+			"_id":               primitive.NewObjectID(),
+			"purchase_quantity": entry.PurchaseQuantity,
+			"price":             entry.PurchasePrice,
+			"quantity":          entry.Quantity,
+			"company":           entry.Company,
+			"sku":               entry.SKU,
+		}
+
+		update := bson.M{"$push": bson.M{"entries": entry_data}}
 		opts := options.Update().SetUpsert(false)
 
 		_, err = client.Database("waha").Collection("components").UpdateOne(ctx, filter, update, opts)
@@ -288,7 +293,7 @@ func (cs *ComponentService) DeleteEntry(entryid primitive.ObjectID, componentid 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	// Connect to MongoDB

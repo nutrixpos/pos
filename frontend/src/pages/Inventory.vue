@@ -20,7 +20,7 @@
                             <Column header="Actions" style="width:30rem">
                                 <template #body="slotProps">
                                     <ButtonGroup>
-                                        <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data.name)" severity="secondary" aria-label="Save"  />
+                                        <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data._id)" severity="secondary" aria-label="Save"  />
                                     </ButtonGroup>
                                 </template>
                             </Column>
@@ -29,14 +29,15 @@
                                     <h4>Entries for {{ slotProps.data.name }}</h4>
                                     <div class="flex justify-content-center align-items-center">
                                         <InputText class="m-1" placeholder="Company" v-model="new_entry_company" aria-describedby="name-help" />
-                                        <InputText class="m-1" placeholder="Quantity" v-model="new_entry_quantity" aria-describedby="name-help" />
-                                        <InputText class="m-1" placeholder="Price" v-model="new_entry_price" aria-describedby="name-help" />
+                                        <InputText class="m-1" placeholder="Purchase Quantity" v-model="new_entry_quantity" aria-describedby="name-help" />
+                                        <InputText class="m-1" placeholder="Purchase Price" v-model="new_entry_price" aria-describedby="name-help" />
                                         <Button icon="pi pi-plus" label="Add Entry" @click="addNewEntry(slotProps.data._id)" severity="info" raised />
                                     </div>
                                     <DataTable :value="slotProps.data.entries">
                                         <Column field="company" header="Company"></Column>
                                         <Column field="quantity" header="Quantity" sortable></Column>
-                                        <Column field="price" header="Price" sortable></Column>
+                                        <Column field="purchase_quantity" header="Purchase Quantity" sortable></Column>
+                                        <Column field="purchase_price" header="Purchase Price" sortable></Column>
                                         <Column header="Actions" style="width:30rem">
                                             <template #body="slotProps">
                                                 <ButtonGroup>
@@ -67,7 +68,7 @@
                         <InputText class="m-1" placeholder="Company" v-model="new_component_entry_company" aria-describedby="name-help" />
                         <InputText class="m-1" placeholder="Quantity" v-model="new_component_entry_quantity" aria-describedby="name-help" />
                         <InputText class="m-1" placeholder="Price" v-model="new_component_entry_price" aria-describedby="name-help" />
-                        <Button label="Add" @click="new_component_entries.push({company: new_component_entry_company, quantity: new_component_entry_quantity, unit: new_component_unit, price: new_component_entry_price})" />
+                        <Button label="Add" @click="new_component_entries.push({company: new_component_entry_company, quantity: new_component_entry_quantity, unit: new_component_unit, purchase_price: new_component_entry_price})" />
                     </div>
                     <DataTable :value="new_component_entries">
                         <Column field="company" header="Company"></Column>
@@ -89,9 +90,7 @@
                 <DataTable @rowExpand="onComponentLogRowExpand"  v-model:expandedRows="expandedComponentLogsRows" :value="component_logs" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
                     <Column expander style="width: 5rem" />
                     <Column field="date" header="Date"></Column>
-                    <Column field="component_name" header="Unit"></Column>
                     <Column field="quantity" header="Quantity"></Column>
-                    <Column field="company" header="Company"></Column>
                     <Column  header="Order Item">
                         <template #body="slotProps">
                             [{{ slotProps.data.item_order_index }}] {{ slotProps.data.item_name }}
@@ -102,12 +101,12 @@
                         <div class="p-4">
                             <h4>Order Items</h4>
                             <DataTable :value="slotProps.data.order.items" v-if="slotProps.data.order">
-                                <Column field="name" header="Name"></Column>
+                                <Column field="product.name" header="Name"></Column>
                                 <Column header="Ingredients">
                                     <template #body="slotProps">
                                         <ul>
-                                            <li v-for="(ingredient,index) in slotProps.data.ingredients" :key="index">
-                                                {{ ingredient.name }}: {{ ingredient.quantity }}
+                                            <li v-for="(material,index) in slotProps.data.materials" :key="index">
+                                                {{ material.material.name }}: {{ material.quantity }} {{ material.material.unit }}
                                             </li>
                                         </ul>
                                     </template>
@@ -217,7 +216,7 @@ const confirm = useConfirm();
 
     var newEntry = {
                 "quantity": parseFloat(new_entry_quantity.value),
-                "price": parseFloat(new_entry_price.value),
+                "purchase_price": parseFloat(new_entry_price.value),
                 "company": new_entry_company.value
             }
 
@@ -255,7 +254,7 @@ const confirm = useConfirm();
           entries.push({
             company: entry.company,
             quantity: parseInt(entry.quantity),
-            price: parseFloat(entry.price)
+            purchase_price: parseFloat(entry.purchase_price)
           })
       })
 
@@ -288,12 +287,12 @@ const confirm = useConfirm();
   };
 
 
-  const loadComponentLogs = (component_name) => {
-    axios.get('http://localhost:8000/api/componentlogs?name='+component_name)
+  const loadComponentLogs = (component_id) => {
+    axios.get('http://localhost:8000/api/componentlogs?id='+component_id)
     .then((result)=>{
         component_logs.value = result.data
         component_logs_dialog.value = true
-        component_logs_name.value = component_name
+        component_logs_name.value = component_id
     })
   }
 

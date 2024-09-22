@@ -17,17 +17,8 @@ type OrderItem struct {
 }
 
 type Category struct {
-	Name    string          `json:"name"`
-	Recipes []models.Recipe `json:"recipes"`
-}
-
-type RecipeComponentResponse struct {
-	ComponentId     string                  `json:"component_id"`
-	Name            string                  `json:"name"`
-	DefaultQuantity float32                 `json:"defaultquantity"`
-	Unit            string                  `json:"unit"`
-	Entries         []models.ComponentEntry `json:"entries"`
-	Type            string                  `json:"type"` // recipe or component
+	Name    string           `json:"name"`
+	Recipes []models.Product `json:"recipes"`
 }
 
 type OrderStartRequestIngredient struct {
@@ -38,20 +29,14 @@ type OrderStartRequestIngredient struct {
 	Company     string  `json:"company"`
 }
 
-type OrderStartRequest struct {
-	Id          string                          `json:"order_id"`
-	Name        string                          `json:"name"`
-	Ingredients [][]OrderStartRequestIngredient `json:"ingredients"`
-}
-
 type Order struct {
 	models.Order `bson:",inline"`
 	Ingredients  [][]OrderStartRequestIngredient `json:"ingredients"`
 }
 
 type RequestComponentEntryAdd struct {
-	ComponentId string                  `json:"component_id"`
-	Entries     []models.ComponentEntry `json:"entries"`
+	ComponentId string                 `json:"component_id"`
+	Entries     []models.MaterialEntry `json:"entries"`
 }
 
 type FinishOrderRequest struct {

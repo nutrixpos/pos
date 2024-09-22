@@ -68,7 +68,7 @@ func AddComponent(config config.Config, logger logger.ILogger) http.HandlerFunc 
 		}
 
 		// Parse the request body into a DBComponent struct
-		var dbComponent models.Component
+		var dbComponent models.Material
 		err := json.NewDecoder(r.Body).Decode(&dbComponent)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

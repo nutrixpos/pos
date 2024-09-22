@@ -145,7 +145,7 @@ func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		decoder := json.NewDecoder(r.Body)
-		var order_start_request dto.OrderStartRequest2
+		var order_start_request dto.OrderStartRequest
 		err := decoder.Decode(&order_start_request)
 		if err != nil {
 			logger.Error(err.Error())
