@@ -76,6 +76,7 @@ type Order struct {
 	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`
 	Id          string      `json:"id" bson:"_id,omitempty"`
 	Items       []OrderItem `json:"items" bson:"items"`
+	Discount    float64     `json:"discount" bson:"discount"`
 	State       string      `json:"state" bson:"state"`
 	StartedAt   time.Time   `json:"started_at" bson:"started_at"`
 	Comment     string      `json:"comment" bson:"comment"`

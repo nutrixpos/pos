@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
@@ -12,6 +13,54 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		// Retrieve the entry ID from the query string
+		entryIDStr := r.URL.Query().Get("entry_id")
+		if entryIDStr == "" {
+			http.Error(w, "entry_id query string is required", http.StatusBadRequest)
+			return
+		}
+
+		materialIdStr := r.URL.Query().Get("material_id")
+		if materialIdStr == "" {
+			http.Error(w, "material_id query string is required", http.StatusBadRequest)
+			return
+		}
+
+		quantityStr := r.URL.Query().Get("quantity")
+		if quantityStr == "" {
+			http.Error(w, "quantity query string is required", http.StatusBadRequest)
+			return
+		}
+
+		var quantity float64
+		quantity, err := strconv.ParseFloat(quantityStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid quantity", http.StatusBadRequest)
+			return
+		}
+
+		componentService := services.ComponentService{
+			Logger: logger,
+			Config: config,
+		}
+
+		cost, err := componentService.CalculateMaterialCost(entryIDStr, materialIdStr, quantity)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf("%f", cost)))
+	}
+}
 
 func GetComponents(config config.Config, logger logger.ILogger) http.HandlerFunc {
 

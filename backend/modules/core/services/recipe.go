@@ -156,6 +156,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	tree.Id = recipe_id
 	tree.Name = recipe.Name
 	tree.Quantity = recipe.Quantity
+	tree.Price = recipe.Price
 
 	return tree, nil
 }

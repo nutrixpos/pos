@@ -20,6 +20,57 @@ type ComponentService struct {
 	Config config.Config
 }
 
+func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return 0, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	// Connected successfully
+	cs.Logger.Info("Connected to MongoDB!")
+
+	material_id_hex, err := primitive.ObjectIDFromHex(material_id)
+	if err != nil {
+		return 0, err
+	}
+
+	entry_id_hex, err := primitive.ObjectIDFromHex(entry_id)
+	if err != nil {
+		return 0, err
+	}
+
+	var material models.Material
+	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
+		"_id":         material_id_hex,
+		"entries._id": entry_id_hex,
+	},
+		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(material.Entries) == 0 {
+		return 0.0, fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+	}
+
+	cost = (material.Entries[0].PurchasePrice / float64(material.Entries[0].PurchaseQuantity)) * quantity
+
+	return cost, nil
+}
+
 func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, order_id string, item_order_index int) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))

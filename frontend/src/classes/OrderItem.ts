@@ -2,21 +2,23 @@ import axios from 'axios';
 
 
 export class MaterialEntry {
-	_id:               number;
+	_id:               string;
 	purchase_quantity: number;
 	purchase_price:    number;
 	quantity:         number
 	company:          string;
+    cost: number
 	sku:              string;
     label: string;
 
     constructor(){
-        this._id = 0
+        this._id = ""
         this.purchase_quantity = 0
         this.purchase_price = 0
         this.quantity = 0
         this.company = ""
         this.sku = ""
+        this.cost = 0
         this.label = ""
     }
 }
@@ -92,11 +94,22 @@ export class OrderItemMaterial {
 	material:       Material;
 	entry: MaterialEntry; 
 	quantity:       number;
+    entries: MaterialEntry[]
     
-    constructor(){
-        this.material = new Material()
-        this.entry = new MaterialEntry()
+    constructor(material ?:Material){
+
+        if (material != undefined){
+            this.material = material
+            this.entry = material.entries[0]
+            this.entries = material.entries
+        }else {
+            this.material = new Material()
+            this.entry = new MaterialEntry()
+            this.entries = []
+        }
+
         this.quantity = 0
+
     }
 }
 
@@ -106,6 +119,7 @@ export class OrderItem {
     product:            Product;
 	materials:          OrderItemMaterial[];
     ready: number;
+    price: number;
 	is_consume_from_ready: boolean;
     can_change_ready_toggle: boolean;
 	sub_items:           OrderItem[];
@@ -120,6 +134,7 @@ export class OrderItem {
 
             this.product = product
             this.quantity = product.quantity
+            this.price = product.price
             this.materials = product.materials.map( (material,index) => {
 
                 
@@ -132,6 +147,7 @@ export class OrderItem {
 
                 const itemmaterial = <OrderItemMaterial>{
                     entry: material.entries[0],
+                    entries: material.entries,
                     material: material,
                     quantity: material.quantity
                 }
@@ -185,6 +201,7 @@ export class OrderItem {
             this.sub_items = []
             this.quantity = 1
             this.can_change_ready_toggle = false
+            this.price = 0
         }
     }
 
@@ -200,6 +217,7 @@ export class OrderItem {
         this.sub_items = orderItem.sub_items
         this.comment = orderItem.comment
         this.quantity = orderItem.quantity
+        this.price = orderItem.price
     }
 
 
@@ -242,6 +260,7 @@ export class OrderItem {
                             }
                         })
                         material.material = product_material
+                        material.entries = product_material.entries
                     }
                 })
             })
@@ -254,6 +273,31 @@ export class OrderItem {
 
             this.sub_items[index] = new_item
         })
+    }
+
+
+    async UpdateMaterialEntryCost(materialIndex: number){
+        await axios.get(`http://localhost:8000/api/materialcost?material_id=${this.materials[materialIndex].material._id}&entry_id=${this.materials[materialIndex].entry._id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
+
+            this.materials[materialIndex].entry.cost = response.data
+          
+        })  
+    }
+
+    PushMaterial(material: Material) {
+
+        material.entries.forEach(e => {
+            e.label = e.company + " - " + e.quantity + " " + material.unit
+        })
+
+        const new_material = new OrderItemMaterial(material)
+        this.materials.push(new_material)
+        this.UpdateMaterialEntryCost(this.materials.length - 1)
+    }
+
+
+    RemoveMaterialByIndex(materialIndex: number){
+        this.materials.splice(materialIndex,1)        
     }
 
 
@@ -272,12 +316,13 @@ export class OrderItem {
     }
 
 
-    ReloadDefaults() {
-        axios.get("http://localhost:8000/api/recipetree?id="+this.product.id).then((response) => {
+    async ReloadDefaults() {
+        await axios.get("http://localhost:8000/api/recipetree?id="+this.product.id).then((response) => {
 
             const materials : Material[] = []
             const subrecipes: OrderItem[] = []
             this.product = response.data
+            this.price = response.data.price
             this.sub_items = this.FillSubitems()
 
             response.data.materials.forEach((material: any) => {
@@ -317,6 +362,7 @@ export class OrderItem {
 
                 return <OrderItemMaterial>{
                     entry: material.entries[0],
+                    entries: material.entries,
                     material: material,
                     quantity: material.quantity
                 }

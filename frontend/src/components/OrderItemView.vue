@@ -11,13 +11,18 @@
         </div>
     </div>
     <div v-if="!model.is_consume_from_ready">
-        <div class="flex my-3 py-2 justify-content-between" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
+        <Button label="Add Material" @click="new_component_dialog = true" />
+        <div class="flex my-3 py-2 justify-content-between align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
+
+            <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="model.RemoveMaterialByIndex(index)" />
+
             {{ material.material.name }}
             <div class="flex">
-                <InputText type="number" v-model.number="model.materials[index].quantity" size="small"/>
+                <InputText type="number"  @change="model.UpdateMaterialEntryCost(index)" v-model.number="model.materials[index].quantity" size="small"/>
                 <span class="ml-2 mt-2">{{ material.material.unit }}</span>
             </div>
-            <Dropdown v-if="model.product.materials[index].entries != null && model.product.materials[index].entries.length > 0" v-model="model.materials[index].entry"  :options="model.product.materials[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
+            <Dropdown @change="model.UpdateMaterialEntryCost(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
+            Cost: {{ material.entry.cost }}
         </div>
     </div>
     <div v-if="model.sub_items != null">
@@ -25,17 +30,45 @@
             <OrderItemView v-model="model.sub_items[index]" />
         </div>
     </div>
+    <Dialog v-model:visible="new_component_dialog" modal header="Add material">
+        <PickMaterial @returnMaterial="(material) => addMaterial(material)" />
+    </Dialog>
 </template>
 
 <script setup lang="ts">
-import {defineModel} from 'vue'
+import {defineModel,ref} from 'vue'
 import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
 import InputSwitch from 'primevue/inputswitch';
-import { OrderItem } from '@/classes/OrderItem'
+import { Material, OrderItem, OrderItemMaterial } from '@/classes/OrderItem'
+import PickMaterial from '@/components/PickMaterial.vue'
+import Dialog from 'primevue/dialog'
 
 const model = defineModel<OrderItem>({
     required: true})
+
+
+const new_component_dialog = ref(false)
+
+
+const updateEntriesCost = () => {
+    model.value.materials.forEach(async (material: OrderItemMaterial,index: number) => {
+        await model.value.UpdateMaterialEntryCost(index)
+    })
+}
+
+updateEntriesCost();
+
+const addMaterial = (material: Material) => {
+    model.value.PushMaterial(material)
+}
+
+
+// watch(model.value.materials, () => {
+//     updateEntriesCost()
+// },
+// {deep: true})
 
 
 // const init = () => {
