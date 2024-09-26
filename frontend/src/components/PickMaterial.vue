@@ -35,7 +35,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import axios from 'axios'
 import { FilterMatchMode } from 'primevue/api';
-import { Material } from '@/classes/OrderItem';
+import { Material, MaterialEntry } from '@/classes/OrderItem';
 
 
 const materials = ref([])
@@ -60,9 +60,14 @@ const GetMaterials = () => {
     .then((response) => {
 
         
-        response.data.forEach(component => {
+        response.data.forEach((component:Material,materialIndex: number) => {
 
-            component.entries?.forEach(entry => {
+            component.entries?.forEach((entry: MaterialEntry,entryIndex: number) => {
+                if (entry.quantity < 0){
+                    response.data[materialIndex].entries.splice(entryIndex, 1)
+                    return
+                }
+                    
                 component.quantity += entry.quantity
             });
         });

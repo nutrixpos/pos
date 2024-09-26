@@ -14,11 +14,11 @@
         <Button label="Add Material" @click="new_component_dialog = true" />
         <div class="flex my-3 py-2 justify-content-between align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
 
-            <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="model.RemoveMaterialByIndex(index)" />
+            <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="removeMaterialByIndex(index)" />
 
             {{ material.material.name }}
             <div class="flex">
-                <InputText type="number"  @change="model.UpdateMaterialEntryCost(index)" v-model.number="model.materials[index].quantity" size="small"/>
+                <InputText type="number" @change="model.UpdateMaterialEntryCost(index); validateMaterialQuantity(index)" :invalid="materialValidity.length >= index+1 ? !materialValidity[index] : false" v-model.number="model.materials[index].quantity" size="small"/>
                 <span class="ml-2 mt-2">{{ material.material.unit }}</span>
             </div>
             <Dropdown @change="model.UpdateMaterialEntryCost(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import {defineModel,ref} from 'vue'
+import {defineModel,ref, watch} from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
@@ -50,7 +50,34 @@ const model = defineModel<OrderItem>({
 
 
 const new_component_dialog = ref(false)
+const materialValidity = ref<boolean[]>([])
 
+
+const removeMaterialByIndex = (index:number) => {
+    model.value.RemoveMaterialByIndex(index)
+    materialValidity.value.splice(index,1)
+}
+
+
+const validateMaterialQuantity = (index: number)  => {
+
+    const entry_quantity = Number(model.value.materials[index].entry.label.split('-')[1].split(' ')[1])
+
+    if (model.value.materials[index].quantity > entry_quantity){
+        materialValidity.value[index] = false
+        return
+    }
+
+    materialValidity.value[index] = true
+}
+
+const Init = () => {
+    updateEntriesCost()
+    model.value.materials.forEach((_,index) => {
+        materialValidity.value.push(true)
+        validateMaterialQuantity(index)
+    })
+}
 
 const updateEntriesCost = () => {
     model.value.materials.forEach(async (material: OrderItemMaterial,index: number) => {
@@ -58,11 +85,26 @@ const updateEntriesCost = () => {
     })
 }
 
-updateEntriesCost();
+Init()
 
 const addMaterial = (material: Material) => {
     model.value.PushMaterial(material)
+    validateMaterialQuantity(model.value.materials.length - 1)
 }
+
+
+watch(materialValidity, (newValidities) => {
+    let valid = true 
+
+    newValidities.forEach((validity) => {
+        if (!validity){
+            valid = false
+        }  
+    })
+
+    model.value.isValid = valid
+},
+{deep:true})
 
 
 // watch(model.value.materials, () => {

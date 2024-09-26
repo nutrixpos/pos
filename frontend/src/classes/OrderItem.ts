@@ -124,7 +124,8 @@ export class OrderItem {
     can_change_ready_toggle: boolean;
 	sub_items:           OrderItem[];
 	quantity:           number;
-	comment:            string;             
+	comment:            string;
+    isValid: boolean;
 
 
     constructor(product?: Product){
@@ -135,6 +136,8 @@ export class OrderItem {
             this.product = product
             this.quantity = product.quantity
             this.price = product.price
+            this.isValid = true;
+
             this.materials = product.materials.map( (material,index) => {
 
                 
@@ -202,6 +205,7 @@ export class OrderItem {
             this.quantity = 1
             this.can_change_ready_toggle = false
             this.price = 0
+            this.isValid = true
         }
     }
 
@@ -297,7 +301,7 @@ export class OrderItem {
 
 
     RemoveMaterialByIndex(materialIndex: number){
-        this.materials.splice(materialIndex,1)        
+        this.materials.splice(materialIndex,1)   
     }
 
 

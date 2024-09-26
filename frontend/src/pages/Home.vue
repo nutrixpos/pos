@@ -28,11 +28,14 @@
                 </Panel>
             </div>
             <div class="col-2 flex pt-3 pb-3">
-                <Panel header="Order Items" class="w-12">
+                <Panel header="Order Items" class="w-12" :style="`background-color:${is_order_valid ?  'white' : 'var(--red-100)'};border-color: ${is_order_valid ?  '' : 'red'};`">
                     <div class="flex flex-column" style="height:calc(100vh - 10rem)">
                         <div style="height:60vh;overflow: auto;">
                             <div v-for="(item,index) in orderItems" :key="index">
                                 <div class="flex justify-content-between align-items-center">
+                                    <div style="background-color:red;width:0.3rem;height:2.5rem;" class="mr-2" v-if="!item.isValid">
+                                        &nbsp;
+                                    </div>
                                     <p class="w-6" style="text-overflow:ellipsis"><strong>{{ item.product.name }}</strong></p>
                                     <p>{{ item.price }} EGP</p>
                                     <div>
@@ -66,7 +69,7 @@
                                     <p style="font-size:1.4rem">{{ total.toFixed(2) }} <span style="font-size:1rem">EGP</span></p>
                                 </div>
                             </div>
-                            <Button label="Checkout" @click="goOrder" />
+                            <Button label="Checkout" :disabled="!is_order_valid" @click="goOrder" />
                         </div>
                     </div>
                 </Panel>
@@ -105,6 +108,7 @@
   const toast = useToast();
   const itemToEditIndex = ref(0)
   const edit_item_dialog = ref(false)
+  const is_order_valid = ref(true)
 
   
   import MealCard from '@/components/MealCard.vue';
@@ -224,12 +228,16 @@ watch(discount_percent, (new_discount_percent) => {
 watch(() => orderItems.value, 
   (currentValue) => {
     let x = 0
+    let valid = true
     currentValue.forEach((item) => {
 
         x += item.price
+        if (!item.isValid)
+            valid=false
 
     })
-    
+
+    is_order_valid.value = valid
     subtotal.value = x
     discount.value = discount_percent.value * subtotal.value / 100
   },

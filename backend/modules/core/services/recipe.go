@@ -132,11 +132,19 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 		if err != nil {
 			return tree, err
 		}
+
+		valid_entries := []models.MaterialEntry{}
+		for _, entry := range db_component.Entries {
+			if entry.Quantity > 0 {
+				valid_entries = append(valid_entries, entry)
+			}
+		}
+
 		self_components = append(self_components, models.Material{
 			Id:       material.Id,
 			Name:     db_component.Name,
 			Quantity: material.Quantity,
-			Entries:  db_component.Entries,
+			Entries:  valid_entries,
 			Unit:     db_component.Unit,
 		})
 	}

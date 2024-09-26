@@ -305,7 +305,8 @@ const confirm = useConfirm();
             var totalAmount;
 
             component.entries?.forEach(entry => {
-                totalAmount = totalAmount ? totalAmount + entry.quantity : entry.quantity
+                if (entry.quantity > 0)
+                    totalAmount = totalAmount ? totalAmount + entry.quantity : entry.quantity
             });
 
             component.totalAmount = totalAmount
