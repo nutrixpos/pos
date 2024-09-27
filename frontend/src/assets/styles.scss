@@ -1,0 +1,51 @@
+$sm:10px;
+$md:960px;
+$lg:1500px !default;
+$xl:2000px;
+
+$breakpoints: (
+    'sm': $sm,
+    'md': $md,
+    'lg': $lg,
+    'xl': $xl
+) !default;
+
+
+// $primary-color:  #20232a;
+// $primary-color-text: white;
+// $secondary-color: #00763B;
+
+// :root {
+    // --primary-color: #{$primary-color};
+    // --primary: #{$primary-color};
+    // --primary-color-text: #{$primary-color-text};
+// }
+
+
+
+
+// .p-button-primary, .p-button {
+//   background: $primary-color;
+//   border: 1px solid $primary-color;
+//   color: white;
+//   &.p-button-outlined {
+//     background:transparent;
+//     color: $primary-color;
+//   }
+// }
+
+// .p-button-secondary {
+//   background: $secondary-color;
+//   border: 1px solid $secondary-color;
+//   &.p-button-outlined {
+//     background:transparent;
+//     color: $secondary-color;
+//   }
+// }
+
+// body {
+//     margin-bottom:0px;
+// }
+
+
+@import 'primeflex/primeflex.scss'

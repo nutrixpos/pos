@@ -7,6 +7,9 @@
                     <span class="ml-2">{{ item.label }}</span>
                 </a>
             </template>
+            <template #end>
+                <Button icon="pi pi-bell" severity="secondary" size="large" badge="0"  text rounded aria-label="Notifications" />
+            </template>
         </Menubar>
         <div class="grid" style="flex-grow:1;">
             <div class="col-2">
@@ -19,7 +22,7 @@
                     </template>
                 </Listbox>
             </div>
-            <div class="col-8 flex pt-3 pb-3">
+            <div class="lg:col-8 col-6 flex pt-3 pb-3">
                 <Panel header="Recipes" style="width:100%;">
                     <InputText v-model="searchtext" placeholder="Search" class="mb-4" />
                     <div class="flex flex-wrap">
@@ -27,7 +30,7 @@
                     </div>
                 </Panel>
             </div>
-            <div class="col-2 flex pt-3 pb-3">
+            <div class="col-4 lg:col-2 flex pt-3 pb-3">
                 <Panel header="Order Items" class="w-12" :style="`background-color:${is_order_valid ?  'white' : 'var(--red-100)'};border-color: ${is_order_valid ?  '' : 'red'};`">
                     <div class="flex flex-column" style="height:calc(100vh - 10rem)">
                         <div style="height:60vh;overflow: auto;">
