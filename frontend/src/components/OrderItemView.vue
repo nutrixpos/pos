@@ -1,14 +1,16 @@
 <template>
     <div class="flex justify-content-between align-items-center">
         <h4>{{ model.product.name }}</h4>
-        <InputText :disabled="!model.is_consume_from_ready" type="number" v-model.number="model.quantity"  size="small"/>
-        <div class="flex align-items-center justify-content-center">
+        <div>
+            x <InputText :disabled="!model.is_consume_from_ready" type="number" v-model.number="model.quantity"  size="small"/>
+        </div>
+        <!-- <div class="flex align-items-center justify-content-center">
             <span class="mx-2">From Ready</span>
             <InputSwitch v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
             <span class="mx-2">
                 <p style="font-size: 0.9rem;">{{model.ready}} Ready</p>
             </span>
-        </div>
+        </div> -->
     </div>
     <div v-if="!model.is_consume_from_ready">
         <Button label="Add Material" @click="new_component_dialog = true" />
@@ -40,8 +42,8 @@ import {defineModel,ref, watch} from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
-import InputSwitch from 'primevue/inputswitch';
-import { Material, OrderItem, OrderItemMaterial } from '@/classes/OrderItem'
+// import InputSwitch from 'primevue/inputswitch';
+import { Material, OrderItem,OrderItemMaterial } from '@/classes/OrderItem'
 import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
 
@@ -59,37 +61,37 @@ const removeMaterialByIndex = (index:number) => {
 }
 
 
-const validateMaterialQuantity = (index: number)  => {
+// const validateMaterialQuantity = (index: number)  => {
 
-    const entry_quantity = Number(model.value.materials[index].entry.label.split('-')[1].split(' ')[1])
+//     const entry_quantity = Number(model.value.materials[index].entry.label.split('-')[1].split(' ')[1])
 
-    if (model.value.materials[index].quantity > entry_quantity){
-        materialValidity.value[index] = false
-        return
-    }
+//     if (model.value.materials[index].quantity > entry_quantity){
+//         materialValidity.value[index] = false
+//         return
+//     }
 
-    materialValidity.value[index] = true
+//     materialValidity.value[index] = true
+// }
+
+const Init = async () => {
+    await updateEntriesCost()
+    // model.value.materials.forEach((_,index) => {
+    //     materialValidity.value.push(true)
+    //     validateMaterialQuantity(index)
+    // })
 }
 
-const Init = () => {
-    updateEntriesCost()
-    model.value.materials.forEach((_,index) => {
-        materialValidity.value.push(true)
-        validateMaterialQuantity(index)
-    })
-}
-
-const updateEntriesCost = () => {
-    model.value.materials.forEach(async (material: OrderItemMaterial,index: number) => {
+const updateEntriesCost = async () => {
+    await model.value.materials.forEach(async (material: OrderItemMaterial,index: number) => {
         await model.value.UpdateMaterialEntryCost(index)
     })
 }
 
 Init()
 
-const addMaterial = (material: Material) => {
-    model.value.PushMaterial(material)
-    validateMaterialQuantity(model.value.materials.length - 1)
+const addMaterial = async (material: Material) => {
+    await model.value.PushMaterial(material)
+    // validateMaterialQuantity(model.value.materials.length - 1)
 }
 
 

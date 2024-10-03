@@ -8,7 +8,17 @@
                 </a>
             </template>
             <template #end>
-                <Button icon="pi pi-bell" severity="secondary" size="large" badge="0"  text rounded aria-label="Notifications" />
+                <Button  severity="secondary" size="large"  text rounded aria-label="Notifications" @click.stop="notifications_toggle">
+                    <span class="p-button-icon pi pi-bell"></span>
+                    <Badge :value="notifications_severity_counter[0]" class="p-badge-success"  />
+                    <Badge :value="notifications_severity_counter[1]" class="p-badge-info"  />
+                    <Badge :value="notifications_severity_counter[2]" class="p-badge-warning" />
+                    <Badge :value="notifications_severity_counter[3]" class="p-badge-danger" />
+                </Button>
+                <OverlayPanel ref="notifications_op" class="w-3" style="max-height:60vh;overflow-y: auto;">
+                    <Button text label="Clear all" severity="secondary" @click="clearNotifications()"/>
+                    <NotificationView :notification="notification" v-for="(notification,index) in notifications" :key="index" />
+                </OverlayPanel>
             </template>
         </Menubar>
         <div class="grid" style="flex-grow:1;">
@@ -104,30 +114,121 @@
   import {OrderItem} from '@/classes/OrderItem'
   import Divider from 'primevue/divider';
   import Slider from 'primevue/slider';
+  import Badge from 'primevue/badge'
+  import NotificationView from '@/components/NotificationView.vue';
+  import OverlayPanel from 'primevue/overlaypanel';
+  import { Notification} from '@/classes/Notification';
+  import { ref,watch,computed } from "vue";
 
 
 
 
-  const toast = useToast();
-  const itemToEditIndex = ref(0)
-  const edit_item_dialog = ref(false)
-  const is_order_valid = ref(true)
 
-  
-  import MealCard from '@/components/MealCard.vue';
-  
-  import { ref,watch } from "vue";
-  
-  
-  const comment = ref("")
-  const subtotal = ref(0)
-  const discount = ref(0)
-  const discount_percent = ref(0)
-  const total = ref(0)
-  const namewithcomment = ref("")
-  const idwithcomment = ref("")
-  const visible = ref(false)
-  const selectedCategory = ref();
+const toast = useToast();
+const itemToEditIndex = ref(0)
+const edit_item_dialog = ref(false)
+const is_order_valid = ref(true)
+
+
+import MealCard from '@/components/MealCard.vue';
+
+
+const comment = ref("")
+const subtotal = ref(0)
+const discount = ref(0)
+const discount_percent = ref(0)
+const total = ref(0)
+const namewithcomment = ref("")
+const idwithcomment = ref("")
+const visible = ref(false)
+const selectedCategory = ref();
+
+
+const notifications_op = ref();
+const notifications_toggle = (event: any) => {
+    notifications_op.value.toggle(event);
+}
+const notifications = ref<Notification[]>([])
+
+
+const clearNotifications = () => {
+    notifications.value = []
+}
+
+
+const init = () => {
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws");
+    socket.onopen = () => {
+        console.log("Opened ws connection");
+        socket.send(`{"type":"subscribe","topic_name":"all"}`);
+    }
+
+    socket.onmessage = (event) => {
+        console.log("Received message: " + event.data);
+
+        const data = JSON.parse(event.data);
+
+        if (data.type == "topic_message") {
+            if (data.topic_name == "order_finished"){
+
+                toast.removeGroup('br')
+                toast.add({ severity: 'success', summary: 'Order Finished', detail: `order with id ( ${data.order_id} ) finished and is ready to be served !`, life: 3000,group:'br' });
+
+                const notification = new Notification();
+                notification.description = `order with id #${data.order_id} finished and is ready to be served !`
+                notification.severity = "success"
+                notification.topic_name = "Order Finished"
+                notification.type = "topic_message"
+                notifications.value.push(notification);
+            }else {
+                const notification = new Notification();
+                notification.description = data.message
+                notification.severity = data.severity
+                notification.topic_name = data.topic_name
+                notification.type = data.type
+                notifications.value.push(notification);
+
+                toast.removeGroup('br')
+                toast.add({ severity: data.severity, summary: data.topic_name, detail: data.message, life: 30000,group:'br' });
+            }
+        }
+
+    }
+    socket.onerror = (event) => {
+        console.log("Error occurred");
+        console.log(event);
+    }
+    socket.onclose = () => {
+        console.log("Connection closed");
+    }
+    
+}
+
+init()
+
+// const notifications_severity_counter = ref<number[]>([])
+
+const notifications_severity_counter = computed(() => {
+    const counter = [0,0,0,0]
+    notifications.value.forEach(notification => {
+        switch (notification.severity) {
+            case "success":
+                counter[0]++;
+                break;
+            case "info":
+                counter[1]++;
+                break;
+            case "warn":
+                counter[2]++;
+                break;
+            case "error":
+                counter[3]++;
+                break;
+        }
+    })
+    return counter
+})
+
   
   
 const searchtext = ref("")
@@ -177,7 +278,7 @@ const goOrder = () => {
         axios.post("http://localhost:8000/api/submitorder",
             {
                 items:orderItems.value,
-                discount, 
+                discount:discount.value, 
             }
         ).then((response) => {
             console.log(response.data)

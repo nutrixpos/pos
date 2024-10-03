@@ -288,7 +288,7 @@ export class OrderItem {
         })  
     }
 
-    PushMaterial(material: Material) {
+    async PushMaterial(material: Material) {
 
         material.entries.forEach(e => {
             e.label = e.company + " - " + e.quantity + " " + material.unit
@@ -296,7 +296,7 @@ export class OrderItem {
 
         const new_material = new OrderItemMaterial(material)
         this.materials.push(new_material)
-        this.UpdateMaterialEntryCost(this.materials.length - 1)
+        await this.UpdateMaterialEntryCost(this.materials.length - 1)
     }
 
 

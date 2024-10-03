@@ -16,8 +16,9 @@ import (
 )
 
 type ComponentService struct {
-	Logger logger.ILogger
-	Config config.Config
+	Logger   logger.ILogger
+	Config   config.Config
+	Settings config.Settings
 }
 
 func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
@@ -71,7 +72,7 @@ func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, 
 	return cost, nil
 }
 
-func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, order_id string, item_order_index int) (err error) {
+func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, order_id string, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -82,13 +83,13 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 	// Connect to MongoDB
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return err
+		return notifications, err
 	}
 
 	// Ping the database to check connectivity
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return err
+		return notifications, err
 	}
 
 	// Connected successfully
@@ -96,15 +97,20 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 
 	for _, component := range rs.Materials {
 		if err != nil {
-			return err
+			return notifications, err
 		}
 
 		component_ob_id, err := primitive.ObjectIDFromHex(component.Material.Id)
 		if err != nil {
-			return err
+			return notifications, err
 		}
 
-		filter := bson.M{"_id": component_ob_id, "entries._id": component.Entry.Id}
+		entry_ob_id, err := primitive.ObjectIDFromHex(component.Entry.Id)
+		if err != nil {
+			return notifications, err
+		}
+
+		filter := bson.M{"_id": component_ob_id, "entries._id": entry_ob_id}
 		// Define the update operation
 		update := bson.M{
 			"$inc": bson.M{
@@ -114,7 +120,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 
 		_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
 		if err != nil {
-			return err
+			return notifications, err
 		}
 
 		logs_data := bson.M{
@@ -129,20 +135,37 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 		}
 		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
-			return err
+			return notifications, err
+		}
+
+		quantity, err := cs.GetComponentAvailability(component.Material.Id)
+		if err != nil {
+			return notifications, err
+		}
+
+		if float64(quantity) <= cs.Settings.Inventory.DefaultInventoryQuantityWarn {
+			notifications = append(notifications, models.WebsocketTopicServerMessage{
+				TopicName: "inventory_low",
+				Type:      "topic_message",
+				Severity:  "warn",
+				Message:   fmt.Sprintf("Inventory for %s is low: %f", component.Material.Name, float64(quantity)),
+				Key:       fmt.Sprintf("low_inventiry@%s", component.Material.Id),
+			})
 		}
 
 	}
 
 	for _, subrecipe := range rs.SubItems {
 
-		err = cs.ConsumeItemComponentsForOrder(subrecipe, order_id, item_order_index)
+		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order_id, item_order_index)
 		if err != nil {
-			return err
+			return notifications, err
 		}
+
+		notifications = append(notifications, sub_notifications...)
 	}
 
-	return nil
+	return notifications, nil
 }
 
 func (cs *ComponentService) GetComponentAvailability(componentid string) (amount float32, err error) {

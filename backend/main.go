@@ -14,12 +14,17 @@ import (
 
 func main() {
 	logger := logger.NewZeroLog()
-	config := config.ConfigFactory("viper", "config.yaml", &logger)
+	conf := config.ConfigFactory("viper", "config.yaml", &logger)
+	settings := config.Settings{}
+	err := settings.LoadFromDB(conf)
+	if err != nil {
+		panic("Can't load settings from DB")
+	}
 
 	router := mux.NewRouter()
 
 	modules_manager := modules.ModulesManager{}
-	modules_manager.RegisterModule("core", &logger, core.NewBuilder(config), router)
+	modules_manager.RegisterModule("core", &logger, core.NewBuilder(conf, settings), router)
 
 	srv := &http.Server{
 		Handler: router,

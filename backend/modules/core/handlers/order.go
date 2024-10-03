@@ -131,7 +131,7 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 }
 
-func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func StartOrder(config config.Config, logger logger.ILogger, settings config.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		header := w.Header()
@@ -154,8 +154,9 @@ func StartOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
 		}
 
 		err = orderService.StartOrder(order_start_request)
