@@ -27,7 +27,7 @@ type WebsocketTopicServerMessage struct {
 	TopicName string `json:"topic_name"`
 	Severity  string `json:"severity"`
 	Message   string `json:"message"`
-	Key       string `json:"key"` // unqique label to prevent message dublications
+	Key       string `json:"key"` // unqique label to prevent message duplications
 }
 
 type WebsocketOrderFinishServerMessage struct {

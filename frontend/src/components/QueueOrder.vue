@@ -6,6 +6,9 @@
                 <!-- 2024-06-20T14:31:39.946Z -->
                 <div class="grid mt-1 p-2">
                 <!-- <div class="flex gap-3 mt-1 p-2 justify-content-center align-items-center"> -->
+                    <h3 class="col-12 m-0 p-0 px-2">
+                        {{props.order.display_id}}
+                    </h3>
                     <div class="col-3 flex justify-content-center align-items-center">
                         <p class="px-2"><strong>{{timePassed}}</strong></p>
                     </div>

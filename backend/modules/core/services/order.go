@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/elmawardy/nutrix/common/config"
@@ -198,6 +199,60 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 	return err
 }
 
+func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return order_display_id, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return order_display_id, err
+	}
+
+	var settings config.Settings
+	err = client.Database("waha").Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
+	if err != nil {
+		return order_display_id, err
+	}
+
+	random_queue_index := rand.Intn((len(settings.Orders.Queues)-1)-0) + 0
+	random_queue := settings.Orders.Queues[random_queue_index]
+
+	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
+
+	settings_obj_id, err := primitive.ObjectIDFromHex(settings.Id)
+	if err != nil {
+		return order_display_id, err
+	}
+
+	_, err = client.Database("waha").Collection("settings").UpdateOne(
+		ctx,
+		bson.M{"_id": settings_obj_id, "orders.queues.prefix": random_queue.Prefix},
+		bson.M{
+			"$inc": bson.M{
+				"orders.queues.$.next": 1,
+			},
+		},
+	)
+
+	if err != nil {
+		return order_display_id, err
+	}
+
+	return order_display_id, err
+
+}
+
 func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -221,21 +276,15 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
 
-	// recipe_service := RecipeService{
-	// 	Logger: os.Logger,
-	// 	Config: os.Config,
-	// }
-
-	// for i, item := range order.Items {
-	// 	order.Items[i], err = recipe_service.FillRecipeDesign(item)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	order.DisplayId, err = os.GetOrderDisplayId()
+	if err != nil {
+		return err
+	}
 
 	order_data := bson.M{
 		"items":        order.Items,
 		"submitted_at": time.Now(),
+		"display_id":   order.DisplayId,
 	}
 	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order_data)
 	if err != nil {

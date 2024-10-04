@@ -32,16 +32,29 @@ type IConfig interface {
 }
 
 type Settings struct {
+	Id        string `bson:"_id,omitempty" json:"id"`
 	Inventory struct {
 		DefaultInventoryQuantityWarn float64 `json:"default_inventory_quantity_warn" bson:"default_inventory_quantity_warn"`
 	} `bson:"inventory" json:"inventory"`
+	Orders struct {
+		Queues []struct {
+			Prefix string `json:"prefix" bson:"prefix"`
+			Next   uint32 `json:"next" bson:"next"`
+		} `json:"queues" bson:"queues"`
+	} `bson:"orders" json:"orders"`
 }
 
 func (s *Settings) LoadFromDB(config Config) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
 
+	db_connection_deadline := 5 * time.Second
+	if config.Env == "dev" {
+		db_connection_deadline = 1000 * time.Second
+	}
+
 	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), db_connection_deadline)
+
 	defer cancel()
 
 	// Connect to MongoDB
