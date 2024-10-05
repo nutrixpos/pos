@@ -1,5 +1,5 @@
 <template>
-    <div :style="`position:relative;${ props.item.availability <= 0 ? 'filter: grayscale(100%);' : ''}'`">
+    <div :style="`position:relative;${ props.item.availability <= 1 ? 'filter: grayscale(100%);' : ''}'`">
         <div v-if="props.item.availability <= 0" class="w-full h-full" style="position:absolute;z-index:99"></div>
         <Card style="overflow: hidden;height:13rem;cursor: pointer;" @click="$emit('add')">
             <template #header>

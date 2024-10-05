@@ -50,7 +50,7 @@
               <li class="flex justify-content-between w-6 m-2" v-for="(material,index) in product_for_details?.materials" :key="index"><strong>{{material.name}}:</strong> &nbsp;&nbsp;&nbsp;&nbsp;{{material.quantity}} {{material.unit}}</li>
            </ul>
         </Dialog>
-        <Dialog v-model:visible="visible" modal :header="`Order #${props.number}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+        <Dialog v-model:visible="visible" modal :header="`Order #${props.order.display_id}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
             <!-- <Dialog v-model:visible="visible" modal :header="props.order.items[currentItemIndex].name+` #${currentItemIndex+1}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
             <Stepper @update:activeStep="(number) => {currentItemIndex = number}">
                 <StepperPanel v-for="item,index in items" :key="index" :header="item.product.name">
@@ -213,6 +213,8 @@ const startOrder =  () => {
         ).then((response) => {
             state.value = "in_progress"
             started_at.value = response.data.started_at
+        }).catch((error) => {
+            console.log(error)
         })
 }
 

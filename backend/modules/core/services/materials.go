@@ -72,7 +72,56 @@ func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, 
 	return cost, nil
 }
 
-func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, order_id string, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (cs *ComponentService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float32, err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return amount, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return amount, err
+	}
+
+	material_id_hex, err := primitive.ObjectIDFromHex(material_id)
+	if err != nil {
+		return 0.0, err
+	}
+
+	entry_id_hex, err := primitive.ObjectIDFromHex(entry_id)
+	if err != nil {
+		return 0.0, err
+	}
+
+	var material models.Material
+	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
+		"_id":         material_id_hex,
+		"entries._id": entry_id_hex,
+	},
+		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+	if err != nil {
+		return 0.0, err
+	}
+
+	if len(material.Entries) == 0 {
+		return 0.0, fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+	}
+
+	amount = material.Entries[0].Quantity
+
+	return amount, err
+
+}
+
+func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -95,7 +144,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 	// Connected successfully
 	cs.Logger.Info("Connected to MongoDB!")
 
-	for _, component := range rs.Materials {
+	for _, component := range item.Materials {
 		if err != nil {
 			return notifications, err
 		}
@@ -110,11 +159,27 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 			return notifications, err
 		}
 
+		material_available_amount, err := cs.GetMaterialEntryAvailability(component.Material.Id, component.Entry.Id)
+		if err != nil {
+			return notifications, err
+		}
+
+		if float64(material_available_amount) < (component.Quantity*item.Quantity) || material_available_amount < 0 {
+			notifications = append(notifications, models.WebsocketTopicServerMessage{
+				TopicName: "inventory_insufficient",
+				Type:      "topic_message",
+				Severity:  "error",
+				Message:   fmt.Sprintf("Inventory for %s is insufficient, quantity requested by order_id: %s (display_id: %s) is %f, but entry %s only has %f", component.Material.Name, order.Id, order.DisplayId, (component.Quantity * item.Quantity), component.Entry.Id, float64(material_available_amount)),
+				Key:       fmt.Sprintf("inventory_insufficient@%s", component.Material.Id),
+			})
+			return notifications, fmt.Errorf("entry %s is insufficient", component.Material.Id)
+		}
+
 		filter := bson.M{"_id": component_ob_id, "entries._id": entry_ob_id}
 		// Define the update operation
 		update := bson.M{
 			"$inc": bson.M{
-				"entries.$.quantity": -component.Quantity,
+				"entries.$.quantity": -component.Quantity * item.Quantity,
 			},
 		}
 
@@ -127,10 +192,10 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 			"type":             "component_consume",
 			"date":             time.Now(),
 			"component_id":     component.Material.Id,
-			"quantity":         component.Quantity,
+			"quantity":         component.Quantity * item.Quantity,
 			"entry_id":         component.Entry.Id,
-			"order_id":         order_id,
-			"recipe_id":        rs.Product.Id,
+			"order_id":         order.Id,
+			"recipe_id":        item.Product.Id,
 			"item_order_index": item_order_index,
 		}
 		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
@@ -155,9 +220,9 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(rs models.OrderItem, o
 
 	}
 
-	for _, subrecipe := range rs.SubItems {
+	for _, subrecipe := range item.SubItems {
 
-		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order_id, item_order_index)
+		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, item_order_index)
 		if err != nil {
 			return notifications, err
 		}
@@ -208,7 +273,9 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 	}
 
 	for _, entry := range component.Entries {
-		amount += entry.Quantity
+		if entry.Quantity > 0 {
+			amount += entry.Quantity
+		}
 	}
 
 	return amount, nil

@@ -390,31 +390,33 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
 
 	for itemIndex, item := range order_start_request.Items {
-		notifications, err := componentService.ConsumeItemComponentsForOrder(item, order.Id, itemIndex)
-		if err != nil {
-			return err
-		}
-
+		notifications, err := componentService.ConsumeItemComponentsForOrder(item, order, itemIndex)
 		for _, notification := range notifications {
 			if _, ok := refined_notifications[notification.Key]; !ok {
 				refined_notifications[notification.Key] = notification
 			}
 		}
 
-	}
+		if len(refined_notifications) > 0 {
+			notificationService, err := SpawnNotificationService("melody", os.Logger, os.Config)
+			if err != nil {
+				return err
+			}
+			for _, notification := range refined_notifications {
 
-	notificationService, err := SpawnNotificationService("melody", os.Logger, os.Config)
-	if err != nil {
-		return err
-	}
-	for _, notification := range refined_notifications {
+				json_notification, err := json.Marshal(notification)
+				if err != nil {
+					return err
+				}
 
-		json_notification, err := json.Marshal(notification)
+				notificationService.SendToTopic(notification.TopicName, string(json_notification))
+			}
+		}
+
 		if err != nil {
 			return err
 		}
 
-		notificationService.SendToTopic(notification.TopicName, string(json_notification))
 	}
 
 	update := bson.M{
