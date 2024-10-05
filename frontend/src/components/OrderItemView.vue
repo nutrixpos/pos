@@ -24,7 +24,7 @@
                 <span class="ml-2 mt-2">{{ material.material.unit }}</span>
             </div>
             <Dropdown @change="model.UpdateMaterialEntryCost(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].entries" optionLabel="label" placeholder="Select option" class="w-6" />
-            Cost: {{ material.entry.cost }}
+            Cost: {{ material.entry.cost * model.quantity }}
         </div>
     </div>
     <div v-if="model.sub_items != null">
