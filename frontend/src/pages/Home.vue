@@ -155,9 +155,11 @@ const clearNotifications = () => {
     notifications.value = []
 }
 
+let socket : WebSocket
 
-const init = () => {
-    const socket = new WebSocket("ws://127.0.0.1:8000/ws");
+
+const startWebsocket = () => {
+    socket = new WebSocket("ws://127.0.0.1:8000/ws");
     socket.onopen = () => {
         console.log("Opened ws connection");
         socket.send(`{"type":"subscribe","topic_name":"all"}`);
@@ -200,8 +202,19 @@ const init = () => {
     }
     socket.onclose = () => {
         console.log("Connection closed");
+        const retryConnection = async () => {
+            if (socket.readyState !== WebSocket.OPEN) {
+                await new Promise(r => setTimeout(r, 5000));
+                console.log("Reconnecting to WebSocket...");
+                startWebsocket()
+            }
+        }
+        retryConnection();
     }
-    
+}
+
+const init = () => {
+    startWebsocket()
 }
 
 init()
