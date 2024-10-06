@@ -61,6 +61,7 @@ const materialValidity = ref<boolean[]>([])
 const removeMaterialByIndex = (index:number) => {
     model.value.RemoveMaterialByIndex(index)
     materialValidity.value.splice(index,1)
+    emit('changed')
 }
 
 const MaterialInputChanged = async (index:number) => {
