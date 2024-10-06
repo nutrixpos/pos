@@ -214,7 +214,8 @@ const startOrder =  () => {
             state.value = "in_progress"
             started_at.value = response.data.started_at
         }).catch((error) => {
-            console.log(error)
+            toast.removeGroup('br')
+            toast.add({ severity: 'error', summary: 'Error', detail: error.response.data.body, life: 5000,group:'br' });
         })
 }
 

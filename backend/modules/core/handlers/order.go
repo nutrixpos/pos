@@ -163,7 +163,21 @@ func StartOrder(config config.Config, logger logger.ILogger, settings config.Set
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
-			return
+
+			response := struct {
+				Data string `json:"body"`
+			}{
+				Data: err.Error(),
+			}
+
+			json_response, err := json.Marshal(response)
+			if err != nil {
+				logger.Error(err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			w.Write(json_response)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
