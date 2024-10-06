@@ -95,6 +95,7 @@ export class OrderItemMaterial {
 	entry: MaterialEntry; 
 	quantity:       number;
     entries: MaterialEntry[]
+    isQuantityValid: boolean = true;
     
     constructor(material ?:Material){
 
@@ -139,8 +140,6 @@ export class OrderItem {
             this.isValid = true;
 
             this.materials = product.materials.map( (material,index) => {
-
-                
                 
                 material.entries.forEach((entry :MaterialEntry, entry_index) => {
                     entry.label = entry.company + " - " + entry.quantity + " " + material.unit
@@ -154,6 +153,9 @@ export class OrderItem {
                     material: material,
                     quantity: material.quantity
                 }
+
+
+                this.ValidateMaterialQuantity(index)
 
                 return itemmaterial
 
@@ -215,6 +217,12 @@ export class OrderItem {
         this.Id = orderItem.Id
         this.product = orderItem.product
         this.materials = orderItem.materials
+
+        this.materials.forEach((material: OrderItemMaterial,index: number) => {
+            this.ValidateMaterialQuantity(index)
+        })
+
+
         this.ready = orderItem.ready
         this.is_consume_from_ready = orderItem.is_consume_from_ready
         this.can_change_ready_toggle = orderItem.can_change_ready_toggle
@@ -254,7 +262,7 @@ export class OrderItem {
                 
             })
             this.product.materials = materials
-            this.materials.forEach((material) => {
+            this.materials.forEach((material,materialIndex) => {
                 this.product.materials.forEach((product_material) => {
                     if (material.material._id == product_material._id){
 
@@ -267,6 +275,9 @@ export class OrderItem {
                         material.entries = product_material.entries
                     }
                 })
+
+                this.ValidateMaterialQuantity(materialIndex)
+
             })
         })
         
@@ -285,7 +296,59 @@ export class OrderItem {
 
             this.materials[materialIndex].entry.cost = response.data
           
-        })  
+        })
+        
+        this.ValidateMaterialQuantity(materialIndex)
+    }
+
+    ValidateItem(){
+        let valid = true
+
+        this.materials.forEach((material) => {
+            if (!material.isQuantityValid)
+                valid = false
+        })
+
+
+        if (!this.ValidateSubItems())
+            valid = false
+
+        
+        this.isValid = valid
+    }
+
+    ValidateSubItems(): boolean {
+
+        let valid = true
+
+        this.sub_items.forEach(item => {
+            if (!item.isValid){
+                valid = false
+            }
+                
+        })
+
+        return valid
+    }
+
+    ValidateMaterialQuantity(materialIndex: number){
+
+        if (this.materials == undefined) {
+            return
+        }
+
+        if (this.materials[materialIndex].entry == undefined){
+            this.materials[materialIndex].isQuantityValid = false
+            return
+        }
+
+        if (this.materials[materialIndex].quantity > this.materials[materialIndex].entry.quantity){
+            this.materials[materialIndex].isQuantityValid = false
+        }else {
+            this.materials[materialIndex].isQuantityValid = true
+        }
+
+        this.ValidateItem()
     }
 
     async PushMaterial(material: Material) {
@@ -296,6 +359,7 @@ export class OrderItem {
 
         const new_material = new OrderItemMaterial(material)
         this.materials.push(new_material)
+        this.ValidateMaterialQuantity(this.materials.length - 1)
         await this.UpdateMaterialEntryCost(this.materials.length - 1)
     }
 
@@ -372,149 +436,11 @@ export class OrderItem {
                 }
 
             })
+
+            this.materials.forEach((material,materialIndex) => {
+                this.ValidateMaterialQuantity(materialIndex)
+            })
         })  
     }
 
 }
-
-// export class OrderItem {
-
-//     recipe_name: string;
-//     Id: string | undefined;
-//     Ready: number;
-//     isConsumeFromReady: boolean;
-//     canChangeReadyToggle: boolean;
-//     Materials: Array<Material>
-//     SubRecipes: Array<OrderItem>;
-//     Quantity: number;
-//     Comment: string;
-//     Design: RecipeDesign
-
-
-//     constructor(recipe?: RecipeDesign){
-
-//         if (recipe != undefined)
-//         {
-
-//             this.Design = recipe
-//             this.Ready = recipe.ready
-//             this.isConsumeFromReady = false
-//             this.canChangeReadyToggle = false
-//             this.SubRecipes = []
-//             this.materials = []
-//             this.Quantity = recipe.quantity
-//             this.recipe_name = recipe.recipe_name
-//             this.Id = recipe.recipe_id
-//             this.Comment = recipe.comment
-
-//             // recipe.components.forEach((component) => {
-
-//             //     const new_component = new Component()
-//             //     new_component.component_id = component.component_id
-//             //     new_component.defaultquantity = component.defaultquantity
-//             //     new_component.name = component.name
-//             //     new_component.unit = component.unit
-
-//             //     component.entries.forEach(entry => {
-
-//             //         const new_entry: ComponentEntry = new ComponentEntry()
-//             //         new_entry._id = entry._id
-//             //         new_entry.company = entry.company
-//             //         new_entry.label = entry.company + " - " + entry.quantity + " " + entry.unit
-//             //         new_entry.price = entry.price
-//             //         new_entry.quantity = entry.quantity
-//             //         new_entry.unit = entry.unit
-//             //         new_entry.PurchaseQuantity = entry.PurchaseQuantity
-//             //         new_component.entries.push(new_entry)
-//             //     })
-                
-//             //     this.Design.components.push(new_component)
-//             // })
-
-//             if (recipe.quantity != undefined){
-//                 this.Quantity = recipe.quantity
-                
-//                 if (this.Ready >= recipe.quantity ){
-
-//                     // allow user to edit the ready toggle and add enable the toggle so that it consumes from the ready quantity
-//                     this.isConsumeFromReady = false
-//                     this.canChangeReadyToggle = false
-
-//                 }else {
-//                     this.canChangeReadyToggle = false
-//                     this.isConsumeFromReady = false
-//                 }
-//             }else {
-//                 this.canChangeReadyToggle = false
-//                 this.isConsumeFromReady = false
-//                 this.Quantity = 0
-//             }
-
-
-//             if (recipe.sub_recipes != null)
-//                 recipe.sub_recipes?.forEach(subrecipe => {
-                
-//                     const newSubRecipe = new OrderItem(subrecipe)
-//                     this.SubRecipes.push(newSubRecipe)
-//                 })
-//         } else {
-//             this.recipe_name = ""
-//             this.Id = ""
-//             this.Ready = 0
-//             this.isConsumeFromReady = false
-//             this.canChangeReadyToggle = false
-//             this.SubRecipes = []
-//             this.materials = []
-//             this.Quantity =1
-//             this.Comment = ""
-//             this.Design = new RecipeDesign()
-//             this.Design.components = []
-//         }
-//     }
-
-
-//     ReloadDefaults() {
-//         axios.get("http://localhost:8000/api/recipetree?id="+this.Id,).then((response) => {
-
-//             const components : Component[] = []
-//             const subrecipes: OrderItem[] = []
-//             this.Id = response.data.recipe_id
-//             this.recipe_name = response.data.recipe_name
-//             this.Design = response.data
-
-//             response.data.components.forEach((component: Component) => {
-
-//                 const new_component = new Component()
-//                 new_component.component_id = component.component_id
-//                 new_component.defaultquantity = component.defaultquantity
-//                 new_component.name = component.name
-//                 new_component.unit = component.unit
-
-//                 component.entries.forEach((entry:ComponentEntry) => {
-
-//                     const new_entry: ComponentEntry = new ComponentEntry()
-//                     new_entry._id = entry._id
-//                     new_entry.company = entry.company
-//                     new_entry.label = entry.company + " - " + entry.quantity + " " + entry.unit
-//                     new_entry.price = entry.price
-//                     new_entry.quantity = entry.quantity
-//                     new_entry.unit = entry.unit
-//                     new_entry.PurchaseQuantity = entry.PurchaseQuantity
-//                     new_component.entries.push(new_entry)
-//                 })
-                
-//                 components.push(new_component)
-//             })
-
-//             response.data.sub_recipes?.forEach((subrecipe: RecipeDesign) => {
-
-//                 const new_subrecipe = new OrderItem(subrecipe)
-//                 subrecipes.push(new_subrecipe)
-//             })
-
-//             this.Design.components = components
-//             this.SubRecipes = subrecipes
-//         })  
-//     }
-
-// }
