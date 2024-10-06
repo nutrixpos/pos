@@ -365,7 +365,8 @@ export class OrderItem {
 
 
     RemoveMaterialByIndex(materialIndex: number){
-        this.materials.splice(materialIndex,1)   
+        this.materials.splice(materialIndex,1)
+        this.ValidateItem()
     }
 
 
