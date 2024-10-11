@@ -5,11 +5,12 @@ import (
 
 	"github.com/elmawardy/nutrix/common/customerrors"
 	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/gorilla/mux"
 )
 
 type ModulesManager struct {
-	Modules map[string]IModule
+	Modules map[string]BaseModule
 }
 
 type IHttpModuleBuilder interface {
@@ -18,36 +19,51 @@ type IHttpModuleBuilder interface {
 
 type IModuleBuilder interface {
 	SetLogger(logger.ILogger) IModuleBuilder
-	Build() IModule
+	SetPrompter(userio.Prompter) IModuleBuilder
+	Build() BaseModule
 }
 
-type IModule interface {
+type BaseModule interface {
 }
 
-func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger, module_builder IModuleBuilder, r ...*mux.Router) error {
+type SeederModule interface {
+	Seed(entities []string) error
+	GetSeedables() (entities []string, err error)
+}
+
+func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger, module_builder IModuleBuilder, prompter userio.Prompter, r ...*mux.Router) error {
 
 	if manager.Modules == nil {
-		manager.Modules = make(map[string]IModule)
+		manager.Modules = make(map[string]BaseModule)
 	}
 
 	msg := fmt.Sprintf("Registering module : %s", name)
 	logger.Info(msg)
 
 	if _, ok := manager.Modules[name]; ok {
-		return customerrors.ModuleNameAlreadyExists{}
+		return customerrors.ErrModuleNameAlreadyExists
 	}
 
-	new_module := module_builder.SetLogger(logger)
+	new_module_builder := module_builder.SetLogger(logger).SetPrompter(prompter)
 
 	if len(r) > 0 {
 		if m, ok := module_builder.(IHttpModuleBuilder); ok {
 			m.RegisterHttpHandlers(r[0])
 		} else {
-			logger.Error(customerrors.TypeAssersionFailed{}.Error())
+			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
 		}
 	}
 
-	manager.Modules[name] = new_module.Build()
+	manager.Modules[name] = new_module_builder.Build()
 
 	return nil
+}
+
+func (manager *ModulesManager) GetModules() (modules map[string]BaseModule, err error) {
+
+	if manager.Modules == nil {
+		return nil, customerrors.ErrModuleNotRegistered
+	}
+
+	return manager.Modules, nil
 }

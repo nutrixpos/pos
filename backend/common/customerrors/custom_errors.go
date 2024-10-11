@@ -1,13 +1,10 @@
 package customerrors
 
-type ModuleNameAlreadyExists struct{}
+import "errors"
 
-func (e ModuleNameAlreadyExists) Error() string {
-	return "Module name already exists!"
-}
-
-type TypeAssersionFailed struct{}
-
-func (e TypeAssersionFailed) Error() string {
-	return "Type assertion failed!"
-}
+var (
+	ErrModuleNotRegistered     = errors.New("can't register module")
+	ErrModuleNameAlreadyExists = errors.New("module name already exists")
+	ErrSeedingModule           = errors.New("error seeding module")
+	ErrTypeAssersionFailed     = errors.New("type assertion failed")
+)
