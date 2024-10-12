@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/customerrors"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -94,24 +96,40 @@ func (s *Seeder) SeedProducts() error {
 
 	material.Quantity = 15
 
+	sub_product := models.Product{
+
+		Name:  "ProductSeeded 1",
+		Price: 100.0,
+		Materials: []models.Material{
+			material,
+		},
+	}
+
 	products := []models.Product{
 		{
-			Name:  "ProductSeeded",
+			Name:  "ProductSeeded 2",
 			Price: 100.0,
 			Materials: []models.Material{
 				material,
 			},
 			SubProducts: []models.Product{
 				{
-					Name:  "Product 2",
-					Price: 100.0,
-					Materials: []models.Material{
-						material,
-					},
-					SubProducts: []models.Product{},
+					Id:       "",
+					Quantity: 1,
 				},
 			},
 		},
+	}
+
+	result, err := client.Database("waha").Collection("recipes").InsertOne(ctx, sub_product)
+	if err != nil {
+		return err
+	}
+
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		products[0].SubProducts[0].Id = oid.Hex()
+	} else {
+		return customerrors.ErrInvalidObjectId
 	}
 
 	newValue := make([]interface{}, len(products))
@@ -180,7 +198,7 @@ func (s *Seeder) SeedCategories() error {
 		}
 
 		var product models.Product
-		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
+		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 
 		if err == mongo.ErrNoDocuments {
 			confirm, err := s.Prompter.Confirmation("seeded products not found, would you like to create one?")
@@ -195,7 +213,7 @@ func (s *Seeder) SeedCategories() error {
 					return err
 				}
 
-				err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
+				err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 				if err != nil {
 					return err
 				}
@@ -229,7 +247,7 @@ func (s *Seeder) SeedCategories() error {
 	} else if err == mongo.ErrNoDocuments || err == nil {
 
 		var product models.Product
-		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
+		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 
 		if err == mongo.ErrNoDocuments {
 			confirm, err := s.Prompter.Confirmation("No seeded products found, would you like to create one?")

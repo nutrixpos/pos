@@ -136,8 +136,13 @@ func (m *BubbleTeaSeedablesPrompter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
-		if k == "q" || k == "esc" || k == "ctrl+c" {
+		if k == "ctrl+c" {
 			m.isTerminating = true
+			return m, tea.Quit
+		}
+
+		if k == "q" || k == "esc" {
+			m.isTerminating = false
 			return m, tea.Quit
 		}
 	}
@@ -200,8 +205,12 @@ func UpdateTreeSelection(m *BubbleTeaSeedablesPrompter, msg tea.Msg) (tea.Model,
 		switch msg.String() {
 
 		// These keys should exit the program.
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			m.isTerminating = true
+			return m, tea.Quit
+
+		case "q":
+			m.isTerminating = false
 			return m, tea.Quit
 
 		// The "up" and "k" keys move the cursor up
