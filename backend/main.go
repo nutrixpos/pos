@@ -40,6 +40,7 @@ func main() {
 		Config:   conf,
 		Logger:   &logger,
 		Settings: settings,
+		Router:   router,
 		Modules:  modules,
 		Prompter: prompter,
 	}
