@@ -10,7 +10,6 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -63,8 +62,7 @@ func (cs *CategoryService) GetCategories() (categories []dto.Category, err error
 		// Fetch the recipes for each category using the Recipe IDs
 		for _, recipeID := range category.Recipes {
 			var recipe models.Product
-			obj_id, _ := primitive.ObjectIDFromHex(recipeID)
-			filter := bson.D{{Key: "_id", Value: obj_id}}
+			filter := bson.D{{Key: "id", Value: recipeID}}
 			err := client.Database("waha").Collection("recipes").FindOne(ctx, filter).Decode(&recipe)
 			if err != nil {
 				cs.Logger.Error(`\nERROR: Recipe doesn't exist id: ${%v}`, recipeID)

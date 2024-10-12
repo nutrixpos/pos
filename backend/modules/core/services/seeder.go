@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/customerrors"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/elmawardy/nutrix/modules/core/models"
@@ -96,8 +95,11 @@ func (s *Seeder) SeedProducts() error {
 
 	material.Quantity = 15
 
+	sub_product_id := primitive.NewObjectID().Hex()
+
 	sub_product := models.Product{
 
+		Id:    sub_product_id,
 		Name:  "ProductSeeded 1",
 		Price: 100.0,
 		Materials: []models.Material{
@@ -107,6 +109,7 @@ func (s *Seeder) SeedProducts() error {
 
 	products := []models.Product{
 		{
+			Id:    primitive.NewObjectID().Hex(),
 			Name:  "ProductSeeded 2",
 			Price: 100.0,
 			Materials: []models.Material{
@@ -114,22 +117,16 @@ func (s *Seeder) SeedProducts() error {
 			},
 			SubProducts: []models.Product{
 				{
-					Id:       "",
+					Id:       sub_product_id,
 					Quantity: 1,
 				},
 			},
 		},
 	}
 
-	result, err := client.Database("waha").Collection("recipes").InsertOne(ctx, sub_product)
+	_, err = client.Database("waha").Collection("recipes").InsertOne(ctx, sub_product)
 	if err != nil {
 		return err
-	}
-
-	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
-		products[0].SubProducts[0].Id = oid.Hex()
-	} else {
-		return customerrors.ErrInvalidObjectId
 	}
 
 	newValue := make([]interface{}, len(products))
@@ -303,30 +300,35 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 
 	entries := []models.MaterialEntry{
 		{
+			Id:               primitive.NewObjectID().Hex(),
 			Quantity:         2000,
 			PurchasePrice:    250,
 			PurchaseQuantity: 200,
 			Company:          "Test1",
 		},
 		{
+			Id:               primitive.NewObjectID().Hex(),
 			Quantity:         2000,
 			PurchasePrice:    250,
 			PurchaseQuantity: 200,
 			Company:          "Test2",
 		},
 		{
+			Id:               primitive.NewObjectID().Hex(),
 			Quantity:         2000,
 			PurchasePrice:    250,
 			PurchaseQuantity: 200,
 			Company:          "Test3",
 		},
 		{
+			Id:               primitive.NewObjectID().Hex(),
 			Quantity:         2000,
 			PurchasePrice:    250,
 			PurchaseQuantity: 200,
 			Company:          "Test4",
 		},
 		{
+			Id:               primitive.NewObjectID().Hex(),
 			Quantity:         2000,
 			PurchasePrice:    250,
 			PurchaseQuantity: 200,
@@ -335,6 +337,7 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 	}
 
 	material := models.Material{
+		Id:   primitive.NewObjectID().Hex(),
 		Name: "MotzarillaSeeded",
 		Unit: "gm",
 	}

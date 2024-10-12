@@ -12,7 +12,6 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -68,12 +67,7 @@ func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []mod
 
 	var recipe models.Product
 
-	subRecipeID, err := primitive.ObjectIDFromHex(recipe_id)
-	if err != nil {
-		return components, err
-	}
-
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": subRecipeID}).Decode(&recipe)
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe}).Decode(&recipe)
 	if err != nil {
 		return components, err
 	}
@@ -108,13 +102,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 
 	var recipe models.Product
 
-	recipe_id_hex, err := primitive.ObjectIDFromHex(recipe_id)
-	if err != nil {
-		rs.Logger.Error(err.Error())
-		return tree, err
-	}
-
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipe_id_hex}).Decode(&recipe)
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&recipe)
 	if err != nil {
 		rs.Logger.Error("GetRecipeTree@getting recipe" + err.Error())
 		return tree, err
@@ -122,13 +110,8 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 
 	for _, material := range recipe.Materials {
 
-		component_id, err := primitive.ObjectIDFromHex(material.Id)
-		if err != nil {
-			return tree, err
-		}
-
 		var db_component models.Material
-		err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"_id": component_id}).Decode(&db_component)
+		err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"id": material.Id}).Decode(&db_component)
 		if err != nil {
 			return tree, err
 		}
@@ -236,12 +219,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 			defer wg.Done()
 
 			var recipe models.Product
-			objID, err := primitive.ObjectIDFromHex(recipe_id)
-			if err != nil {
-				errorChan <- err
-				return
-			}
-			err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&recipe)
+			err = coll.FindOne(ctx, bson.M{"id": recipe_id}).Decode(&recipe)
 			if err != nil {
 				errorChan <- err
 				return

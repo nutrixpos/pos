@@ -98,10 +98,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 		}
 
 		var recipe models.Product
-
-		recipeID, _ := primitive.ObjectIDFromHex(items[itemIndex].Product.Id)
-
-		err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"_id": recipeID}).Decode(&recipe)
+		err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": items[itemIndex].Product.Id}).Decode(&recipe)
 
 		if err != nil {
 			panic(err)

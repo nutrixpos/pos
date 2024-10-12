@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 export class MaterialEntry {
-	_id:               string;
+	id:               string;
 	purchase_quantity: number;
 	purchase_price:    number;
 	quantity:         number
@@ -12,7 +12,7 @@ export class MaterialEntry {
     label: string;
 
     constructor(){
-        this._id = ""
+        this.id = ""
         this.purchase_quantity = 0
         this.purchase_price = 0
         this.quantity = 0
@@ -25,7 +25,7 @@ export class MaterialEntry {
 
 
 export class Material {
-	_id:               string;
+	id:               string;
 	name:             string;
 	entries: MaterialEntry[]
 	quantity:         number;
@@ -33,7 +33,7 @@ export class Material {
     label: string;
 
     constructor(){
-        this._id = ""
+        this.id = ""
         this.name = ""
         this.quantity = 0
         this.entries = []
@@ -242,7 +242,7 @@ export class OrderItem {
             response.data.materials.forEach((material: any) => {
 
                 const new_material = new Material()
-                new_material._id = material._id
+                new_material.id = material.id
                 new_material.quantity = material.quantity
                 new_material.name = material.name
                 new_material.unit = material.unit
@@ -250,7 +250,7 @@ export class OrderItem {
                 material.entries.forEach((entry: any) => {
 
                     const new_entry: MaterialEntry = new MaterialEntry()
-                    new_entry._id = entry._id
+                    new_entry.id = entry.id
                     new_entry.company = entry.company
                     new_entry.label = entry.company + " - " + entry.quantity + " " + material.unit
                     new_entry.purchase_price = entry.purchase_price
@@ -264,10 +264,10 @@ export class OrderItem {
             this.product.materials = materials
             this.materials.forEach((material,materialIndex) => {
                 this.product.materials.forEach((product_material) => {
-                    if (material.material._id == product_material._id){
+                    if (material.material.id == product_material.id){
 
                         product_material.entries.forEach(pm => {
-                            if (material.entry._id == pm._id){
+                            if (material.entry.id == pm.id){
                                 material.entry = pm
                             }
                         })
@@ -292,7 +292,7 @@ export class OrderItem {
 
 
     async UpdateMaterialEntryCost(materialIndex: number){
-        await axios.get(`http://localhost:8000/api/materialcost?material_id=${this.materials[materialIndex].material._id}&entry_id=${this.materials[materialIndex].entry._id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
+        await axios.get(`http://localhost:8000/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
 
             this.materials[materialIndex].entry.cost = response.data
           
@@ -397,7 +397,7 @@ export class OrderItem {
             response.data.materials.forEach((material: any) => {
 
                 const new_material = new Material()
-                new_material._id = material._id
+                new_material.id = material.id
                 new_material.quantity = material.quantity
                 new_material.name = material.name
                 new_material.unit = material.unit
@@ -405,7 +405,7 @@ export class OrderItem {
                 material.entries.forEach((entry: any) => {
 
                     const new_entry: MaterialEntry = new MaterialEntry()
-                    new_entry._id = entry._id
+                    new_entry.id = entry.id
                     new_entry.company = entry.company
                     new_entry.label = entry.company + " - " + entry.quantity + " " + material.unit
                     new_entry.purchase_price = entry.purchase_price

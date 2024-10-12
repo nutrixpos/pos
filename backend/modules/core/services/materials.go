@@ -43,20 +43,10 @@ func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, 
 	// Connected successfully
 	cs.Logger.Info("Connected to MongoDB!")
 
-	material_id_hex, err := primitive.ObjectIDFromHex(material_id)
-	if err != nil {
-		return 0, err
-	}
-
-	entry_id_hex, err := primitive.ObjectIDFromHex(entry_id)
-	if err != nil {
-		return 0, err
-	}
-
 	var material models.Material
 	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
-		"_id":         material_id_hex,
-		"entries._id": entry_id_hex,
+		"id":         material_id,
+		"entries.id": entry_id,
 	},
 		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
 	if err != nil {
@@ -91,20 +81,10 @@ func (cs *ComponentService) GetMaterialEntryAvailability(material_id string, ent
 		return amount, err
 	}
 
-	material_id_hex, err := primitive.ObjectIDFromHex(material_id)
-	if err != nil {
-		return 0.0, err
-	}
-
-	entry_id_hex, err := primitive.ObjectIDFromHex(entry_id)
-	if err != nil {
-		return 0.0, err
-	}
-
 	var material models.Material
 	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
-		"_id":         material_id_hex,
-		"entries._id": entry_id_hex,
+		"id":         material_id,
+		"entries.id": entry_id,
 	},
 		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
 	if err != nil {
@@ -149,16 +129,6 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem,
 			return notifications, err
 		}
 
-		component_ob_id, err := primitive.ObjectIDFromHex(component.Material.Id)
-		if err != nil {
-			return notifications, err
-		}
-
-		entry_ob_id, err := primitive.ObjectIDFromHex(component.Entry.Id)
-		if err != nil {
-			return notifications, err
-		}
-
 		material_available_amount, err := cs.GetMaterialEntryAvailability(component.Material.Id, component.Entry.Id)
 		if err != nil {
 			return notifications, err
@@ -175,7 +145,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem,
 			return notifications, fmt.Errorf("entry %s is insufficient", component.Material.Id)
 		}
 
-		filter := bson.M{"_id": component_ob_id, "entries._id": entry_ob_id}
+		filter := bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}
 		// Define the update operation
 		update := bson.M{
 			"$inc": bson.M{
@@ -260,12 +230,8 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 
 	// Get the "test" collection from the database
 	collection := client.Database("waha").Collection("components")
-	objectID, err := primitive.ObjectIDFromHex(componentid)
-	if err != nil {
-		return 0.0, err
-	}
 
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"id": componentid}
 	var component models.Material
 	err = collection.FindOne(ctx, filter).Decode(&component)
 	if err != nil {
@@ -403,14 +369,14 @@ func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, e
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	filter := bson.M{"_id": componentId}
+	filter := bson.M{"id": componentId}
 
 	for _, entry := range entries {
 
 		entry.PurchaseQuantity = entry.Quantity
 
 		entry_data := bson.M{
-			"_id":               primitive.NewObjectID(),
+			"id":                primitive.NewObjectID().Hex(),
 			"purchase_quantity": entry.PurchaseQuantity,
 			"price":             entry.PurchasePrice,
 			"quantity":          entry.Quantity,
@@ -430,7 +396,7 @@ func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, e
 	return nil
 }
 
-func (cs *ComponentService) DeleteEntry(entryid primitive.ObjectID, componentid primitive.ObjectID) error {
+func (cs *ComponentService) DeleteEntry(entryid string, componentid string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -456,8 +422,8 @@ func (cs *ComponentService) DeleteEntry(entryid primitive.ObjectID, componentid 
 	collection := client.Database("waha").Collection("components")
 
 	// Find the component document and update the entries array
-	filter := bson.M{"_id": componentid}
-	update := bson.M{"$pull": bson.M{"entries": bson.M{"_id": entryid}}}
+	filter := bson.M{"id": componentid}
+	update := bson.M{"$pull": bson.M{"entries": bson.M{"id": entryid}}}
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err

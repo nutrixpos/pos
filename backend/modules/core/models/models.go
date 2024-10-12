@@ -84,7 +84,7 @@ type Order struct {
 }
 
 type MaterialEntry struct {
-	Id               string  `json:"_id,omitempty" bson:"_id,omitempty"`
+	Id               string  `json:"id,omitempty" bson:"id,omitempty"`
 	PurchaseQuantity float32 `json:"purchase_quantity" bson:"purchase_quantity"`
 	PurchasePrice    float64 `json:"purchase_price" bson:"price"`
 	Quantity         float32 `json:"quantity"`
@@ -93,7 +93,7 @@ type MaterialEntry struct {
 }
 
 type Material struct {
-	Id       string          `json:"_id,omitempty" bson:"_id,omitempty"`
+	Id       string          `json:"id,omitempty" bson:"id,omitempty"`
 	Name     string          `json:"name"`
 	Entries  []MaterialEntry `json:"entries" bson:"entries"`
 	Quantity float64         `json:"quantity"`
@@ -111,7 +111,7 @@ type ProductEntry struct {
 }
 
 type Product struct {
-	Id          string         `bson:"_id,omitempty" json:"id"`
+	Id          string         `bson:"id,omitempty" json:"id"`
 	Name        string         `bson:"name" json:"name"`
 	Materials   []Material     `bson:"materials" json:"materials"`
 	SubProducts []Product      `bson:"sub_products" json:"sub_products"`

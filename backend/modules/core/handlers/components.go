@@ -161,25 +161,14 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Retrieve the entry ID from the query string
 		entryIDStr := r.URL.Query().Get("entry_id")
-		entryID, err := primitive.ObjectIDFromHex(entryIDStr)
-		if err != nil {
-			http.Error(w, "Invalid entry ID", http.StatusBadRequest)
-			return
-		}
-
 		componentIdStr := r.URL.Query().Get("component_id")
-		componentId, err := primitive.ObjectIDFromHex(componentIdStr)
-		if err != nil {
-			http.Error(w, "Invalid entry ID", http.StatusBadRequest)
-			return
-		}
 
 		componentService := services.ComponentService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err = componentService.DeleteEntry(entryID, componentId)
+		err := componentService.DeleteEntry(entryIDStr, componentIdStr)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error(err.Error())
