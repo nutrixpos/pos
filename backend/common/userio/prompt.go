@@ -29,6 +29,7 @@ type BubbleTeaSeedablesPrompter struct {
 	IsConfirmation     bool
 	ConfirmationResult bool
 	UserInputText      string
+	isTerminating      bool
 }
 
 type PromptTreeElement struct {
@@ -74,6 +75,10 @@ func (m *BubbleTeaSeedablesPrompter) MultiChooseTree(msg string, choices []Promp
 	if _, err := p.Run(); err != nil {
 		m.Logger.Error("Alas, there's been an error in bubbletea prompt: %v", err)
 		os.Exit(1)
+	}
+
+	if m.isTerminating {
+		os.Exit(0)
 	}
 
 	return m.TreeChoices, err
@@ -132,6 +137,7 @@ func (m *BubbleTeaSeedablesPrompter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
 		if k == "q" || k == "esc" || k == "ctrl+c" {
+			m.isTerminating = true
 			return m, tea.Quit
 		}
 	}
@@ -195,6 +201,7 @@ func UpdateTreeSelection(m *BubbleTeaSeedablesPrompter, msg tea.Msg) (tea.Model,
 
 		// These keys should exit the program.
 		case "ctrl+c", "q":
+			m.isTerminating = true
 			return m, tea.Quit
 
 		// The "up" and "k" keys move the cursor up
