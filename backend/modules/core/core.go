@@ -106,7 +106,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.I
 	router.Handle("/api/component", handlers.AddComponent(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/order", handlers.GetOrder(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/componentlogs", handlers.GetComponentLogs(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/components", handlers.GetComponents(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle("/api/components", handlers.GetMaterials(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/materialcost", handlers.CalculateMaterialCost(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/categories", handlers.GetCategories(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/startorder", handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings)).Methods("POST", "OPTIONS")

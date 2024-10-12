@@ -66,7 +66,7 @@ func (s *Seeder) SeedProducts() error {
 
 	// Get the material with name Motzarilla from the DB
 	var material models.Material
-	err = client.Database("waha").Collection("components").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
+	err = client.Database("waha").Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
 
 	if err != nil {
 
@@ -82,7 +82,7 @@ func (s *Seeder) SeedProducts() error {
 					return err
 				}
 
-				err = client.Database("waha").Collection("components").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
+				err = client.Database("waha").Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
 				if err != nil {
 					return err
 				}
@@ -369,8 +369,8 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 		log.Fatal(err)
 	}
 
-	// Get the "components" collection from the database
-	collection := client.Database("waha").Collection("components")
+	// Get the "materials" collection from the database
+	collection := client.Database("waha").Collection("materials")
 
 	// Find one document in the collection
 	var component models.Material

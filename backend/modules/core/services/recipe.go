@@ -42,7 +42,7 @@ func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderIt
 
 }
 
-func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []models.Material, err error) {
+func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []models.Material, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -69,7 +69,7 @@ func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []mod
 
 	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe}).Decode(&recipe)
 	if err != nil {
-		return components, err
+		return materials, err
 	}
 
 	return recipe.Materials, nil
@@ -77,7 +77,7 @@ func (rs *RecipeService) GetRecipeComponents(recipe_id string) (components []mod
 
 func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, err error) {
 
-	self_components := []models.Material{}
+	self_materials := []models.Material{}
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -111,7 +111,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	for _, material := range recipe.Materials {
 
 		var db_component models.Material
-		err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{"id": material.Id}).Decode(&db_component)
+		err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": material.Id}).Decode(&db_component)
 		if err != nil {
 			return tree, err
 		}
@@ -123,7 +123,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 			}
 		}
 
-		self_components = append(self_components, models.Material{
+		self_materials = append(self_materials, models.Material{
 			Id:       material.Id,
 			Name:     db_component.Name,
 			Quantity: material.Quantity,
@@ -143,7 +143,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 		tree.SubProducts = append(tree.SubProducts, sub_recipe)
 	}
 
-	tree.Materials = self_components
+	tree.Materials = self_materials
 	tree.Id = recipe_id
 	tree.Name = recipe.Name
 	tree.Quantity = recipe.Quantity
@@ -229,7 +229,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 			recipeAvailability.ComponentRequirements = make(map[string]float64)
 
 			self_component_requirements := make(map[string]float64)
-			components_inventory := make(map[string]float64)
+			materials_inventory := make(map[string]float64)
 
 			var lowest_available float64
 
@@ -243,18 +243,18 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 				self_component_requirements[material.Id] = float64(material.Quantity)
 				recipeAvailability.ComponentRequirements[material.Id] += self_component_requirements[material.Id]
 
-				componentService := ComponentService{
+				materialService := MaterialService{
 					Logger: rs.Logger,
 					Config: rs.Config,
 				}
 
-				component_amount, err := componentService.GetComponentAvailability(material.Id)
+				component_amount, err := materialService.GetComponentAvailability(material.Id)
 				if err != nil {
 					errorChan <- err
 					return
 				}
 
-				components_inventory[material.Id] = float64(component_amount)
+				materials_inventory[material.Id] = float64(component_amount)
 			}
 
 			for _, product := range recipe.SubProducts {
@@ -290,7 +290,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 					temp_component_requirements[k] = v
 				}
 
-				for k, v := range components_inventory {
+				for k, v := range materials_inventory {
 					temp_component_inventory[k] = v
 				}
 
@@ -325,7 +325,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 				if increase_availability && !satisfied {
 					recipeAvailability.Available += 1
 					for k, v := range temp_component_inventory {
-						components_inventory[k] = v
+						materials_inventory[k] = v
 					}
 				}
 
@@ -334,11 +334,11 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 			for index, ingredient := range recipe.Materials {
 
 				if index == 0 {
-					lowest_available = components_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
+					lowest_available = materials_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
 				}
 
-				if components_inventory[ingredient.Id]/recipeAvailability.ComponentRequirements[ingredient.Id] < lowest_available {
-					lowest_available = components_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
+				if materials_inventory[ingredient.Id]/recipeAvailability.ComponentRequirements[ingredient.Id] < lowest_available {
+					lowest_available = materials_inventory[ingredient.Id] / recipeAvailability.ComponentRequirements[ingredient.Id]
 				}
 			}
 

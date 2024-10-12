@@ -48,12 +48,12 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 			return
 		}
 
-		componentService := services.ComponentService{
+		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		cost, err := componentService.CalculateMaterialCost(entryIDStr, materialIdStr, quantity)
+		cost, err := materialService.CalculateMaterialCost(entryIDStr, materialIdStr, quantity)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -62,7 +62,7 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 	}
 }
 
-func GetComponents(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
@@ -76,19 +76,19 @@ func GetComponents(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		componentService := services.ComponentService{
+		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		components, err := componentService.GetComponents()
+		materials, err := materialService.GetMaterials()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// Convert the slice to JSON
-		jsonComponents, err := json.Marshal(components)
+		jsonMaterials, err := json.Marshal(materials)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -97,7 +97,7 @@ func GetComponents(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 		// Write the JSON to the response
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonComponents)
+		w.Write(jsonMaterials)
 	}
 
 }
@@ -128,11 +128,11 @@ func AddComponent(config config.Config, logger logger.ILogger) http.HandlerFunc 
 			dbComponent.Entries[index].PurchaseQuantity = entry.Quantity
 		}
 
-		componentService := services.ComponentService{
+		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
-		err = componentService.AddComponent(dbComponent)
+		err = materialService.AddComponent(dbComponent)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -163,12 +163,12 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		entryIDStr := r.URL.Query().Get("entry_id")
 		componentIdStr := r.URL.Query().Get("component_id")
 
-		componentService := services.ComponentService{
+		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := componentService.DeleteEntry(entryIDStr, componentIdStr)
+		err := materialService.DeleteEntry(entryIDStr, componentIdStr)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error(err.Error())
@@ -210,12 +210,12 @@ func PushComponentEntry(config config.Config, logger logger.ILogger) http.Handle
 			return
 		}
 
-		componentService := services.ComponentService{
+		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err = componentService.PushComponentEntry(objectId, componentEntryRequest.Entries)
+		err = materialService.PushMaterialEntry(objectId, componentEntryRequest.Entries)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -15,13 +15,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ComponentService struct {
+type MaterialService struct {
 	Logger   logger.ILogger
 	Config   config.Config
 	Settings config.Settings
 }
 
-func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
+func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -44,7 +44,7 @@ func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, 
 	cs.Logger.Info("Connected to MongoDB!")
 
 	var material models.Material
-	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
+	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -62,7 +62,7 @@ func (cs *ComponentService) CalculateMaterialCost(entry_id, material_id string, 
 	return cost, nil
 }
 
-func (cs *ComponentService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float32, err error) {
+func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float32, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -82,7 +82,7 @@ func (cs *ComponentService) GetMaterialEntryAvailability(material_id string, ent
 	}
 
 	var material models.Material
-	err = client.Database("waha").Collection("components").FindOne(context.Background(), bson.M{
+	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -101,7 +101,7 @@ func (cs *ComponentService) GetMaterialEntryAvailability(material_id string, ent
 
 }
 
-func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -153,7 +153,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem,
 			},
 		}
 
-		_, err = client.Database("waha").Collection("components").UpdateOne(context.Background(), filter, update)
+		_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), filter, update)
 		if err != nil {
 			return notifications, err
 		}
@@ -203,7 +203,7 @@ func (cs *ComponentService) ConsumeItemComponentsForOrder(item models.OrderItem,
 	return notifications, nil
 }
 
-func (cs *ComponentService) GetComponentAvailability(componentid string) (amount float32, err error) {
+func (cs *MaterialService) GetComponentAvailability(componentid string) (amount float32, err error) {
 
 	amount = 0.0
 
@@ -229,7 +229,7 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 	cs.Logger.Info("Connected to MongoDB!")
 
 	// Get the "test" collection from the database
-	collection := client.Database("waha").Collection("components")
+	collection := client.Database("waha").Collection("materials")
 
 	filter := bson.M{"id": componentid}
 	var component models.Material
@@ -248,7 +248,7 @@ func (cs *ComponentService) GetComponentAvailability(componentid string) (amount
 
 }
 
-func (cs *ComponentService) GetComponents() (components []models.Material, err error) {
+func (cs *MaterialService) GetMaterials() (materials []models.Material, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -259,24 +259,24 @@ func (cs *ComponentService) GetComponents() (components []models.Material, err e
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		cs.Logger.Error(err.Error())
-		return components, err
+		return materials, err
 	}
 
 	// Ping the database to check connectivity
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		cs.Logger.Error(err.Error())
-		return components, err
+		return materials, err
 	}
 
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
 	// Get the "test" collection from the database
-	cur, err := client.Database("waha").Collection("components").Find(ctx, bson.D{})
+	cur, err := client.Database("waha").Collection("materials").Find(ctx, bson.D{})
 	if err != nil {
 		cs.Logger.Error(err.Error())
-		return components, err
+		return materials, err
 	}
 
 	defer cur.Close(ctx)
@@ -287,16 +287,16 @@ func (cs *ComponentService) GetComponents() (components []models.Material, err e
 		err := cur.Decode(&component)
 		if err != nil {
 			cs.Logger.Error(err.Error())
-			return components, err
+			return materials, err
 		}
-		components = append(components, component)
+		materials = append(materials, component)
 	}
 
-	return components, nil
+	return materials, nil
 
 }
 
-func (cs *ComponentService) AddComponent(component models.Material) error {
+func (cs *MaterialService) AddComponent(component models.Material) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -320,7 +320,7 @@ func (cs *ComponentService) AddComponent(component models.Material) error {
 	fmt.Println("Connected to MongoDB!")
 
 	// Insert the DBComponent struct into the "components" collection
-	collection := client.Database("waha").Collection("components")
+	collection := client.Database("waha").Collection("materials")
 	_, err = collection.InsertOne(ctx, component)
 	if err != nil {
 		cs.Logger.Error(err.Error())
@@ -346,7 +346,7 @@ func (cs *ComponentService) AddComponent(component models.Material) error {
 	return nil
 }
 
-func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, entries []models.MaterialEntry) error {
+func (cs *MaterialService) PushMaterialEntry(componentId primitive.ObjectID, entries []models.MaterialEntry) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -387,7 +387,7 @@ func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, e
 		update := bson.M{"$push": bson.M{"entries": entry_data}}
 		opts := options.Update().SetUpsert(false)
 
-		_, err = client.Database("waha").Collection("components").UpdateOne(ctx, filter, update, opts)
+		_, err = client.Database("waha").Collection("materials").UpdateOne(ctx, filter, update, opts)
 		if err != nil {
 			return err
 		}
@@ -396,7 +396,7 @@ func (cs *ComponentService) PushComponentEntry(componentId primitive.ObjectID, e
 	return nil
 }
 
-func (cs *ComponentService) DeleteEntry(entryid string, componentid string) error {
+func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -419,7 +419,7 @@ func (cs *ComponentService) DeleteEntry(entryid string, componentid string) erro
 	fmt.Println("Connected to MongoDB!")
 
 	// Connect to the database
-	collection := client.Database("waha").Collection("components")
+	collection := client.Database("waha").Collection("materials")
 
 	// Find the component document and update the entries array
 	filter := bson.M{"id": componentid}

@@ -75,7 +75,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 			component_id, _ := primitive.ObjectIDFromHex(component.Material.Id)
 			entry_id, _ := primitive.ObjectIDFromHex(component.Entry.Id)
 
-			err = client.Database("waha").Collection("components").FindOne(
+			err = client.Database("waha").Collection("materials").FindOne(
 				context.Background(), bson.M{"_id": component_id, "entries._id": entry_id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
 
 			if err == nil {
@@ -378,7 +378,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 
 	// decrease the ingredient component quantity from the components inventory
 
-	componentService := ComponentService{
+	materialService := MaterialService{
 		Config:   os.Config,
 		Logger:   os.Logger,
 		Settings: os.Settings,
@@ -387,7 +387,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
 
 	for itemIndex, item := range order_start_request.Items {
-		notifications, err := componentService.ConsumeItemComponentsForOrder(item, order, itemIndex)
+		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex)
 		for _, notification := range notifications {
 			if _, ok := refined_notifications[notification.Key]; !ok {
 				refined_notifications[notification.Key] = notification
