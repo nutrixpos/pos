@@ -102,7 +102,7 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 }
 
-func AddComponent(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// an example API handler
@@ -182,7 +182,7 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
-func PushComponentEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func PushMaterialEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 

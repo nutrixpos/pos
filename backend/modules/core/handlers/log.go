@@ -9,7 +9,7 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
-func GetComponentLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// an example API handler

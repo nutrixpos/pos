@@ -220,7 +220,7 @@ const confirm = useConfirm();
                 "company": new_entry_company.value
             }
 
-    axios.post('http://localhost:8000/api/componententry', {
+    axios.post('http://localhost:8000/api/materialentry', {
         component_id,
         entries: [
            newEntry
@@ -258,7 +258,7 @@ const confirm = useConfirm();
           })
       })
 
-      axios.post('http://localhost:8000/api/component', {
+      axios.post('http://localhost:8000/api/material', {
         name: new_component_name.value,
         unit: new_component_unit.value,
         entries: entries
@@ -288,7 +288,7 @@ const confirm = useConfirm();
 
 
   const loadComponentLogs = (component_id) => {
-    axios.get('http://localhost:8000/api/componentlogs?id='+component_id)
+    axios.get('http://localhost:8000/api/materiallogs?id='+component_id)
     .then((result)=>{
         component_logs.value = result.data
         component_logs_dialog.value = true
@@ -298,7 +298,7 @@ const confirm = useConfirm();
 
 
   const loadInventory = () => {
-    axios.get('http://localhost:8000/api/components')
+    axios.get('http://localhost:8000/api/materials')
     .then((result)=>{
 
         result.data.forEach(component => {

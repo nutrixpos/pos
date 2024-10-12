@@ -56,7 +56,7 @@ const returnMaterial = (material: Material) => {
 
 const GetMaterials = () => {
     loading.value = true
-    axios.get("http://localhost:8000/api/components")
+    axios.get("http://localhost:8000/api/materials")
     .then((response) => {
 
         
