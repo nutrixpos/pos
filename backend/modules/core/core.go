@@ -42,12 +42,13 @@ func (cmb *CoreModuleBuilder) SetPrompter(prompter userio.Prompter) modules.IMod
 	return cmb
 }
 
-func (c *Core) Seed(entities []string) error {
+func (c *Core) Seed(entities []string, is_new_only bool) error {
 
 	seedService := services.Seeder{
-		Logger:   c.Logger,
-		Config:   c.Config,
-		Prompter: c.Prompter,
+		Logger:    c.Logger,
+		Config:    c.Config,
+		Prompter:  c.Prompter,
+		IsNewOnly: is_new_only,
 	}
 
 	seedablesMap := make(map[string]bool, len(entities))

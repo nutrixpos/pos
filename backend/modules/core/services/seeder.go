@@ -17,10 +17,11 @@ import (
 )
 
 type Seeder struct {
-	Logger   logger.ILogger
-	Config   config.Config
-	Settings config.Settings
-	Prompter userio.Prompter
+	Logger    logger.ILogger
+	Config    config.Config
+	Settings  config.Settings
+	Prompter  userio.Prompter
+	IsNewOnly bool
 }
 
 func (s *Seeder) SeedProducts() error {
@@ -50,8 +51,14 @@ func (s *Seeder) SeedProducts() error {
 
 	// Check if the product with name "ProductSeeded" exists in the db
 	var product models.Product
-	err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
+	err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": bson.M{"$in": []string{"ProductSeeded 1", "ProductSeeded 2"}}}).Decode(&product)
 	if err == nil {
+
+		if s.IsNewOnly {
+			s.Logger.Info("product already exists, skipping seeding")
+			return nil
+		}
+
 		confirmed, err := s.Prompter.Confirmation("products already exists, do you want to insert new documents beside the current ones ?")
 		if err != nil {
 			return err
@@ -182,9 +189,15 @@ func (s *Seeder) SeedCategories() error {
 	collection := db.Collection("categories")
 
 	// Count the number of documents in the categories collection
-	count, err := collection.CountDocuments(ctx, bson.D{})
+	count, err := collection.CountDocuments(ctx, bson.M{"name": "CategorySeeded"})
 
 	if count > 0 {
+
+		if s.IsNewOnly {
+			s.Logger.Info("categories already seeded, skipping..")
+			return nil
+		}
+
 		confirmed, err := s.Prompter.Confirmation("categories already exists, do you want to insert new documents beside the current ones ?")
 		if err != nil {
 			return err
@@ -336,14 +349,36 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 		},
 	}
 
-	material := models.Material{
-		Id:   primitive.NewObjectID().Hex(),
-		Name: "MotzarillaSeeded",
-		Unit: "gm",
+	materials := []models.Material{
+		{
+			Id:   primitive.NewObjectID().Hex(),
+			Name: "MotzarillaSeeded",
+			Unit: "gm",
+			Settings: models.MaterialSettings{
+				StockAlertTreshold: 1000,
+			},
+		},
+		{
+			Id:   primitive.NewObjectID().Hex(),
+			Name: "Milk (seeded)",
+			Entries: []models.MaterialEntry{
+				{
+					Id:               primitive.NewObjectID().Hex(),
+					Quantity:         5,
+					PurchasePrice:    350,
+					PurchaseQuantity: 5,
+					Company:          "Seeded milk 1",
+				},
+			},
+			Settings: models.MaterialSettings{
+				StockAlertTreshold: 2,
+			},
+			Unit: "litre",
+		},
 	}
 
 	if seedEntries {
-		material.Entries = entries
+		materials[0].Entries = entries
 	}
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
@@ -376,8 +411,15 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 	var component models.Material
 	err = collection.FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&component)
 	if err == mongo.ErrNoDocuments {
+
+		newValue := make([]interface{}, len(materials))
+
+		for i := range materials {
+			newValue[i] = materials[i]
+		}
+
 		// Insert the materials into the database
-		_, err = collection.InsertOne(ctx, material)
+		_, err = collection.InsertMany(ctx, newValue)
 		if err != nil {
 			return err
 		}
@@ -387,13 +429,26 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 		return err
 	}
 
+	if s.IsNewOnly {
+		s.Logger.Info("material already exists. skipping seeding materials..")
+		return nil
+	}
+
 	confirm_reseed_materials, err := s.Prompter.Confirmation("material already exists. Do you want to proceed with seeding materials?")
+
 	if err != nil {
 		return err
 	}
 
 	if confirm_reseed_materials {
-		_, err = collection.InsertOne(ctx, material)
+		newValue := make([]interface{}, len(materials))
+
+		for i := range materials {
+			newValue[i] = materials[i]
+		}
+
+		// Insert the materials into the database
+		_, err = collection.InsertMany(ctx, newValue)
 		if err != nil {
 			return err
 		}

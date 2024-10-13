@@ -27,7 +27,7 @@ type BaseModule interface {
 }
 
 type SeederModule interface {
-	Seed(entities []string) error
+	Seed(entities []string, is_new_only bool) error
 	GetSeedables() (entities []string, err error)
 }
 

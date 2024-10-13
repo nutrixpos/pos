@@ -17,6 +17,11 @@
                             <Column field="name" header="Name"></Column>
                             <Column field="totalAmount" header="Quantity"></Column>
                             <Column field="unit" header="Unit"></Column>
+                            <Column header="Status">
+                                <template #body="slotProps">
+                                    <Tag :value="slotProps.data.totalAmount > slotProps.data.settings.stock_alert_treshold ? 'INSTOCK' : 'LOWSTOCK'" :severity="slotProps.data.totalAmount > slotProps.data.settings.stock_alert_treshold ? 'success' : 'warning'" />
+                                </template>
+                            </Column>
                             <Column header="Actions" style="width:30rem">
                                 <template #body="slotProps">
                                     <ButtonGroup>
@@ -134,6 +139,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
+import Tag from 'primevue/tag'
 // import Message from 'primevue/message'
   
 import { ref } from "vue";

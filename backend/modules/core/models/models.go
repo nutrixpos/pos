@@ -92,12 +92,17 @@ type MaterialEntry struct {
 	SKU              string  `json:"sku"`
 }
 
+type MaterialSettings struct {
+	StockAlertTreshold float64 `json:"stock_alert_treshold" bson:"settings"`
+}
+
 type Material struct {
-	Id       string          `json:"id,omitempty" bson:"id,omitempty"`
-	Name     string          `json:"name"`
-	Entries  []MaterialEntry `json:"entries" bson:"entries"`
-	Quantity float64         `json:"quantity"`
-	Unit     string          `json:"unit" bson:"unit"`
+	Id       string           `json:"id,omitempty" bson:"id,omitempty"`
+	Name     string           `json:"name"`
+	Entries  []MaterialEntry  `json:"entries" bson:"entries"`
+	Quantity float64          `json:"quantity"`
+	Settings MaterialSettings `json:"settings" bson:"settings"`
+	Unit     string           `json:"unit" bson:"unit"`
 }
 
 type ProductEntry struct {

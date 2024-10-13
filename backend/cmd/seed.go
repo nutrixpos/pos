@@ -12,26 +12,32 @@ import (
 )
 
 type SeedProcess struct {
-	Config   config.Config
-	Logger   logger.ILogger
-	Settings config.Settings
-	Router   *mux.Router
-	Modules  map[string]modules.BaseModule
+	Config    config.Config
+	Logger    logger.ILogger
+	Settings  config.Settings
+	Router    *mux.Router
+	Modules   map[string]modules.BaseModule
+	IsNewOnly bool
 }
 
 func (sp *SeedProcess) GetCmd(prompter userio.Prompter) (*cobra.Command, error) {
-	return &cobra.Command{
+
+	cmd := &cobra.Command{
 		Use:   "seed",
 		Short: "Seed db with data for dev/test purposes.",
 		Run: func(cmd *cobra.Command, args []string) {
-			sp.Logger.Info("Seeding")
+			sp.Logger.Info("Seeding..")
 			err := sp.Seed(sp.Modules, prompter)
 			if err != nil {
 				sp.Logger.Error(err.Error())
 				panic(err)
 			}
 		},
-	}, nil
+	}
+
+	cmd.PersistentFlags().BoolVar(&sp.IsNewOnly, "new-only", false, "seed only non existing data, and leave old data untouched")
+
+	return cmd, nil
 
 }
 
@@ -88,7 +94,7 @@ func (sp *SeedProcess) Seed(mods map[string]modules.BaseModule, prompter userio.
 				}
 			}
 
-			seedableModules[selectedSeedableModule.Title].Seed(selected_module_seedables)
+			seedableModules[selectedSeedableModule.Title].Seed(selected_module_seedables, sp.IsNewOnly)
 		}
 	}
 
