@@ -24,6 +24,13 @@ export class MaterialEntry {
 }
 
 
+export class MaterialSettings {
+    stock_alert_treshold: number
+    constructor(){
+        this.stock_alert_treshold = 0
+    }
+}
+
 export class Material {
 	id:               string;
 	name:             string;
@@ -31,6 +38,7 @@ export class Material {
 	quantity:         number;
     unit: string;
     label: string;
+    settings: MaterialSettings;
 
     constructor(){
         this.id = ""
@@ -39,6 +47,9 @@ export class Material {
         this.entries = []
         this.unit = ""
         this.label = ""
+        this.settings = {
+            stock_alert_treshold:0
+        }
     }
 }
 

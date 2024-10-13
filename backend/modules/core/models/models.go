@@ -93,7 +93,7 @@ type MaterialEntry struct {
 }
 
 type MaterialSettings struct {
-	StockAlertTreshold float64 `json:"stock_alert_treshold" bson:"settings"`
+	StockAlertTreshold float64 `json:"stock_alert_treshold" bson:"stock_alert_treshold"`
 }
 
 type Material struct {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -296,7 +297,51 @@ func (cs *MaterialService) GetMaterials() (materials []models.Material, err erro
 
 }
 
-func (cs *MaterialService) AddComponent(component models.Material) error {
+func (cs *MaterialService) EditMaterial(materialEditRequest dto.MaterialEditRequest) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	// Connected successfully
+
+	// Find material in db
+	var existingMaterial models.Material
+	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": materialEditRequest.Material.Id}).Decode(&existingMaterial)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	existingMaterial.Settings.StockAlertTreshold = materialEditRequest.Material.Settings.StockAlertTreshold
+
+	// Update the material
+	_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), bson.M{"id": existingMaterial.Id}, bson.M{"$set": existingMaterial})
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (cs *MaterialService) AddComponent(material models.Material) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -321,13 +366,13 @@ func (cs *MaterialService) AddComponent(component models.Material) error {
 
 	// Insert the DBComponent struct into the "components" collection
 	collection := client.Database("waha").Collection("materials")
-	_, err = collection.InsertOne(ctx, component)
+	_, err = collection.InsertOne(ctx, material)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
 	}
 
-	for _, entry := range component.Entries {
+	for _, entry := range material.Entries {
 
 		logs_data := bson.M{
 			"type":     "component_add",

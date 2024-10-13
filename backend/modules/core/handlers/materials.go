@@ -182,6 +182,42 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		var material_edit_request dto.MaterialEditRequest
+		err := json.NewDecoder(r.Body).Decode(&material_edit_request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		materialService := services.MaterialService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err = materialService.EditMaterial(material_edit_request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func PushMaterialEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

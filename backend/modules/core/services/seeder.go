@@ -364,7 +364,7 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 			Entries: []models.MaterialEntry{
 				{
 					Id:               primitive.NewObjectID().Hex(),
-					Quantity:         5,
+					Quantity:         2,
 					PurchasePrice:    350,
 					PurchaseQuantity: 5,
 					Company:          "Seeded milk 1",

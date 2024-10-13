@@ -26,6 +26,7 @@
                                 <template #body="slotProps">
                                     <ButtonGroup>
                                         <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data._id)" severity="secondary" aria-label="Save"  />
+                                        <Button icon="pi pi-cog" class="ml-2" severity="secondary" aria-label="Edit" @click="material_settings = slotProps.data; material_settings_dialog=true"  />
                                     </ButtonGroup>
                                 </template>
                             </Column>
@@ -57,6 +58,18 @@
                     </div>
                 </div>
             </div>
+            <Dialog v-model:visible="material_settings_dialog" modal :header="`Settings for  ${material_settings.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+                <div class="flex align-items-center">
+                    <h4>stock_alert_treshold</h4>
+                    <InputText type="number" class="ml-2" id="stock_alert_treshold" v-model.number="material_settings.settings.stock_alert_treshold" aria-describedby="stock_alert_treshold" />
+                </div>
+                <template #footer>
+                    <ButtonGroup>
+                        <Button label="Cancel" @click="material_settings_dialog=false" severity="secondary" aria-label="Save"  />
+                        <Button class="ml-2" severity="primary" label="Save" aria-label="Save" @click="saveMaterialSettings"/>
+                    </ButtonGroup>
+                </template>
+            </Dialog>
             <Dialog v-model:visible="add_component_dialog" modal :header="`Add new inventory component`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
                <div class="md:w-full">
                     <div class="flex flex-column gap-2">
@@ -129,7 +142,7 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import axios from 'axios'
@@ -140,15 +153,22 @@ import InputText from 'primevue/inputtext'
 import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
 import Tag from 'primevue/tag'
+import { Material } from '@/classes/OrderItem';
 // import Message from 'primevue/message'
   
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
+
+
+
 const confirm = useConfirm();
 
 
 
   const toast = useToast();
+
+  const material_settings_dialog = ref(false)
+  const material_settings = ref<Material>({})
   
   const expandedRows = ref([]);
   const expandedComponentLogsRows = ref([])
@@ -177,6 +197,17 @@ const confirm = useConfirm();
 
   const expanded_component_id = ref("")
 
+
+  const saveMaterialSettings = () => {
+    axios.post('http://localhost:8000/api/editmaterial', {
+        material: material_settings.value
+    }).then(() => {
+      toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000});
+      material_settings_dialog.value = false
+    }).catch(error => {
+      toast.add({severity:'error', summary: 'Error', detail: error.message, life: 3000});
+    })
+  }
 
   const componentRowExpand = (event) => {
     expanded_component_id.value = event.data._id
@@ -267,7 +298,7 @@ const confirm = useConfirm();
       axios.post('http://localhost:8000/api/material', {
         name: new_component_name.value,
         unit: new_component_unit.value,
-        entries: entries
+        entries: entries,
       })
       .then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Component saved successfully !', life: 3000,group:'br' });
