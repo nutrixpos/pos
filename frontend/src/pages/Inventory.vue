@@ -47,7 +47,7 @@
                                         <Column header="Actions" style="width:30rem">
                                             <template #body="slotProps">
                                                 <ButtonGroup>
-                                                    <Button icon="pi pi-times" label="Delete" severity="secondary" aria-label="Delete" @click="confirmDeleteEntry($event,slotProps.data._id)" />
+                                                    <Button icon="pi pi-times" label="Delete" severity="secondary" aria-label="Delete" @click="confirmDeleteEntry($event,slotProps.data.id)" />
                                                 </ButtonGroup>
                                             </template>
                                         </Column>
@@ -202,7 +202,7 @@ const confirm = useConfirm();
     axios.post('http://localhost:8000/api/editmaterial', {
         material: material_settings.value
     }).then(() => {
-      toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000});
+      toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000,group:'br'});
       material_settings_dialog.value = false
     }).catch(error => {
       toast.add({severity:'error', summary: 'Error', detail: error.message, life: 3000});
@@ -210,7 +210,7 @@ const confirm = useConfirm();
   }
 
   const componentRowExpand = (event) => {
-    expanded_component_id.value = event.data._id
+    expanded_component_id.value = event.data.id
   }
 
 
