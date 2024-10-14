@@ -18,7 +18,7 @@ const openedDialogs = ref(0)
 
 
 const loadOrders =  () => {
-    axios.get('http://localhost:8000/api/orders')
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/orders`)
     .then((result)=>{
         orders.value = result.data
     })

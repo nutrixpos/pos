@@ -28,6 +28,7 @@ import Kitchen from '@/pages/Kitchen.vue'
 import Admin from '@/pages/Admin.vue'
 import Inventory from '@/pages/Inventory.vue'
 import Sales from '@/pages/Sales.vue'
+import { createPinia } from 'pinia'
 
 const routes = [
   { path: '/', alias:['/home'], component: Home },
@@ -49,7 +50,7 @@ const router = createRouter({
 
 
 
-const app = createApp(App)
+const app = createApp(App).use(createPinia())
 app
 .use(router)
 .use(PrimeVue)

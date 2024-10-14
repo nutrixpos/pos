@@ -192,7 +192,7 @@ const confirmFinish = (event) => {
 
 const finishOrder = () => {
 
-    axios.post("http://localhost:8000/api/finishorder",
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/finishorder`,
         {
             "order_id":props.order.id
         }
@@ -205,7 +205,7 @@ const finishOrder = () => {
 
 const startOrder =  () => {
 
-    axios.post("http://localhost:8000/api/startorder",
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/startorder`,
         {
             "order_id":props.order.id,
             "items" : items.value

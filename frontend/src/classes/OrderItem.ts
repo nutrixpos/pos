@@ -245,7 +245,7 @@ export class OrderItem {
 
 
     async RefreshProductData(){
-        await axios.get("http://localhost:8000/api/recipetree?id="+this.product.id).then((response) => {
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/recipetree?id=`+this.product.id).then((response) => {
 
             const materials : Material[] = []
             this.product = response.data
@@ -303,7 +303,7 @@ export class OrderItem {
 
 
     async UpdateMaterialEntryCost(materialIndex: number){
-        await axios.get(`http://localhost:8000/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
 
             this.materials[materialIndex].entry.cost = response.data
           
@@ -397,7 +397,7 @@ export class OrderItem {
 
 
     async ReloadDefaults() {
-        await axios.get("http://localhost:8000/api/recipetree?id="+this.product.id).then((response) => {
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/recipetree?id=`+this.product.id).then((response) => {
 
             const materials : Material[] = []
             const subrecipes: OrderItem[] = []
