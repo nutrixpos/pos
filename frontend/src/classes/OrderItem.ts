@@ -237,10 +237,17 @@ export class OrderItem {
         this.ready = orderItem.ready
         this.is_consume_from_ready = orderItem.is_consume_from_ready
         this.can_change_ready_toggle = orderItem.can_change_ready_toggle
-        this.sub_items = orderItem.sub_items
+
+
+        orderItem.sub_items.forEach(sub_item => {
+            const new_sub_item = new OrderItem()
+            new_sub_item.FromItemData(sub_item)
+            this.sub_items.push(new_sub_item)
+        })
+
         this.comment = orderItem.comment
         this.quantity = orderItem.quantity
-        this.price = orderItem.price
+        this.price = orderItem.price ? orderItem.price : orderItem.product.price
     }
 
 

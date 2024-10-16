@@ -1,13 +1,30 @@
 <template>
     <div class="flex flex-column m-2" style="height: 100%;">
-        <Menubar :model="items">
-            <template #item="{ item, props }">
-                <a v-ripple class="flex align-items-center" v-bind="props.action" :href="item.link">
-                    <span :class="item.icon" />
-                    <span class="ml-2">{{ item.label }}</span>
-                </a>
+        <Toolbar>
+            <template #start>
+                <router-link v-for="(item,index) in items" :key="index" :to="item.link" target="_blank" rel="noopener">
+                    <Button :icon="item.icon" :label="item.label"  text severity="secondary" />
+                </router-link>
             </template>
+
+            <template #center>
+                <IconField iconPosition="left">
+                    <InputIcon>
+                        <i class="pi pi-search" />
+                    </InputIcon>
+                    <InputText placeholder="Search" />
+                </IconField>
+            </template>
+
             <template #end>
+                <Button  severity="secondary" size="large"  text rounded aria-label="Stashed" label="Stashed"  @click.stop="stashed_toggle">
+                    <span class="p-button-icon pi pi-bookmark"></span>
+                    <Badge :value="stashedOrders.length" class="p-badge-success"  />
+                </Button>
+                <OverlayPanel ref="stashed_orders_op" class="w-3" style="max-height:60vh;overflow-y: auto;">
+                    <h4 class="my-0 mx-2" style="color:#c2c2c2">Stashed Orders</h4>
+                    <StashedOrder :order="order" v-for="(order,index) in stashedOrders" :key="index" @back_to_checkout="BackStashedOrderToCheckout(index)" />
+                </OverlayPanel>
                 <Button  severity="secondary" size="large"  text rounded aria-label="Notifications" @click.stop="notifications_toggle">
                     <span class="p-button-icon pi pi-bell"></span>
                     <Badge :value="notifications_severity_counter[0]" class="p-badge-success"  />
@@ -16,11 +33,12 @@
                     <Badge :value="notifications_severity_counter[3]" class="p-badge-danger" />
                 </Button>
                 <OverlayPanel ref="notifications_op" class="w-3" style="max-height:60vh;overflow-y: auto;">
+                    <h4 class="my-0 mx-2" style="color:#c2c2c2">Notifications</h4>
                     <Button text label="Clear all" severity="secondary" @click="clearNotifications()"/>
                     <NotificationView :notification="notification" v-for="(notification,index) in notifications" :key="index" />
                 </OverlayPanel>
             </template>
-        </Menubar>
+        </Toolbar>
         <div class="grid" style="flex-grow:1;">
             <div class="col-2">
                 <Listbox  v-model="selectedCategory" :options="categories" optionLabel="name" class="w-full mt-2" filter>
@@ -59,7 +77,7 @@
                                 <p class="m-0">{{ item.comment }}</p>
                             </div>
                         </div>
-                        <div class="flex flex-column flex-wrap justify-content-between h-20rem">
+                        <div class="flex flex-column flex-wrap justify-content-between">
                             <div>
                                 <Divider />
                                 <div class="flex justify-content-between flex-wrap align-items-center">
@@ -82,6 +100,9 @@
                                     <p style="font-size:1.4rem">{{ total.toFixed(2) }} <span style="font-size:1rem">EGP</span></p>
                                 </div>
                             </div>
+                            <ButtonGroup class="mb-4">
+                                <Button icon="pi pi-bookmark" @click="stashOrder" severity="secondary" />
+                            </ButtonGroup>
                             <Button label="Checkout" :disabled="!is_order_valid" @click="goOrder" />
                         </div>
                     </div>
@@ -102,16 +123,19 @@
 </template>
 
 <script setup lang="ts">
-  import Menubar from 'primevue/menubar';
+  import Toolbar from 'primevue/toolbar';
   import Dialog from 'primevue/dialog';
   import Listbox from 'primevue/listbox';
   import Panel from 'primevue/panel';
   import InputText from 'primevue/inputtext';
+  import InputIcon from 'primevue/inputicon';
+  import IconField from 'primevue/iconfield';
   import Button from 'primevue/button';
   import { useToast } from "primevue/usetoast";
   import axios from 'axios'
   import OrderItemView from '@/components/OrderItemView.vue'
   import {OrderItem} from '@/classes/OrderItem'
+  import Order from '@/classes/Order'
   import Divider from 'primevue/divider';
   import Slider from 'primevue/slider';
   import Badge from 'primevue/badge'
@@ -119,6 +143,7 @@
   import OverlayPanel from 'primevue/overlaypanel';
   import { Notification} from '@/classes/Notification';
   import { ref,watch,computed } from "vue";
+  import StashedOrder from '@/components/StashedOrder.vue'
 
 
 
@@ -143,12 +168,100 @@ const idwithcomment = ref("")
 const visible = ref(false)
 const selectedCategory = ref();
 
+const stashedOrders = ref<Order[]>([])
+
 
 const notifications_op = ref();
+const stashed_orders_op = ref();
+
+
+const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
+
+    const order = stashedOrders.value[stashed_order_index]
+    let tmp_subtotal = 0
+
+
+    for (var index=0;index<order.items.length;index++){
+        const tmp_order_item = new OrderItem()
+        tmp_order_item.FromItemData(order.items[index])
+        await tmp_order_item.RefreshProductData()
+        tmp_order_item.price = order.items[index].product.price
+        tmp_subtotal+=order.items[index].price
+        order.items[index] = tmp_order_item
+    }
+
+
+    subtotal.value = tmp_subtotal
+    discount_percent.value =  isNaN(order.discount * 100 / tmp_subtotal) ? 0 : order.discount * 100 / tmp_subtotal
+    orderItems.value = order.items
+
+
+    // discount.value = order.discount == null || order.discount == undefined ? 0 : order.discount
+
+
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/orderremovestash`,{
+        order_display_id:order.display_id
+    })
+    .then(()=>{
+        stashedOrders.value.splice(stashed_order_index,1)
+
+        stashed_orders_op.value.toggle()
+    })
+    .catch((err) => {
+        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+        stashed_orders_op.value.toggle()
+    })
+
+
+}
+
+
 const notifications_toggle = (event: any) => {
     notifications_op.value.toggle(event);
 }
+
+const stashed_toggle = (event: any) => {
+    stashed_orders_op.value.toggle(event);
+}
+
 const notifications = ref<Notification[]>([])
+
+
+const stashOrder = () => {
+
+    const order = new Order()
+    order.items = orderItems.value
+    order.discount = discount.value == null ? 0 : discount.value
+
+
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/orderstash`,{
+        order:order
+    }).then(async (response) => {
+        orderItems.value=[]
+        discount.value = 0
+        discount_percent.value = 0
+        total.value =0
+        subtotal.value = 0
+
+
+        console.log(response)
+
+
+        for (var index=0;index<response.data.order.items.length;index++){
+            const temp_order_item = new OrderItem()
+            temp_order_item.FromItemData(response.data.order.items[index])
+            await temp_order_item.RefreshProductData()
+            temp_order_item.ValidateItem()
+            response.data.order.items[index] = temp_order_item
+        }
+
+        
+        stashedOrders.value.push(response.data.order)
+        toast.add({severity:'success', summary: `Order ${order.display_id} stashed successfully !`, detail: "successfully stashed order !", life: 3000,group:'br'});
+    }).catch((err) => {
+        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+    })
+}
 
 
 const clearNotifications = () => {
@@ -330,6 +443,7 @@ watch(discount, (new_discount) => {
       isUpdatingDiscountPercent.value = false
   }
 })
+
 watch(discount_percent, (new_discount_percent) => {
  if (!isUpdatingDiscount.value){
     isUpdatingDiscountPercent.value = true

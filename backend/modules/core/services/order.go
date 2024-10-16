@@ -25,6 +25,38 @@ type OrderService struct {
 	Settings config.Settings
 }
 
+func (os *OrderService) RemoveStashedOrder(stash_remove_request dto.OrderRemoveStashRequest) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("stashed_orders")
+	filter := bson.M{"display_id": stash_remove_request.OrderDisplayId}
+
+	_, err = collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.ItemCost, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -340,6 +372,42 @@ func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 
 	return orders, nil
 
+}
+
+func (os *OrderService) StashOrder(order_stash_request dto.OrderStashRequest) (models.Order, error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return order_stash_request.Order, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return order_stash_request.Order, err
+	}
+
+	// Connected successfully
+
+	order_stash_request.Order.DisplayId, err = os.GetOrderDisplayId()
+	if err != nil {
+		return order_stash_request.Order, err
+	}
+
+	collection := client.Database("waha").Collection("stashed_orders")
+	_, err = collection.InsertOne(ctx, order_stash_request.Order)
+	if err != nil {
+		return order_stash_request.Order, err
+	}
+
+	return order_stash_request.Order, err
 }
 
 func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
