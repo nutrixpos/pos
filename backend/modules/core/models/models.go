@@ -65,6 +65,7 @@ type OrderItemMaterial struct {
 type OrderItem struct {
 	Id                 string              `json:"id" bson:"id"`
 	Product            Product             `json:"product"`
+	Price              float64             `json:"price" bson:"price"`
 	Materials          []OrderItemMaterial `json:"materials" bson:"materials"`
 	IsConsumeFromReady bool                `json:"is_consume_from_ready"`
 	SubItems           []OrderItem         `json:"sub_items" bson:"sub_items"`
