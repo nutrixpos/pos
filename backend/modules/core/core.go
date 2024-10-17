@@ -114,6 +114,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.I
 	router.Handle("/api/orders", handlers.GetOrders(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/orderstash", handlers.OrderStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/orderremovestash", handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle("/api/ordergetstashed", handlers.GetStashedOrders(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/submitorder", handlers.SubmitOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")

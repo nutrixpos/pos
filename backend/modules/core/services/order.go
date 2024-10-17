@@ -25,6 +25,51 @@ type OrderService struct {
 	Settings config.Settings
 }
 
+func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return stashed_orders, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return stashed_orders, err
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("stashed_orders")
+	cursor, err := collection.Find(context.Background(), bson.D{})
+	if err != nil {
+		return stashed_orders, err
+	}
+	defer cursor.Close(context.Background())
+
+	for cursor.Next(context.Background()) {
+		var order models.Order
+		if err := cursor.Decode(&order); err != nil {
+			return stashed_orders, err
+		}
+
+		stashed_orders = append(stashed_orders, order)
+	}
+
+	// Check for errors during iteration
+	if err := cursor.Err(); err != nil {
+		return stashed_orders, err
+	}
+
+	return stashed_orders, err
+}
+
 func (os *OrderService) RemoveStashedOrder(stash_remove_request dto.OrderRemoveStashRequest) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))

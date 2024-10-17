@@ -21,7 +21,7 @@
                     <span class="p-button-icon pi pi-bookmark"></span>
                     <Badge :value="stashedOrders.length" class="p-badge-success"  />
                 </Button>
-                <OverlayPanel ref="stashed_orders_op" class="w-3" style="max-height:60vh;overflow-y: auto;">
+                <OverlayPanel ref="stashed_orders_op" class="w-5 lg:w-3" style="max-height:60vh;overflow-y: auto;">
                     <h4 class="my-0 mx-2" style="color:#c2c2c2">Stashed Orders</h4>
                     <StashedOrder :order="order" v-for="(order,index) in stashedOrders" :key="index" @back_to_checkout="BackStashedOrderToCheckout(index)" />
                 </OverlayPanel>
@@ -227,6 +227,34 @@ const stashed_toggle = (event: any) => {
 const notifications = ref<Notification[]>([])
 
 
+const getStashedOrders = () => {
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/ordergetstashed`).then(async (response) => {
+
+        const dataCopy = JSON.parse(JSON.stringify(response.data))
+
+        for (var i=0;i<dataCopy.length;i++){
+
+            let order = new Order()
+            order = JSON.parse(JSON.stringify(dataCopy[i]))
+            order.items = []
+
+
+            for (var j=0;j<dataCopy[i].items.length;j++){
+
+                const item = new OrderItem()
+                item.FromItemData(dataCopy[i].items[j])
+
+                order.items.push(item)
+            }
+
+            stashedOrders.value.push(order)
+        }
+    }).catch((err) => {
+        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+    })
+}
+
+
 const stashOrder = () => {
 
     const order = new Order()
@@ -328,6 +356,7 @@ const startWebsocket = () => {
 
 const init = () => {
     startWebsocket()
+    getStashedOrders()
 }
 
 init()

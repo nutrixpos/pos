@@ -12,6 +12,45 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
+func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// an example API handler
+		header := w.Header()
+		header.Add("Access-Control-Allow-Origin", "*")
+		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
+		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		stashed_orders, err := orderService.GetStashedOrders()
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		jsonResponse, err := json.Marshal(stashed_orders)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Write the JSON to the response
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
+	}
+}
+
 func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
