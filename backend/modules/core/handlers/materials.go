@@ -11,7 +11,6 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
@@ -240,18 +239,12 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 			return
 		}
 
-		objectId, err := primitive.ObjectIDFromHex(componentEntryRequest.ComponentId)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err = materialService.PushMaterialEntry(objectId, componentEntryRequest.Entries)
+		err = materialService.PushMaterialEntry(componentEntryRequest.ComponentId, componentEntryRequest.Entries)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -391,7 +391,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 	return nil
 }
 
-func (cs *MaterialService) PushMaterialEntry(componentId primitive.ObjectID, entries []models.MaterialEntry) error {
+func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 

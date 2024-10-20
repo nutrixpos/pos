@@ -148,6 +148,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	tree.Name = recipe.Name
 	tree.Quantity = recipe.Quantity
 	tree.Price = recipe.Price
+	tree.Ready = recipe.Ready
 
 	return tree, nil
 }
@@ -343,8 +344,8 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 			}
 
 			recipeAvailability.RecipeId = recipe_id
-			recipeAvailability.Available += lowest_available + recipe.Quantity
-			recipeAvailability.Ready = recipe.Quantity
+			recipeAvailability.Available += lowest_available + recipe.Ready
+			recipeAvailability.Ready = recipe.Ready
 
 			availabilitiesChan <- recipeAvailability
 

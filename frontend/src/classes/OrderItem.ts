@@ -149,6 +149,7 @@ export class OrderItem {
             this.quantity = product.quantity
             this.price = product.price
             this.isValid = true;
+            this.ready = product.ready
 
             this.materials = product.materials.map( (material,index) => {
                 
@@ -172,7 +173,6 @@ export class OrderItem {
 
             })
 
-            this.ready = product.ready
 
             if (this.product.sub_products != undefined){
                 this.sub_items = product.sub_products.map((p) => {
@@ -195,7 +195,7 @@ export class OrderItem {
 
                     // allow user to edit the ready toggle and add enable the toggle so that it consumes from the ready quantity
                     this.is_consume_from_ready = false
-                    this.can_change_ready_toggle = false
+                    this.can_change_ready_toggle = true
 
                 }else {
                     this.can_change_ready_toggle = false
@@ -248,6 +248,25 @@ export class OrderItem {
         this.comment = orderItem.comment
         this.quantity = orderItem.quantity
         this.price = orderItem.price ? orderItem.price : orderItem.product.price
+
+        
+        if (this.quantity != undefined){
+            
+            if (this.ready >= this.quantity ){
+
+                // allow user to edit the ready toggle and add enable the toggle so that it consumes from the ready quantity
+                this.is_consume_from_ready = false
+                this.can_change_ready_toggle = true
+
+            }else {
+                this.can_change_ready_toggle = false
+                this.is_consume_from_ready = false
+            }
+        }else {
+            this.can_change_ready_toggle = false
+            this.is_consume_from_ready = false
+            this.quantity = 1
+        }
     }
 
 
@@ -410,6 +429,7 @@ export class OrderItem {
             const subrecipes: OrderItem[] = []
             this.product = response.data
             this.price = response.data.price
+            this.ready = response.data.ready
             this.sub_items = this.FillSubitems()
 
             response.data.materials.forEach((material: any) => {

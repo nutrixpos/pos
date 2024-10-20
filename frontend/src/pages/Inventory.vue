@@ -37,7 +37,7 @@
                                         <InputText class="m-1" placeholder="Company" v-model="new_entry_company" aria-describedby="name-help" />
                                         <InputText class="m-1" placeholder="Purchase Quantity" v-model="new_entry_quantity" aria-describedby="name-help" />
                                         <InputText class="m-1" placeholder="Purchase Price" v-model="new_entry_price" aria-describedby="name-help" />
-                                        <Button icon="pi pi-plus" label="Add Entry" @click="addNewEntry(slotProps.data._id)" severity="info" raised />
+                                        <Button icon="pi pi-plus" label="Add Entry" @click="addNewEntry(slotProps.data.id)" severity="info" raised />
                                     </div>
                                     <DataTable :value="slotProps.data.entries">
                                         <Column field="company" header="Company"></Column>

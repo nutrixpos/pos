@@ -108,7 +108,7 @@
                     </div>
                 </Panel>
             </div>
-            <Dialog v-model:visible="edit_item_dialog" modal header="Edit item" class="xs:w-12 lg:w-6">
+            <Dialog v-model:visible="edit_item_dialog" modal header="Edit item" class="xs:w-12 md:w-10 lg:w-8">
                 <OrderItemView v-model="orderItems[itemToEditIndex]"  />
             </Dialog>
             <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">

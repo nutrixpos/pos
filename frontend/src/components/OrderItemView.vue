@@ -4,13 +4,13 @@
         <div>
             x <InputText :disabled="!model.is_consume_from_ready" type="number" v-model.number="model.quantity"  size="small"/>
         </div>
-        <!-- <div class="flex align-items-center justify-content-center">
+        <div class="flex align-items-center justify-content-center">
             <span class="mx-2">From Ready</span>
             <InputSwitch v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
             <span class="mx-2">
                 <p style="font-size: 0.9rem;">{{model.ready}} Ready</p>
             </span>
-        </div> -->
+        </div>
     </div>
     <div v-if="!model.is_consume_from_ready">
         <Button label="Add Material" @click="new_component_dialog = true" />
@@ -42,7 +42,7 @@ import {defineModel,ref, watch,defineEmits} from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
-// import InputSwitch from 'primevue/inputswitch';
+import InputSwitch from 'primevue/inputswitch';
 import { Material, OrderItem,OrderItemMaterial } from '@/classes/OrderItem'
 import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
