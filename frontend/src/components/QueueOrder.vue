@@ -59,7 +59,7 @@
                         <OrderItemView v-model="items[index]" />
                         <div class="flex pt-4 justify-content-between">
                             <Button label="Back" severity="secondary" :disabled="currentItemIndex==0" icon="pi pi-arrow-left" @click="prevCallback" />
-                            <Button :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
+                            <Button :disabled="currentItemIndex == props.order.items.length-1 && !isValid" :label="currentItemIndex == props.order.items.length-1 ? 'Go' : 'Next'" :icon="currentItemIndex != props.order.items.length-1 ? 'pi pi-arrow-right' : ''" iconPos="right" @click="if (currentItemIndex == props.order.items.length-1) {startOrder(); visible=false;} else nextCallback()" />
                         </div>
                     </template>
                 </StepperPanel>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, defineProps, watch, defineEmits} from 'vue'
+import {ref, defineProps, watch, defineEmits, computed} from 'vue'
 
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -233,10 +233,30 @@ const prepareOrder = async () => {
         await item.RefreshReadyNumber()
         await item.FromItemData(props.order.items[i])// const item = new OrderItem(orderItem.product)
         await item.RefreshProductData()
+
+        item.materials.forEach((material,materialIndex) => {
+            item.ValidateMaterialQuantity(materialIndex)
+        })
+        
+
         items.value.push(item)
         visible.value = true  
     }
 }
+
+const isValid : boolean = computed(() => {
+
+    let valid = true
+
+
+    items.value.forEach((item)=>{
+        if(!item.isValid)
+            valid = false
+    })
+
+    return valid
+
+})
 
 
 const init = () => {

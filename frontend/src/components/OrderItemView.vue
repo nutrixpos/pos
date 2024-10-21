@@ -6,7 +6,7 @@
         </div>
         <div class="flex align-items-center justify-content-center">
             <span class="mx-2">From Ready</span>
-            <InputSwitch v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
+            <InputSwitch @change="model.ValidateItem()" v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
             <span class="mx-2">
                 <p style="font-size: 0.9rem;">{{model.ready}} Ready</p>
             </span>

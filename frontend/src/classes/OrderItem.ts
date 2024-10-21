@@ -360,6 +360,15 @@ export class OrderItem {
     ValidateItem(){
         let valid = true
 
+
+        if (this.is_consume_from_ready){
+            if (this.ready >= this.quantity){
+                this.isValid = valid
+                return
+            }
+        }
+
+
         this.materials.forEach((material) => {
             if (!material.isQuantityValid)
                 valid = false
@@ -390,11 +399,32 @@ export class OrderItem {
     ValidateMaterialQuantity(materialIndex: number){
 
         if (this.materials == undefined) {
+            this.isValid = false
             return
         }
 
+        let material_entry_exists_in_product = false
+
+        this.product.materials.forEach((material) => {
+            if (material.id == this.materials[materialIndex].material.id){
+                material.entries.forEach((entry) => {
+                    if (entry.id == this.materials[materialIndex].entry.id){
+                        material_entry_exists_in_product = true
+                    }
+                })
+            }
+        })
+
+        if (!material_entry_exists_in_product){
+            this.materials[materialIndex].isQuantityValid = false
+            this.ValidateItem()
+            return
+        }
+
+
         if (this.materials[materialIndex].entry == undefined){
             this.materials[materialIndex].isQuantityValid = false
+            this.ValidateItem()
             return
         }
 

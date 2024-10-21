@@ -398,6 +398,7 @@ const addItem = async (item) => {
     new_item.product.name = item.name
     new_item.product.id = item.id
     await new_item.ReloadDefaults()
+    new_item.ValidateItem()
 
 
     orderItems.value.push(new_item)
@@ -410,6 +411,7 @@ const addWithComment = async () => {
     new_item.comment = comment.value
     new_item.product.id = idwithcomment.value
     await new_item.ReloadDefaults()
+    new_item.ValidateItem()
 
     orderItems.value.push(new_item)
     visible.value=false
