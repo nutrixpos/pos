@@ -8,4 +8,5 @@ var (
 	ErrSeedingModule           = errors.New("error seeding module")
 	ErrTypeAssersionFailed     = errors.New("type assertion failed")
 	ErrInvalidObjectId         = errors.New("invalid object id")
+	ErrInsufficientReady       = errors.New("insufficient ready")
 )

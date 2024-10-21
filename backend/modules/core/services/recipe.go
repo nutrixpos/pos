@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/customerrors"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
@@ -19,6 +20,56 @@ import (
 type RecipeService struct {
 	Logger logger.ILogger
 	Config config.Config
+}
+
+func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+	var product models.Product
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": product_id}).Decode(&product)
+	if err != nil {
+		return err
+	}
+
+	ready := product.Ready
+
+	if ready < quantity {
+		return customerrors.ErrInsufficientReady
+	}
+
+	ready -= quantity
+
+	_, err = client.Database("waha").Collection("recipes").UpdateOne(
+		context.Background(),
+		bson.M{"id": product_id},
+		bson.M{
+			"$set": bson.M{"ready": ready},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderItem, error) {
@@ -153,9 +204,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	return tree, nil
 }
 
-//TODO - Continue
-
-func (rs *RecipeService) ConsumeRecipe(recipes_id string) (err error) {
+func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -178,7 +227,15 @@ func (rs *RecipeService) ConsumeRecipe(recipes_id string) (err error) {
 	// Connected successfully
 	rs.Logger.Info("Connected to MongoDB!")
 
-	return nil
+	var product models.Product
+	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&product)
+	if err != nil {
+		return ready, err
+	}
+
+	ready = product.Ready
+
+	return ready, nil
 }
 
 func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabilities []dto.RecipeAvailability, err error) {

@@ -24,10 +24,10 @@
                 <span class="ml-2 mt-2">{{ material.material.unit }}</span>
             </div>
             <Dropdown @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
-            Cost: {{ material.entry.cost * model.quantity }}
+            Cost: {{ material.entry?.cost * model.quantity }}
         </div>
     </div>
-    <div v-if="model.sub_items != null">
+    <div v-if="model.sub_items != null && !model.is_consume_from_ready">
         <div v-for="(subitem,index) in model.sub_items" :key="index" class="m-0">
             <OrderItemView @changed="validateItem()" v-model="model.sub_items[index]" />
         </div>
@@ -43,7 +43,7 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
 import InputSwitch from 'primevue/inputswitch';
-import { Material, OrderItem,OrderItemMaterial } from '@/classes/OrderItem'
+import { Material, OrderItem } from '@/classes/OrderItem'
 import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
 
@@ -92,9 +92,10 @@ const Init = async () => {
 }
 
 const updateEntriesCost = async () => {
-    await model.value.materials.forEach(async (material: OrderItemMaterial,index: number) => {
-        await model.value.UpdateMaterialEntryCost(index)
-    })
+
+    for (var i=0;i<model.value.materials.length;i++){
+        await model.value.UpdateMaterialEntryCost(i)
+    }
 }
 
 Init()

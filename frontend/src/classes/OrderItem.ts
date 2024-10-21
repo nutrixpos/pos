@@ -223,9 +223,12 @@ export class OrderItem {
     }
 
 
-    FromItemData(orderItem: OrderItem){
+    async FromItemData(orderItem: OrderItem){
 
-        this.Id = orderItem.Id
+        this.Id = orderItem.product.id
+        await this.RefreshReadyNumber()
+
+
         this.product = orderItem.product
         this.materials = orderItem.materials
 
@@ -234,16 +237,16 @@ export class OrderItem {
         })
 
 
-        this.ready = orderItem.ready
         this.is_consume_from_ready = orderItem.is_consume_from_ready
-        this.can_change_ready_toggle = orderItem.can_change_ready_toggle
+        // this.can_change_ready_toggle = orderItem.can_change_ready_toggle
 
 
-        orderItem.sub_items.forEach(sub_item => {
+        for (let i=0;i<orderItem.sub_items.length;i++){
             const new_sub_item = new OrderItem()
-            new_sub_item.FromItemData(sub_item)
+            await new_sub_item.FromItemData(orderItem.sub_items[i])
             this.sub_items.push(new_sub_item)
-        })
+        }
+
 
         this.comment = orderItem.comment
         this.quantity = orderItem.quantity
@@ -255,7 +258,6 @@ export class OrderItem {
             if (this.ready >= this.quantity ){
 
                 // allow user to edit the ready toggle and add enable the toggle so that it consumes from the ready quantity
-                this.is_consume_from_ready = false
                 this.can_change_ready_toggle = true
 
             }else {
@@ -267,6 +269,21 @@ export class OrderItem {
             this.is_consume_from_ready = false
             this.quantity = 1
         }
+    }
+
+
+    SetProductId(id: string){
+        this.Id = id
+        this.product.id = id
+    }
+
+    async RefreshReadyNumber(){
+
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/productgetready?id=`+this.Id).then((response) => { 
+
+            this.ready = response.data
+
+         })
     }
 
 
@@ -317,25 +334,27 @@ export class OrderItem {
 
             })
         })
-        
-        this.sub_items.forEach((sub_item,index) => {
-            const new_item = new OrderItem()
-            new_item.FromItemData(sub_item)
-            new_item.RefreshProductData();
 
-            this.sub_items[index] = new_item
-        })
+
+        for (let i=0;i<this.sub_items.length;i++){
+            const new_item = new OrderItem()
+            await new_item.FromItemData(this.sub_items[i])
+            await new_item.RefreshProductData();
+
+            this.sub_items[i] = new_item   
+        }
     }
 
 
     async UpdateMaterialEntryCost(materialIndex: number){
-        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
-
-            this.materials[materialIndex].entry.cost = response.data
-          
-        })
-        
-        this.ValidateMaterialQuantity(materialIndex)
+        if (this.materials[materialIndex].entry != undefined){
+            await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
+    
+                this.materials[materialIndex].entry.cost = response.data
+                this.ValidateMaterialQuantity(materialIndex)
+              
+            })
+        }
     }
 
     ValidateItem(){
@@ -431,6 +450,11 @@ export class OrderItem {
             this.price = response.data.price
             this.ready = response.data.ready
             this.sub_items = this.FillSubitems()
+            this.Id = response.data.id
+
+            if (this.ready >= this.quantity){
+                this.can_change_ready_toggle = true
+            }
 
             response.data.materials.forEach((material: any) => {
 

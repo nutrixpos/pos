@@ -125,6 +125,16 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 	// Connected successfully
 	cs.Logger.Info("Connected to MongoDB!")
 
+	productService := RecipeService{
+		Logger: cs.Logger,
+		Config: cs.Config,
+	}
+
+	if item.IsConsumeFromReady {
+		err = productService.ConsumeFromReady(item.Product.Id, item.Quantity)
+		return notifications, err
+	}
+
 	for _, component := range item.Materials {
 		if err != nil {
 			return notifications, err

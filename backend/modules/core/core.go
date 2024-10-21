@@ -119,6 +119,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.I
 	router.Handle("/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 	router.Handle("/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/recipetree", handlers.GetRecipeTree(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle("/api/productgetready", handlers.GetProductReadyNumber(cmb.Config, cmb.Logger)).Methods("GET")
 	router.Handle("/api/editmaterial", handlers.EditMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 
 	notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)

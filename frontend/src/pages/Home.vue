@@ -2,7 +2,7 @@
     <div class="flex flex-column m-2" style="height: 100%;">
         <Toolbar>
             <template #start>
-                <router-link v-for="(item,index) in items" :key="index" :to="item.link" target="_blank" rel="noopener">
+                <router-link v-for="(item,index) in items" :key="index" :to="item.link">
                     <Button :icon="item.icon" :label="item.label"  text severity="secondary" />
                 </router-link>
             </template>
@@ -183,7 +183,7 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
 
     for (var index=0;index<order.items.length;index++){
         const tmp_order_item = new OrderItem()
-        tmp_order_item.FromItemData(order.items[index])
+        await tmp_order_item.FromItemData(order.items[index])
         await tmp_order_item.RefreshProductData()
         tmp_order_item.price = order.items[index].product.price
         tmp_subtotal+=order.items[index].price
@@ -242,7 +242,7 @@ const getStashedOrders = () => {
             for (var j=0;j<dataCopy[i].items.length;j++){
 
                 const item = new OrderItem()
-                item.FromItemData(dataCopy[i].items[j])
+                await item.FromItemData(dataCopy[i].items[j])
 
                 order.items.push(item)
             }
@@ -277,7 +277,7 @@ const stashOrder = () => {
 
         for (var index=0;index<response.data.order.items.length;index++){
             const temp_order_item = new OrderItem()
-            temp_order_item.FromItemData(response.data.order.items[index])
+            await temp_order_item.FromItemData(response.data.order.items[index])
             await temp_order_item.RefreshProductData()
             temp_order_item.ValidateItem()
             response.data.order.items[index] = temp_order_item

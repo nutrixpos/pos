@@ -221,19 +221,21 @@ const startOrder =  () => {
 
 
 
-const prepareOrder = () => {
+const prepareOrder = async () => {
 
     currentItemIndex.value = 0
     items.value = []
 
 
-    props.order.items.forEach(async (orderItem: OrderItem) => {
+    for(var i=0;i<props.order.items.length;i++){
         const item = new OrderItem()
-        item.FromItemData(orderItem)// const item = new OrderItem(orderItem.product)
+        item.SetProductId(props.order.items[i].product.id)
+        await item.RefreshReadyNumber()
+        await item.FromItemData(props.order.items[i])// const item = new OrderItem(orderItem.product)
         await item.RefreshProductData()
         items.value.push(item)
-        visible.value = true
-    })
+        visible.value = true  
+    }
 }
 
 
