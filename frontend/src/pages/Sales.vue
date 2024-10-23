@@ -180,7 +180,7 @@ const setChartOptions = () => {
 
 
 const loadSales = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/sales_logs`)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/sales_logs`)
     .then(response => {
         var per_day_log = {}
         var product_sale_count = {}

@@ -192,7 +192,7 @@ const confirmFinish = (event) => {
 
 const finishOrder = () => {
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/finishorder`,
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/finishorder`,
         {
             "order_id":props.order.id
         }
@@ -205,7 +205,7 @@ const finishOrder = () => {
 
 const startOrder =  () => {
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/startorder`,
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/startorder`,
         {
             "order_id":props.order.id,
             "items" : items.value

@@ -99,28 +99,28 @@ func (c *Core) GetSeedables() (entities []string, err error) {
 	}, nil
 }
 
-func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.IModuleBuilder {
+func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix string) modules.IModuleBuilder {
 
-	router.Handle("/api/sales_logs", handlers.GetSalesLog(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/entry", handlers.DeleteEntry(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/materialentry", handlers.PushMaterialEntry(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/material", handlers.AddMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/order", handlers.GetOrder(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/materiallogs", handlers.GetMaterialLogs(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/materials", handlers.GetMaterials(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/materialcost", handlers.CalculateMaterialCost(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/categories", handlers.GetCategories(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/startorder", handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings)).Methods("POST", "OPTIONS")
-	router.Handle("/api/orders", handlers.GetOrders(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/orderstash", handlers.OrderStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/orderremovestash", handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/ordergetstashed", handlers.GetStashedOrders(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/submitorder", handlers.SubmitOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle("/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/recipetree", handlers.GetRecipeTree(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/productgetready", handlers.GetProductReadyNumber(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle("/api/editmaterial", handlers.EditMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/sales_logs", handlers.GetSalesLog(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/entry", handlers.DeleteEntry(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/materialentry", handlers.PushMaterialEntry(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/material", handlers.AddMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/order", handlers.GetOrder(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/materiallogs", handlers.GetMaterialLogs(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/materials", handlers.GetMaterials(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/materialcost", handlers.CalculateMaterialCost(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/categories", handlers.GetCategories(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/startorder", handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders", handlers.GetOrders(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/orderstash", handlers.OrderStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orderremovestash", handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/ordergetstashed", handlers.GetStashedOrders(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/submitorder", handlers.SubmitOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/recipetree", handlers.GetRecipeTree(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/productgetready", handlers.GetProductReadyNumber(cmb.Config, cmb.Logger)).Methods("GET")
+	router.Handle(prefix+"/api/editmaterial", handlers.EditMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
 
 	notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)
 	if err != nil {
@@ -128,7 +128,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router) modules.I
 		panic(err)
 	}
 
-	router.Handle("/ws", handlers.HandleNotificationsWsRequest(cmb.Config, cmb.Logger, notification_service))
+	router.Handle(prefix+"/ws", handlers.HandleNotificationsWsRequest(cmb.Config, cmb.Logger, notification_service))
 
 	return cmb
 }

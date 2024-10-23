@@ -14,7 +14,7 @@ type ModulesManager struct {
 }
 
 type IHttpModuleBuilder interface {
-	RegisterHttpHandlers(*mux.Router) IModuleBuilder
+	RegisterHttpHandlers(r *mux.Router, prefix string) IModuleBuilder
 }
 
 type IModuleBuilder interface {
@@ -37,7 +37,7 @@ func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger
 		manager.Modules = make(map[string]BaseModule)
 	}
 
-	msg := fmt.Sprintf("Registering module : %s", name)
+	msg := fmt.Sprintf(`Registering module : (%s) ...`, name)
 	logger.Info(msg)
 
 	if _, ok := manager.Modules[name]; ok {
@@ -48,13 +48,15 @@ func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger
 
 	if len(r) > 0 {
 		if m, ok := module_builder.(IHttpModuleBuilder); ok {
-			m.RegisterHttpHandlers(r[0])
+			m.RegisterHttpHandlers(r[0], "/"+name)
 		} else {
 			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
 		}
 	}
 
 	manager.Modules[name] = new_module_builder.Build()
+
+	logger.Info("Successfully registered module (" + name + ")")
 
 	return nil
 }

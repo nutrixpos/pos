@@ -199,7 +199,7 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
     // discount.value = order.discount == null || order.discount == undefined ? 0 : order.discount
 
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/orderremovestash`,{
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderremovestash`,{
         order_display_id:order.display_id
     })
     .then(()=>{
@@ -228,7 +228,7 @@ const notifications = ref<Notification[]>([])
 
 
 const getStashedOrders = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/ordergetstashed`).then(async (response) => {
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/ordergetstashed`).then(async (response) => {
 
         const dataCopy = JSON.parse(JSON.stringify(response.data))
 
@@ -262,7 +262,7 @@ const stashOrder = () => {
     order.discount = discount.value == null ? 0 : discount.value
 
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/orderstash`,{
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderstash`,{
         order:order
     }).then(async (response) => {
         orderItems.value=[]
@@ -300,7 +300,7 @@ let socket : WebSocket
 
 
 const startWebsocket = () => {
-    socket = new WebSocket(`ws://${process.env.VUE_APP_BACKEND_HOST}/ws`);
+    socket = new WebSocket(`ws://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/ws`);
     socket.onopen = () => {
         console.log("Opened ws connection");
         socket.send(`{"type":"subscribe","topic_name":"all"}`);
@@ -421,7 +421,7 @@ const addWithComment = async () => {
 
 
 const getCategories = async () => {
-    const response = await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/categories`)
+    const response = await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/categories`)
     categories.value = categories.value.concat(response.data)
     selectedCategory.value = categories.value[0]
 }
@@ -432,7 +432,7 @@ getCategories();
 const goOrder = () => {
 
     if (orderItems.value.length > 0){
-        axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/submitorder`,
+        axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/submitorder`,
             {
                 items:orderItems.value,
                 discount:discount.value, 
@@ -518,7 +518,7 @@ const refreshAvailabilities = () => {
         product_ids += index > 0 ? "," +product.id : product.id
     })
 
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/recipeavailability?ids=`+product_ids)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/recipeavailability?ids=`+product_ids)
     .then((response) => {
         products.value.forEach((product,index) => {
             products.value[index].availability = Math.round(response.data.filter((x) => x.recipe_id == product.id)[0].available * 100) / 100

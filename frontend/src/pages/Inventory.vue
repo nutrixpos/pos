@@ -199,7 +199,7 @@ const confirm = useConfirm();
 
 
   const saveMaterialSettings = () => {
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/editmaterial`, {
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/editmaterial`, {
         material: material_settings.value
     }).then(() => {
       toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000,group:'br'});
@@ -232,7 +232,7 @@ const confirm = useConfirm();
 
 
 
-            axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/entry?entry_id=${entry_id}&component_id=`+expanded_component_id.value)
+            axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/entry?entry_id=${entry_id}&component_id=`+expanded_component_id.value)
             .then(() => {
                     toast.add({ severity: 'success', summary: 'Done', detail: "Entry deleted !",life: 3000,group:'br' });
                     inventory_components.value.forEach((component) => {
@@ -257,7 +257,7 @@ const confirm = useConfirm();
                 "company": new_entry_company.value
             }
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materialentry`, {
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materialentry`, {
         component_id,
         entries: [
            newEntry
@@ -295,7 +295,7 @@ const confirm = useConfirm();
           })
       })
 
-      axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}/api/material`, {
+      axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/material`, {
         name: new_component_name.value,
         unit: new_component_unit.value,
         entries: entries,
@@ -308,7 +308,7 @@ const confirm = useConfirm();
 
 
   const onComponentLogRowExpand = (event) => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/order?id=`+event.data.order_id)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/order?id=`+event.data.order_id)
     .then((result)=>{
 
         component_logs.value.forEach((log) => {
@@ -325,7 +325,7 @@ const confirm = useConfirm();
 
 
   const loadComponentLogs = (component_id) => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materiallogs?id=`+component_id)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materiallogs?id=`+component_id)
     .then((result)=>{
         component_logs.value = result.data
         component_logs_dialog.value = true
@@ -335,7 +335,7 @@ const confirm = useConfirm();
 
 
   const loadInventory = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materials`)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materials`)
     .then((result)=>{
 
         result.data.forEach(component => {

@@ -279,7 +279,7 @@ export class OrderItem {
 
     async RefreshReadyNumber(){
 
-        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/productgetready?id=`+this.Id).then((response) => { 
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/productgetready?id=`+this.Id).then((response) => { 
 
             this.ready = response.data
 
@@ -288,7 +288,7 @@ export class OrderItem {
 
 
     async RefreshProductData(){
-        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/recipetree?id=`+this.product.id).then((response) => {
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/recipetree?id=`+this.product.id).then((response) => {
 
             const materials : Material[] = []
             this.product = response.data
@@ -348,7 +348,7 @@ export class OrderItem {
 
     async UpdateMaterialEntryCost(materialIndex: number){
         if (this.materials[materialIndex].entry != undefined){
-            await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
+            await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materialcost?material_id=${this.materials[materialIndex].material.id}&entry_id=${this.materials[materialIndex].entry.id}&quantity=${this.materials[materialIndex].quantity}`).then((response) => {
     
                 this.materials[materialIndex].entry.cost = response.data
                 this.ValidateMaterialQuantity(materialIndex)
@@ -472,7 +472,7 @@ export class OrderItem {
 
 
     async ReloadDefaults() {
-        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}/api/recipetree?id=`+this.product.id).then((response) => {
+        await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/recipetree?id=`+this.product.id).then((response) => {
 
             const materials : Material[] = []
             const subrecipes: OrderItem[] = []
