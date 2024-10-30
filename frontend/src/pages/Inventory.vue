@@ -156,8 +156,10 @@ import Tag from 'primevue/tag'
 import { Material } from '@/classes/OrderItem';
 // import Message from 'primevue/message'
   
-import { ref } from "vue";
+import { ref,getCurrentInstance } from "vue";
 import { useToast } from "primevue/usetoast";
+
+const { proxy } = getCurrentInstance();
 
 
 
@@ -201,6 +203,10 @@ const confirm = useConfirm();
   const saveMaterialSettings = () => {
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/editmaterial`, {
         material: material_settings.value
+    },{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
     }).then(() => {
       toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000,group:'br'});
       material_settings_dialog.value = false
@@ -232,7 +238,11 @@ const confirm = useConfirm();
 
 
 
-            axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/entry?entry_id=${entry_id}&component_id=`+expanded_component_id.value)
+            axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/entry?entry_id=${entry_id}&component_id=`+expanded_component_id.value,{
+                headers: {
+                    Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+                }
+            })
             .then(() => {
                     toast.add({ severity: 'success', summary: 'Done', detail: "Entry deleted !",life: 3000,group:'br' });
                     inventory_components.value.forEach((component) => {
@@ -262,6 +272,10 @@ const confirm = useConfirm();
         entries: [
            newEntry
         ]
+      },{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
       })
       .then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Entry saved successfully !', life: 3000,group:'br' });
@@ -299,6 +313,10 @@ const confirm = useConfirm();
         name: new_component_name.value,
         unit: new_component_unit.value,
         entries: entries,
+      },{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
       })
       .then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Component saved successfully !', life: 3000,group:'br' });
@@ -308,7 +326,11 @@ const confirm = useConfirm();
 
 
   const onComponentLogRowExpand = (event) => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/order?id=`+event.data.order_id)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/order?id=`+event.data.order_id,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then((result)=>{
 
         component_logs.value.forEach((log) => {
@@ -325,7 +347,11 @@ const confirm = useConfirm();
 
 
   const loadComponentLogs = (component_id) => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materiallogs?id=`+component_id)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materiallogs?id=`+component_id,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then((result)=>{
         component_logs.value = result.data
         component_logs_dialog.value = true
@@ -335,7 +361,11 @@ const confirm = useConfirm();
 
 
   const loadInventory = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materials`)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materials`,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then((result)=>{
 
         result.data.forEach(component => {

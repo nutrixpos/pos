@@ -13,17 +13,6 @@ func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
 		categoryService := services.CategoryService{
 			Logger: logger,
 			Config: config,

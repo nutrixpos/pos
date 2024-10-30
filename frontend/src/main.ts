@@ -10,8 +10,6 @@ import 'primeicons/primeicons.css'
 
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-// import { library } from "@fortawesome/fontawesome-svg-core";
-import { fas } from '@fortawesome/free-solid-svg-icons';
 import ToastService from 'primevue/toastservice';
 import ConfirmationService from 'primevue/confirmationservice';
 
@@ -26,12 +24,27 @@ import {  createWebHistory, createRouter } from 'vue-router'
 import Home from '@/pages/Home.vue'
 import Kitchen from '@/pages/Kitchen.vue'
 import Admin from '@/pages/Admin.vue'
+import Login from '@/pages/Login.vue'
 import Inventory from '@/pages/Inventory.vue'
 import Sales from '@/pages/Sales.vue'
 import { createPinia } from 'pinia'
+import zitadelAuth from "@/services/zitadelAuth";
+
 
 const routes = [
-  { path: '/', alias:['/home'], component: Home },
+  { 
+    path: '/', alias:['/home'], 
+    meta: {
+      authName: zitadelAuth.oidcAuth.authName
+    },
+    component: () => {
+
+      if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("cashier") ) {
+        return Home 
+      }
+      return import('@/pages/NoAccessView.vue')
+    }
+  },
   { path: '/kitchen', component: Kitchen },
   { 
     path: '/admin', 
@@ -48,15 +61,29 @@ const router = createRouter({
   routes,
 })
 
+declare module 'vue' {
+  interface ComponentCustomProperties {
+      $zitadel: typeof zitadelAuth
+  }
+}
 
 
-const app = createApp(App).use(createPinia())
-app
-.use(router)
-.use(PrimeVue)
-.use(ToastService)
-.use(ConfirmationService)
-.component('fa', FontAwesomeIcon)
-.mount('#app')
+zitadelAuth.oidcAuth.useRouter(router)
+
+zitadelAuth.oidcAuth.startup().then(ok => {
+  if (ok) {
+        const app = createApp(App).use(createPinia())
+        app.config.globalProperties.$zitadel = zitadelAuth
+
+        app
+        .use(router)
+        .use(PrimeVue)
+        .use(ToastService)
+        .use(ConfirmationService)
+        .mount('#app')
+  } else {
+      console.error('Startup was not ok')
+  }
+})
 
  

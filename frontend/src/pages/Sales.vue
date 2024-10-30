@@ -59,9 +59,11 @@
 import DataTable from "primevue/datatable";
 import Column from 'primevue/column'
 import Chart from 'primevue/chart';
-import {ref} from 'vue'
+import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import SalesLogTableItems from '@/components/SalesLogTableItems.vue'
+
+const {proxy} = getCurrentInstance()
 
 const sales_log = ref([])
 const expandedSalesLogRows = ref([])
@@ -180,7 +182,11 @@ const setChartOptions = () => {
 
 
 const loadSales = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/sales_logs`)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/sales_logs`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then(response => {
         var per_day_log = {}
         var product_sale_count = {}

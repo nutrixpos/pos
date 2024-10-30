@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref,defineEmits} from 'vue'
+import {ref,defineEmits,getCurrentInstance} from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext';
 import InputIcon from 'primevue/inputicon'
@@ -36,6 +36,7 @@ import Column from 'primevue/column';
 import axios from 'axios'
 import { FilterMatchMode } from 'primevue/api';
 import { Material, MaterialEntry } from '@/classes/OrderItem';
+const { proxy } = getCurrentInstance();
 
 
 const materials = ref([])
@@ -56,7 +57,11 @@ const returnMaterial = (material: Material) => {
 
 const GetMaterials = () => {
     loading.value = true
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materials`)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materials`,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then((response) => {
 
         

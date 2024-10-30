@@ -86,6 +86,9 @@ import ConfirmPopup from 'primevue/confirmpopup';
 import { useToast } from "primevue/usetoast";
 import OrderItemView from "./OrderItemView.vue";
 import {OrderItem, Product} from '@/classes/OrderItem'
+import {getCurrentInstance} from 'vue'
+
+const { proxy } = getCurrentInstance();
 
 
 const toast = useToast();
@@ -195,6 +198,11 @@ const finishOrder = () => {
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/finishorder`,
         {
             "order_id":props.order.id
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+            }
         }
         ).then(() => {
             state.value = "finished"
@@ -209,6 +217,11 @@ const startOrder =  () => {
         {
             "order_id":props.order.id,
             "items" : items.value
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+            }
         }
         ).then((response) => {
             state.value = "in_progress"

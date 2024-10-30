@@ -15,11 +15,6 @@ import (
 
 func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 
 		// Retrieve the entry ID from the query string
 		entryIDStr := r.URL.Query().Get("entry_id")
@@ -64,16 +59,6 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		materialService := services.MaterialService{
 			Logger: logger,
@@ -103,17 +88,6 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		// Parse the request body into a DBComponent struct
 		var dbComponent models.Material
@@ -146,18 +120,6 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
 		// Retrieve the entry ID from the query string
 		entryIDStr := r.URL.Query().Get("entry_id")
 		componentIdStr := r.URL.Query().Get("component_id")
@@ -184,17 +146,6 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
 		var material_edit_request dto.MaterialEditRequest
 		err := json.NewDecoder(r.Body).Decode(&material_edit_request)
 		if err != nil {
@@ -220,17 +171,6 @@ func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc 
 func PushMaterialEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		var componentEntryRequest dto.RequestComponentEntryAdd
 		err := json.NewDecoder(r.Body).Decode(&componentEntryRequest)

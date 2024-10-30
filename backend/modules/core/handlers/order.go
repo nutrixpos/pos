@@ -15,16 +15,6 @@ import (
 func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		orderService := services.OrderService{
 			Logger: logger,
@@ -54,16 +44,6 @@ func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerF
 func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		decoder := json.NewDecoder(r.Body)
 		var order_remove_stash_request dto.OrderRemoveStashRequest
@@ -91,16 +71,6 @@ func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.Hand
 func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		decoder := json.NewDecoder(r.Body)
 		var order_stash_request dto.OrderStashRequest
@@ -143,16 +113,6 @@ func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		decoder := json.NewDecoder(r.Body)
 		var finish_order_request dto.FinishOrderRequest
@@ -183,16 +143,6 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		decoder := json.NewDecoder(r.Body)
 		var order models.Order
@@ -224,16 +174,6 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		orderService := services.OrderService{
 			Logger: logger,
@@ -261,16 +201,6 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 func StartOrder(config config.Config, logger logger.ILogger, settings config.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		decoder := json.NewDecoder(r.Body)
 		var order_start_request dto.OrderStartRequest
@@ -316,17 +246,6 @@ func StartOrder(config config.Config, logger logger.ILogger, settings config.Set
 
 func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// an example API handler
-		header := w.Header()
-		header.Add("Access-Control-Allow-Origin", "*")
-		header.Add("Access-Control-Allow-Methods", "GET, OPTIONS")
-		header.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 
 		id := r.URL.Query().Get("id")
 		if id == "" {

@@ -37,6 +37,19 @@
                     <Button text label="Clear all" severity="secondary" @click="clearNotifications()"/>
                     <NotificationView :notification="notification" v-for="(notification,index) in notifications" :key="index" />
                 </OverlayPanel>
+                <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click.stop="user_profile_toggle">
+                    <span style="font-size:0.9rem;" class="mr-2">{{ user.name }}</span>
+                    <span class="p-button-icon pi pi-user"></span>
+                </Button>
+                <OverlayPanel ref="user_profile_op" class="lg:w-2 md:w-3">
+                    <div class="flex flex-column">
+                        <span>Welcome <strong>{{ user.name }}</strong></span>
+                        <div class="mt-2">
+                            <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                        </div>
+                        <Button class="mt-5" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" label="Signout" @click="proxy.$zitadel.oidcAuth.signOut()" />
+                    </div>
+                </OverlayPanel>
             </template>
         </Toolbar>
         <div class="grid" style="flex-grow:1;">
@@ -128,6 +141,7 @@
   import Listbox from 'primevue/listbox';
   import Panel from 'primevue/panel';
   import InputText from 'primevue/inputtext';
+  import Chip from 'primevue/chip';
   import InputIcon from 'primevue/inputicon';
   import IconField from 'primevue/iconfield';
   import Button from 'primevue/button';
@@ -142,8 +156,10 @@
   import NotificationView from '@/components/NotificationView.vue';
   import OverlayPanel from 'primevue/overlaypanel';
   import { Notification} from '@/classes/Notification';
-  import { ref,watch,computed } from "vue";
+  import { ref,watch,computed,getCurrentInstance  } from "vue";
   import StashedOrder from '@/components/StashedOrder.vue'
+
+  const { proxy } = getCurrentInstance();
 
 
 
@@ -173,6 +189,42 @@ const stashedOrders = ref<Order[]>([])
 
 const notifications_op = ref();
 const stashed_orders_op = ref();
+const user_profile_op = ref();
+
+
+const user : any = computed(() => {
+
+    return proxy.$zitadel.oidcAuth.userProfile
+
+})
+
+const claims : any = computed(() => {
+
+    if (user.value) { 
+        return Object.keys(user.value).map(key => ({
+          key,
+          value: user.value[key]
+        }))
+      }
+
+      return []
+
+})
+
+const roles : any = computed(()=>{
+    if (claims.value.length > 0){
+
+        for (var i=0;i<claims.value.length;i++){
+            if (claims.value[i].key == "urn:zitadel:iam:org:project:roles"){
+                return Object.keys(claims.value[i].value).map(key => {
+                    return key
+                })
+            }
+        }
+    }
+
+    return []
+})
 
 
 const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
@@ -200,6 +252,9 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
 
 
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderremovestash`,{
+        headers:{
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        },
         order_display_id:order.display_id
     })
     .then(()=>{
@@ -216,6 +271,10 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
 }
 
 
+const user_profile_toggle = (event: any) => {
+    user_profile_op.value.toggle(event);
+}
+
 const notifications_toggle = (event: any) => {
     notifications_op.value.toggle(event);
 }
@@ -228,7 +287,11 @@ const notifications = ref<Notification[]>([])
 
 
 const getStashedOrders = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/ordergetstashed`).then(async (response) => {
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/ordergetstashed`,{
+        headers:{
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    }).then(async (response) => {
 
         const dataCopy = JSON.parse(JSON.stringify(response.data))
 
@@ -263,6 +326,9 @@ const stashOrder = () => {
 
 
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderstash`,{
+        headers:{
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        },
         order:order
     }).then(async (response) => {
         orderItems.value=[]
@@ -357,6 +423,12 @@ const startWebsocket = () => {
 const init = () => {
     startWebsocket()
     getStashedOrders()
+
+    console.log("user:")
+    console.log(user.value)
+
+    console.log("claims:")
+    console.log(claims.value)
 }
 
 init()
@@ -421,7 +493,11 @@ const addWithComment = async () => {
 
 
 const getCategories = async () => {
-    const response = await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/categories`)
+    const response = await axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/categories`,{
+        headers:{
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     categories.value = categories.value.concat(response.data)
     selectedCategory.value = categories.value[0]
 }
@@ -436,7 +512,12 @@ const goOrder = () => {
             {
                 items:orderItems.value,
                 discount:discount.value, 
-            }
+            },
+            {
+                headers:{
+                    Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+                },
+            },
         ).then((response) => {
             console.log(response.data)
             toast.add({ severity: 'success', summary: 'Success', detail: 'Order in progress !', life: 3000,group:'br' });
@@ -518,7 +599,11 @@ const refreshAvailabilities = () => {
         product_ids += index > 0 ? "," +product.id : product.id
     })
 
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/recipeavailability?ids=`+product_ids)
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/recipeavailability?ids=`+product_ids,{
+        headers:{
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
     .then((response) => {
         products.value.forEach((product,index) => {
             products.value[index].availability = Math.round(response.data.filter((x) => x.recipe_id == product.id)[0].available * 100) / 100

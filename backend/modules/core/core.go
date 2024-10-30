@@ -5,7 +5,9 @@ import (
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/elmawardy/nutrix/modules"
+	auth_mw "github.com/elmawardy/nutrix/modules/auth/middlewares"
 	"github.com/elmawardy/nutrix/modules/core/handlers"
+	"github.com/elmawardy/nutrix/modules/core/middlewares"
 	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
 )
@@ -101,26 +103,28 @@ func (c *Core) GetSeedables() (entities []string, err error) {
 
 func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix string) modules.IModuleBuilder {
 
-	router.Handle(prefix+"/api/sales_logs", handlers.GetSalesLog(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/entry", handlers.DeleteEntry(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/materialentry", handlers.PushMaterialEntry(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/material", handlers.AddMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/order", handlers.GetOrder(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/materiallogs", handlers.GetMaterialLogs(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/materials", handlers.GetMaterials(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/materialcost", handlers.CalculateMaterialCost(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/categories", handlers.GetCategories(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/startorder", handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders", handlers.GetOrders(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/orderstash", handlers.OrderStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orderremovestash", handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/ordergetstashed", handlers.GetStashedOrders(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/submitorder", handlers.SubmitOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/finishorder", handlers.FinishOrder(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/recipeavailability", handlers.GetRecipeAvailability(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/recipetree", handlers.GetRecipeTree(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/productgetready", handlers.GetProductReadyNumber(cmb.Config, cmb.Logger)).Methods("GET")
-	router.Handle(prefix+"/api/editmaterial", handlers.EditMaterial(cmb.Config, cmb.Logger)).Methods("POST", "OPTIONS")
+	auth_svc := auth_mw.NewZitadelAuth(cmb.Config)
+
+	router.Handle(prefix+"/api/sales_logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesLog(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/entry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materialentry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/material", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/order", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materiallogs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materialcost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialCost(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET")
+	router.Handle(prefix+"/api/categories", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCategories(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/startorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrders(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/orderstash", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderStash(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orderremovestash", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/ordergetstashed", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetStashedOrders(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/submitorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.SubmitOrder(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/finishorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(cmb.Config, cmb.Logger), "admin", "chef"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/recipeavailability", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(cmb.Config, cmb.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/recipetree", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/productgetready", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProductReadyNumber(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/editmaterial", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
 
 	notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)
 	if err != nil {
