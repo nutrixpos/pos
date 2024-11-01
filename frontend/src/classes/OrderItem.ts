@@ -413,6 +413,16 @@ export class OrderItem {
         return valid
     }
 
+    ValidateAllMaterials(){
+        for (let i=0;i<this.materials.length;i++){
+            this.ValidateMaterialQuantity(i)
+        }
+
+        for (let i=0;i<this.sub_items.length;i++){
+            this.sub_items[i].ValidateAllMaterials()
+        }
+    }
+
     ValidateMaterialQuantity(materialIndex: number){
 
         if (this.materials == undefined) {

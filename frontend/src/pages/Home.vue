@@ -470,6 +470,7 @@ const addItem = async (item) => {
     new_item.product.name = item.name
     new_item.product.id = item.id
     await new_item.ReloadDefaults()
+    new_item.ValidateAllMaterials()
     new_item.ValidateItem()
 
 

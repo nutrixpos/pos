@@ -112,7 +112,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix st
 	router.Handle(prefix+"/api/order", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materiallogs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materialcost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialCost(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET")
+	router.Handle(prefix+"/api/materialcost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialCost(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/categories", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCategories(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/startorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.StartOrder(cmb.Config, cmb.Logger, cmb.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrders(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
