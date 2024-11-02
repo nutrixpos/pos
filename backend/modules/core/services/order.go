@@ -149,11 +149,8 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 
 			var component_with_specific_entry models.Material
 
-			component_id, _ := primitive.ObjectIDFromHex(component.Material.Id)
-			entry_id, _ := primitive.ObjectIDFromHex(component.Entry.Id)
-
 			err = client.Database("waha").Collection("materials").FindOne(
-				context.Background(), bson.M{"_id": component_id, "entries._id": entry_id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+				context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
 
 			if err == nil {
 				quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity)
@@ -268,6 +265,12 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	salesSvc := SalesService{Config: os.Config, Logger: os.Logger}
+	err = salesSvc.AddOrderToSalesDay(order, totalCost, totalSalePrice)
+	if err != nil {
+		return err
 	}
 
 	return err

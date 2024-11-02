@@ -24,6 +24,14 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v) // marshal result as standard float64
 }
 
+type SalesDay struct {
+	Id         string    `json:"id" bson:"id,omitempty"`
+	Date       time.Time `json:"date" bson:"date"`
+	Orders     []Order   `json:"orders" bson:"orders"`
+	Costs      float64   `json:"costs" bson:"costs"`
+	TotalSales float64   `json:"total_sales" bson:"total_sales"`
+}
+
 type ComponentConsumeLogs struct {
 	Id             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Date           time.Time          `json:"date" bson:"date"`
