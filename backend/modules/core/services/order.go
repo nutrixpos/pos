@@ -243,12 +243,16 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 	totalCost := 0.0
 	totalSalePrice := 0.0
 
-	recipes_cost, err := os.CalculateCost(order.Items)
+	items_cost, err := os.CalculateCost(order.Items)
 	if err != nil {
 		return err
 	}
 
-	for _, recipe_cost := range recipes_cost {
+	for index, recipe_cost := range items_cost {
+
+		order.Items[index].Cost = recipe_cost.Cost
+		order.Items[index].SalePrice = recipe_cost.SalePrice
+
 		totalCost += recipe_cost.Cost
 		totalSalePrice += recipe_cost.SalePrice
 	}
@@ -258,7 +262,7 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 		"date":          time.Now(),
 		"cost":          totalCost,
 		"sale_price":    totalSalePrice,
-		"items":         recipes_cost,
+		"items":         items_cost,
 		"order_id":      finish_order_request.Id,
 		"time_consumed": time.Since(order.SubmittedAt),
 	}
@@ -267,8 +271,11 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 		log.Fatal(err)
 	}
 
+	order.Cost = totalCost
+	order.SalePrice = totalSalePrice
+
 	salesSvc := SalesService{Config: os.Config, Logger: os.Logger}
-	err = salesSvc.AddOrderToSalesDay(order, totalCost, totalSalePrice)
+	err = salesSvc.AddOrderToSalesDay(order, items_cost)
 	if err != nil {
 		return err
 	}

@@ -24,12 +24,17 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v) // marshal result as standard float64
 }
 
-type SalesDay struct {
-	Id         string    `json:"id" bson:"id,omitempty"`
-	Date       time.Time `json:"date" bson:"date"`
-	Orders     []Order   `json:"orders" bson:"orders"`
-	Costs      float64   `json:"costs" bson:"costs"`
-	TotalSales float64   `json:"total_sales" bson:"total_sales"`
+type SalesPerDayOrder struct {
+	Order Order      `json:"order" bson:"order,inline"`
+	Costs []ItemCost `json:"costs" bson:"costs"`
+}
+
+type SalesPerDay struct {
+	Id         string             `json:"id" bson:"id,omitempty"`
+	Date       string             `json:"date" bson:"date"`
+	Orders     []SalesPerDayOrder `json:"orders" bson:"orders"`
+	Costs      float64            `json:"costs" bson:"costs"`
+	TotalSales float64            `json:"total_sales" bson:"total_sales"`
 }
 
 type ComponentConsumeLogs struct {
@@ -79,6 +84,8 @@ type OrderItem struct {
 	SubItems           []OrderItem         `json:"sub_items" bson:"sub_items"`
 	Quantity           float64             `json:"quantity" bson:"quantity"`
 	Comment            string              `json:"comment" bson:"comment"`
+	SalePrice          float64             `json:"sale_price" bson:"sale_price"`
+	Cost               float64             `json:"cost" bson:"cost"`
 }
 
 type Order struct {
@@ -90,6 +97,8 @@ type Order struct {
 	State       string      `json:"state" bson:"state"`
 	StartedAt   time.Time   `json:"started_at" bson:"started_at"`
 	Comment     string      `json:"comment" bson:"comment"`
+	Cost        float64     `json:"cost" bson:"cost"`
+	SalePrice   float64     `json:"sale_price" bson:"sale_price"`
 }
 
 type MaterialEntry struct {

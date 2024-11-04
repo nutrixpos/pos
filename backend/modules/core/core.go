@@ -106,6 +106,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix st
 	auth_svc := auth_mw.NewZitadelAuth(cmb.Config)
 
 	router.Handle(prefix+"/api/sales_logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesLog(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/salesperday", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesPerDay(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/entry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materialentry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/material", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")

@@ -20,29 +20,30 @@
                                     </div>
                                 </div>
                             </div>
-                            <DataTable v-model:expandedRows="expandedSalesLogRows" :value="sales_log" stripedRows tableStyle="min-width: 50rem" class="w-full pr-5">
+                            <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="salesTableTotalRecords" :loading="isSalesTableLoading" v-model:expandedRows="expandedSalesLogRows" paginatorPosition="both"  paginator :rows="salesTableRowsPerPage" :rowsPerPageOptions="[7, 14, 30, 90]" :value="sales_log" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
                                     <Column expander style="width: 5rem" />
                                     <Column sortable field="date" header="Date"></Column>
-                                    <Column sortable field="cost" header="Cost"></Column>
-                                    <Column sortable field="sales" header="Sales"></Column>
+                                    <Column sortable field="costs" header="Costs"></Column>
+                                    <Column sortable field="total_sales" header="Sales"></Column>
                                     <Column sortable field="profit" header="Profit">
                                         <template #body="slotProps">
-                                            <div :style="`${ (slotProps.data.sales - slotProps.data.cost) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.sales - slotProps.data.cost }}</div>
+                                            <div :style="`${ (slotProps.data.total_sales - slotProps.data.costs) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.total_sales - slotProps.data.costs }}</div>
                                         </template>
                                     </Column>
                                     <template #expansion="slotProps">
                                         <DataTable v-model:expandedRows="expandedSalesLogOrderItems" :value="slotProps.data.orders">
                                             <Column expander style="width: 5rem" />
-                                            <Column sortable field="date" header="Date"></Column>
-                                            <Column sortable field="cost" header="Cost"></Column>
-                                            <Column sortable field="sale_price" header="Sales"></Column>
+                                            <Column sortable field="order.display_id" header="Id"></Column>
+                                            <Column sortable field="order.submitted_at" header="Submitted At"></Column>
+                                            <Column sortable field="order.cost" header="Cost"></Column>
+                                            <Column sortable field="order.sale_price" header="Sales"></Column>
                                             <Column sortable field="profit" header="Profit">
                                                 <template #body="slotProps">
-                                                    <div :style="`${ (slotProps.data.sale_price - slotProps.data.cost) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.sale_price - slotProps.data.cost }}</div>
+                                                    <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.order.sale_price - slotProps.data.order.cost }}</div>
                                                 </template>
                                             </Column>
                                             <template #expansion="slotProps">
-                                                <SalesLogTableItems :items="slotProps.data.Items" />
+                                                <SalesLogTableItems :items="slotProps.data.costs" />
                                             </template>
                                         </DataTable>
                                     </template>
@@ -68,6 +69,9 @@ const {proxy} = getCurrentInstance()
 const sales_log = ref([])
 const expandedSalesLogRows = ref([])
 const expandedSalesLogOrderItems = ref([])
+const salesTableRowsPerPage = ref(7)
+const salesTableFirstIndex = ref(0)
+const salesTableTotalRecords = ref(0)
 
 
 const chartData = ref();
@@ -78,6 +82,8 @@ const chartLabels = ref([])
 const chartSales = ref([])
 const chartCost = ref([])
 
+const isSalesTableLoading = ref(true)
+
 
 
 
@@ -85,6 +91,13 @@ const productPiechartData = ref();
 const productPiechartOptions = ref();
 const productPieChartLabels = ref([])
 const productPieChartSales = ref([])
+
+
+const updatSalesTableRowsPerPage = (event) => {
+    const { first, rows } = event;
+    loadSales(first,rows)
+}
+
 
 const setProductPieChartData = () => {
     const documentStyle = getComputedStyle(document.body);
@@ -181,77 +194,70 @@ const setChartOptions = () => {
 }
 
 
-const loadSales = () => {
-    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/sales_logs`, {
+const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.value) => {
+
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/salesperday?first_index=${first}&rows=${rows}`, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
         }
     })
     .then(response => {
-        var per_day_log = {}
-        var product_sale_count = {}
+
+        let temp_sales_log = []
+        chartLabels.value = []
+        chartCost.value = []
+        chartSales.value = []
+        productPieChartLabels.value = []
+        productPieChartSales.value = []
+        isSalesTableLoading.value = true
+
+        salesTableTotalRecords.value = response.data.total_records
 
 
-        response.data.forEach((log) => {
+        for (let i=0;i<response.data.sales.length;i++){
+            chartLabels.value.push(response.data.sales[i].date)
+            temp_sales_log.push(response.data.sales[i])
+            chartSales.value.push(response.data.sales[i].total_sales)
+            chartCost.value.push(response.data.sales[i].costs)
 
-            const date = new Date(log.date);
-
-            // Get the date
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-
-
-            if (!per_day_log[`${year}-${month}-${day}`]){
-                per_day_log[`${year}-${month}-${day}`] = {
-                    cost: 0.0,
-                    sales: 0.0,
-                    orders: [],
-                    date: `${year}-${month}-${day}` 
-                }
-
-                chartLabels.value.push(`${year}-${month}-${day}`)
-            }
+            for (let j=0;j<response.data.sales[i].orders.length;j++){
 
 
-            log.Items.forEach((component) => {
-                if (!product_sale_count[component.ItemName]){
-                    product_sale_count[component.ItemName] = 0
+
+                for (let k=0;k<response.data.sales[i].orders[j].order.items.length;k++){
+
+                    if (!productPieChartLabels.value.includes(response.data.sales[i].orders[j].order.items[k].product.name)){
+                        productPieChartLabels.value.push(response.data.sales[i].orders[j].order.items[k].product.name)
+                        productPieChartSales.value.push(response.data.sales[i].orders[j].order.items[k].quantity)
+                    }else {
+
+                        let index = productPieChartLabels.value.indexOf(response.data.sales[i].orders[j].order.items[k].product.name)
+                        productPieChartSales.value[index] += response.data.sales[i].orders[j].order.items[k].quantity
+                    }   
                 }
                 
-                product_sale_count[component.ItemName]++;
-            })
-
-
-            per_day_log[`${year}-${month}-${day}`].orders.push(log)
-            per_day_log[`${year}-${month}-${day}`].cost += log.cost
-            per_day_log[`${year}-${month}-${day}`].sales += log.sale_price
-        })
-
-
-        for (var day in per_day_log){
-            sales_log.value.push(per_day_log[day])
-            chartSales.value.push(per_day_log[day].sales)
-            chartCost.value.push(per_day_log[day].cost)
+            }
         }
 
-        for (var product in product_sale_count){
-            productPieChartLabels.value.push(product)
-            productPieChartSales.value.push(product_sale_count[product])
-        }
+        sales_log.value = temp_sales_log
 
 
         chartData.value = setChartData();
         chartOptions.value = setChartOptions();
 
-        setTimeout(() => {            
-            productPiechartData.value = setProductPieChartData();
-            productPiechartOptions.value = setProductPieChartOptions();
-        }, 2000);
+
+        productPiechartData.value = setProductPieChartData();
+        productPiechartOptions.value = setProductPieChartOptions();
+
+
+
+        isSalesTableLoading.value = false
+
     })
     .catch(error => {
         console.log(error)
     })
+
 }
 
 loadSales()
