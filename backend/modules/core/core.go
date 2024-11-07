@@ -124,6 +124,10 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix st
 	router.Handle(prefix+"/api/finishorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(cmb.Config, cmb.Logger), "admin", "chef"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/recipeavailability", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(cmb.Config, cmb.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/recipetree", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/products", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProducts(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/addproduct", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InesrtNewProduct(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/deleteproduct", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteProduct(cmb.Config, cmb.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/updateproduct", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/productgetready", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProductReadyNumber(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/editmaterial", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
 

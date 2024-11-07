@@ -39,7 +39,8 @@ const list_items = ref([
     { 
         name: 'Admin', 
         items: [
-            { name: 'Inventory', icon:'inbox', link:'/admin/inventory' }
+            { name: 'Inventory', icon:'inbox', link:'/admin/inventory' },
+            { name: 'Products', icon:'barcode', link:'/admin/products' },
         ]
         
     },

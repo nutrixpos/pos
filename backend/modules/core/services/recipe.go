@@ -13,6 +13,7 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -20,6 +21,158 @@ import (
 type RecipeService struct {
 	Logger logger.ILogger
 	Config config.Config
+}
+
+func (rs *RecipeService) UpdateProduct(product models.Product) (err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database("waha").Collection("recipes")
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.M{"id": product.Id},
+		bson.M{
+			"$set": bson.M{
+				"name":         product.Name,
+				"materials":    product.Materials,
+				"sub_products": product.SubProducts,
+				"ready":        product.Ready,
+				"recipeId":     product.Id,
+				"price":        product.Price,
+			},
+		},
+	)
+
+	return err
+}
+
+func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database("waha").Collection("recipes")
+	_, err = collection.DeleteOne(ctx, bson.M{"id": product_id})
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+func (rs *RecipeService) InsertNew(product models.Product) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database("waha").Collection("recipes")
+
+	product.Id = primitive.NewObjectID().Hex()
+
+	_, err = collection.InsertOne(ctx, product)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (rs *RecipeService) GetProducts(first_index int, rows int) (products []models.Product, totalRecords int64, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		rs.Logger.Error(err.Error())
+		return products, totalRecords, err
+	}
+
+	collection := client.Database("waha").Collection("recipes")
+	findOptions := options.Find()
+	findOptions.SetSort(bson.M{"name": 1})
+	findOptions.SetSkip(int64(first_index))
+	findOptions.SetLimit(int64(rows))
+
+	totalRecords, err = collection.CountDocuments(ctx, bson.D{})
+	if err != nil {
+		rs.Logger.Error(err.Error())
+		return products, totalRecords, err
+	}
+
+	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
+	if err != nil {
+		rs.Logger.Error(err.Error())
+		return products, totalRecords, err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(context.Background()) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return products, totalRecords, err
+		}
+
+		for index, sub_product := range product.SubProducts {
+
+			err = collection.FindOne(ctx, bson.M{"id": sub_product.Id}, options.FindOne()).Decode(&sub_product)
+			if err != nil {
+				return products, totalRecords, err
+			}
+			product.SubProducts[index].Name = sub_product.Name
+		}
+
+		products = append(products, product)
+	}
+
+	return products, totalRecords, err
 }
 
 func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) error {
