@@ -157,8 +157,8 @@ func (s *Seeder) SeedCategories() error {
 
 	categories := []models.Category{
 		{
-			Name:    "CategorySeeded",
-			Recipes: []string{},
+			Name:     "CategorySeeded",
+			Products: []models.CategoryProduct{},
 		},
 	}
 
@@ -229,14 +229,18 @@ func (s *Seeder) SeedCategories() error {
 				}
 
 				for index := range categories {
-					categories[index].Recipes = append(categories[index].Recipes, product.Id)
+					categories[index].Products = append(categories[index].Products, models.CategoryProduct{
+						Id: product.Id,
+					})
 				}
 			}
 		} else if err != nil {
 			return err
 		} else {
 			for index := range categories {
-				categories[index].Recipes = append(categories[index].Recipes, product.Id)
+				categories[index].Products = append(categories[index].Products, models.CategoryProduct{
+					Id: product.Id,
+				})
 			}
 		}
 
@@ -278,7 +282,9 @@ func (s *Seeder) SeedCategories() error {
 				}
 
 				for index := range categories {
-					categories[index].Recipes = append(categories[index].Recipes, product.Id)
+					categories[index].Products = append(categories[index].Products, models.CategoryProduct{
+						Id: product.Id,
+					})
 				}
 			}
 
@@ -286,7 +292,9 @@ func (s *Seeder) SeedCategories() error {
 			return err
 		} else {
 			for index := range categories {
-				categories[index].Recipes = append(categories[index].Recipes, product.Id)
+				categories[index].Products = append(categories[index].Products, models.CategoryProduct{
+					Id: product.Id,
+				})
 			}
 		}
 

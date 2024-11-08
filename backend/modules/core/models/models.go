@@ -48,9 +48,15 @@ type ComponentConsumeLogs struct {
 	OrderId        string             `json:"order_id" bson:"order_id"`
 }
 
+type CategoryProduct struct {
+	Id   string `json:"id" bson:"id"`
+	Name string `json:"name" bson:"name"`
+}
+
 type Category struct {
-	Name    string   `json:"name"`
-	Recipes []string `json:"recipes"`
+	Id       string            `json:"id" bson:"id"`
+	Name     string            `json:"name"`
+	Products []CategoryProduct `json:"products"` // product ids
 }
 
 type ItemCost struct {

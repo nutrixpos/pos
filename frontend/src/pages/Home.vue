@@ -57,7 +57,6 @@
                 <Listbox  v-model="selectedCategory" :options="categories" optionLabel="name" class="w-full mt-2" filter>
                     <template #option="slotProps">
                         <div class="flex align-items-center">
-                            <fa :icon="slotProps.option.icon" class="mr-2" />
                             <div>{{ slotProps.option.name }}</div>
                         </div>
                     </template>
@@ -262,8 +261,8 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
 
         stashed_orders_op.value.toggle()
     })
-    .catch((err) => {
-        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+    .catch(() => {
+        toast.add({severity:'error', summary: 'Failed to remove stashed order from db', detail: "", life: 3000,group:'br'});
         stashed_orders_op.value.toggle()
     })
 
@@ -312,8 +311,8 @@ const getStashedOrders = () => {
 
             stashedOrders.value.push(order)
         }
-    }).catch((err) => {
-        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+    }).catch(() => {
+        toast.add({severity:'error', summary: 'Failed to get stashed orders', detail: "", life: 3000,group:'br'});
     })
 }
 
@@ -352,8 +351,8 @@ const stashOrder = () => {
         
         stashedOrders.value.push(response.data.order)
         toast.add({severity:'success', summary: `Order ${order.display_id} stashed successfully !`, detail: "successfully stashed order !", life: 3000,group:'br'});
-    }).catch((err) => {
-        toast.add({severity:'error', summary: 'Error Stashing Item', detail: err.response.data.message, life: 3000,group:'br'});
+    }).catch( () => {
+        toast.add({severity:'error', summary: 'Error Stashing Item', detail: "", life: 3000,group:'br'});
     })
 }
 
@@ -499,7 +498,7 @@ const getCategories = async () => {
             Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
         }
     })
-    categories.value = categories.value.concat(response.data)
+    categories.value = categories.value.concat(response.data.categories)
     selectedCategory.value = categories.value[0]
 }
 
@@ -613,22 +612,10 @@ const refreshAvailabilities = () => {
 }
 
 
-// const showAllItems = () => {
-//     categories.value.forEach((category) => {
-//         if (category.recipes){
-//             category.recipes.forEach((recipe) => {
-//                 products.value.push({
-//                     name:recipe.Name
-//                 })
-//             })
-//         }
-//     })
-// }
-
 watch(selectedCategory, (category) => {
     if (category != null){
         products.value = []
-        category.recipes.forEach((recipe) => {
+        category.products.forEach((recipe) => {
             products.value.push({
                 id: recipe.id,
                 name:recipe.name,

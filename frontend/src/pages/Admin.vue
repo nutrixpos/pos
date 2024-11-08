@@ -41,6 +41,7 @@ const list_items = ref([
         items: [
             { name: 'Inventory', icon:'inbox', link:'/admin/inventory' },
             { name: 'Products', icon:'barcode', link:'/admin/products' },
+            { name: 'Categories', icon:'barcode', link:'/admin/categories' },
         ]
         
     },

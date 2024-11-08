@@ -27,6 +27,8 @@ type OrderService struct {
 
 func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err error) {
 
+	stashed_orders = make([]models.Order, 0)
+
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)

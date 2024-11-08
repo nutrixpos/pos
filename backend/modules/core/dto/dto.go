@@ -16,11 +16,6 @@ type OrderItem struct {
 	Components []HttpComponent `json:"components"`
 }
 
-type Category struct {
-	Name    string           `json:"name"`
-	Recipes []models.Product `json:"recipes"`
-}
-
 type OrderStartRequestIngredient struct {
 	ComponentId string  `json:"component_id" bson:"component_id"`
 	EntryId     string  `json:"entry_id" bson:"entry_id"`

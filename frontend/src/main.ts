@@ -28,6 +28,7 @@ import Login from '@/pages/Login.vue'
 import Inventory from '@/pages/Inventory.vue'
 import Sales from '@/pages/Sales.vue'
 import Products from '@/pages/Products.vue'
+import Categories from '@/pages/Categories.vue'
 import { createPinia } from 'pinia'
 import zitadelAuth from "@/services/zitadelAuth";
 
@@ -54,6 +55,7 @@ const routes = [
       {path: 'inventory', component: Inventory,},
       {path: 'sales', component: Sales,},
       {path: 'products', component: Products,},
+      {path: 'categories', component: Categories,},
     ],
   },
 ]
