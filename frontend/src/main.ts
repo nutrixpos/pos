@@ -47,10 +47,24 @@ const routes = [
       return import('@/pages/NoAccessView.vue')
     }
   },
-  { path: '/kitchen', component: Kitchen },
+  { 
+    path: '/kitchen', component: () => {
+
+      if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("chef")) {
+        return Kitchen
+      }
+      return import('@/pages/NoAccessView.vue')
+
+    } 
+  },
   { 
     path: '/admin', 
-    component: Admin,
+    component: () => {
+      if (zitadelAuth.hasRole("admin")) {
+        return Admin
+      }
+      return import('@/pages/NoAccessView.vue')
+    },
     children: [
       {path: 'inventory', component: Inventory,},
       {path: 'sales', component: Sales,},
