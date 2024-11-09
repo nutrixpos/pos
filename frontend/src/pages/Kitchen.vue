@@ -2,7 +2,7 @@
     <div>
         <h1 class="m-3">Kitchen</h1>
         <div class="flex flex-wrap">
-            <QueueOrder @openedDialog="openedDialogs++" @closedDialog="openedDialogs--" v-for="(order,index) in orders" :key="index" :order="order" :number="index+1" class="queue-order"/>
+            <QueueOrder @finished="orderFinished(index)" @openedDialog="openedDialogs++" @closedDialog="openedDialogs--" v-for="(order,index) in orders" :key="index" :order="order" :number="index+1" class="queue-order"/>
         </div>
     </div>
 </template>
@@ -17,6 +17,10 @@ const { proxy } = getCurrentInstance();
 
 const orders = ref([])
 const openedDialogs = ref(0)
+
+const orderFinished = (index) => {
+    orders.value.splice(index,1)
+}
 
 
 const loadOrders =  () => {

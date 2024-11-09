@@ -116,7 +116,7 @@ const props = defineProps(['order','number'])
 const timePassed = ref("")
 
 
-const emit = defineEmits(['openedDialog', 'closedDialog']);
+const emit = defineEmits(['openedDialog', 'closedDialog','finished']);
 
 watch(visible, (newVal) => {
   if (newVal){
@@ -182,12 +182,12 @@ const confirmFinish = (event) => {
         acceptProps: {
             label: 'Yes'
         },
-        accept: () => {
-            finishOrder();
+        accept: async () => {
+            await finishOrder();
             toast.add({ severity: 'success', summary: 'Order finished', detail: 'Good job 🎉', life: 3000,group:'br' });
         },
         reject: () => {
-            
+            toast.add({ severity: 'error', summary: 'Failed', detail: 'Failed finishing order !', life: 3000,group:'br' });  
         }
     });
 };
@@ -206,6 +206,7 @@ const finishOrder = () => {
         }
         ).then(() => {
             state.value = "finished"
+            emit('closedDialog');
         })
 }
 
