@@ -12,6 +12,32 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
+func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			http.Error(w, "id quert string is required", http.StatusBadRequest)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err := orderService.CancelOrder(id)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -188,8 +214,16 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
+		response := struct {
+			Orders       []models.Order `json:"orders"`
+			TotalRecords int            `json:"total_records"`
+		}{
+			Orders:       orders,
+			TotalRecords: len(orders),
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(orders); err != nil {
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

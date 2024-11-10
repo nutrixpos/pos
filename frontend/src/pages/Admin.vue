@@ -4,7 +4,7 @@
             <div class="col-12">
                 <Menubar :model="items">
                     <template #item="{ item, props }">
-                        <a v-ripple class="flex align-items-center" v-bind="props.action" :href="item.link">
+                        <a class="flex align-items-center" v-bind="props.action" :href="item.link">
                             <span :class="item.icon" />
                             <span class="ml-2">{{ item.label }}</span>
                         </a>
@@ -15,7 +15,6 @@
                 <Listbox  v-model="selected_list_item" :options="list_items" optionGroupLabel="name" optionGroupChildren="items" class="w-full mt-2">
                     <template #option="slotProps">
                         <RouterLink style="text-decoration: none;color: inherit" :to="slotProps.option.link" class="flex align-items-center">
-                            <fa :icon="slotProps.option.icon" class="mr-2" />
                             <div>{{ slotProps.option.name }}</div>
                         </RouterLink>
                     </template>
@@ -42,6 +41,7 @@ const list_items = ref([
             { name: 'Inventory', icon:'inbox', link:'/admin/inventory' },
             { name: 'Products', icon:'barcode', link:'/admin/products' },
             { name: 'Categories', icon:'barcode', link:'/admin/categories' },
+            { name: 'Orders', icon:'barcode', link:'/admin/orders' },
         ]
         
     },

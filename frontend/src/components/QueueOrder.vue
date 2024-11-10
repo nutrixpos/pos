@@ -1,6 +1,12 @@
 <template>
-    <div :style="`display:${state == 'finished' ? 'none' : 'block'}`">
-        <Card style="width: 20rem; overflow: hidden;">
+    <div :style="`display:${display};${state == 'cancelled' ? 'position:relative;' : ''}`">
+        <div v-if="state =='cancelled'" style="position:absolute;height:100%;width:100%;z-index:9" class="flex justify-content-center align-items-center">
+            <div class="flex flex-column justify-content-center align-items-center">
+                <span style="color:white;font-size:1.3rem;font-weight:800;text-decoration: line-through;background-color: rgb(0,119,255);">{{ props.order.display_id }}</span>
+                <h2 style="color:tomato;font-weight:800">CANCELLED</h2>
+            </div>
+        </div>
+        <Card :style="`width: 20rem; overflow: hidden;${state == 'cancelled' ? 'filter:grayscale(1) blur(0.2rem);' : ''}`">
             <template #header>
                 <!-- <h1 class="m-2">#{{props.number}}</h1> -->
                 <!-- 2024-06-20T14:31:39.946Z -->
@@ -100,8 +106,10 @@ const confirm = useConfirm();
 const product_details_visible= ref(false)
 const product_for_details = ref<Product>()
 
-const state = ref("pending")
 const started_at = ref("")
+
+
+const state = ref("pending")
 
 
 // const orderItemSelectedOptions = ref({})
@@ -117,6 +125,12 @@ const timePassed = ref("")
 
 
 const emit = defineEmits(['openedDialog', 'closedDialog','finished']);
+
+
+watch(props.order.state, (newVal) => {
+    state.value = newVal
+})
+
 
 watch(visible, (newVal) => {
   if (newVal){
@@ -205,8 +219,8 @@ const finishOrder = () => {
             }
         }
         ).then(() => {
-            state.value = "finished"
             emit('closedDialog');
+            state.value = 'finished'
         })
 }
 
@@ -225,8 +239,8 @@ const startOrder =  () => {
             }
         }
         ).then((response) => {
-            state.value = "in_progress"
             started_at.value = response.data.started_at
+            state.value = "in_progress"
         }).catch((error) => {
             toast.removeGroup('br')
             toast.add({ severity: 'error', summary: 'Error', detail: error.response.data.body, life: 5000,group:'br' });
@@ -258,6 +272,31 @@ const prepareOrder = async () => {
     }
 }
 
+
+const display : boolean = computed(() => {
+
+let valid = 'block'
+
+if (state.value == 'finished')
+    valid = 'none'
+
+if (state.value == 'cancelled'){
+    if (props.order.submitted_at) {
+        const submittedAt = moment(props.order.submitted_at);
+        const now = moment();
+        const duration = moment.duration(now.diff(submittedAt));
+        
+        if (duration.asHours() >= 1) {
+            valid = 'none'
+        }
+    }
+}
+
+
+return valid
+
+})
+
 const isValid : boolean = computed(() => {
 
     let valid = true
@@ -276,10 +315,11 @@ const isValid : boolean = computed(() => {
 const init = () => {
     if (props.order.started_at != null){
         started_at.value = props.order.started_at
-        state.value = props.order.state
 
         updateElapsedTime();
     }
+
+    state.value = props.order.state
 }
 
 

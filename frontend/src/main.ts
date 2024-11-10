@@ -24,13 +24,14 @@ import {  createWebHistory, createRouter } from 'vue-router'
 import Home from '@/pages/Home.vue'
 import Kitchen from '@/pages/Kitchen.vue'
 import Admin from '@/pages/Admin.vue'
-import Login from '@/pages/Login.vue'
 import Inventory from '@/pages/Inventory.vue'
 import Sales from '@/pages/Sales.vue'
 import Products from '@/pages/Products.vue'
 import Categories from '@/pages/Categories.vue'
+import Orders from '@/pages/Orders.vue'
 import { createPinia } from 'pinia'
 import zitadelAuth from "@/services/zitadelAuth";
+import Tooltip from 'primevue/tooltip';
 
 
 const routes = [
@@ -66,10 +67,15 @@ const routes = [
       return import('@/pages/NoAccessView.vue')
     },
     children: [
+      {
+        path: '',
+        redirect: { path: '/admin/inventory' }
+      },
       {path: 'inventory', component: Inventory,},
       {path: 'sales', component: Sales,},
       {path: 'products', component: Products,},
       {path: 'categories', component: Categories,},
+      {path: 'orders', component: Orders,},
     ],
   },
 ]
@@ -98,6 +104,7 @@ zitadelAuth.oidcAuth.startup().then(ok => {
         .use(PrimeVue)
         .use(ToastService)
         .use(ConfirmationService)
+        .directive('tooltip', Tooltip)
         .mount('#app')
   } else {
       console.error('Startup was not ok')

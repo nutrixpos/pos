@@ -96,7 +96,7 @@ type OrderItem struct {
 
 type Order struct {
 	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`
-	Id          string      `json:"id" bson:"_id,omitempty"`
+	Id          string      `json:"id" bson:"id,omitempty"`
 	DisplayId   string      `json:"display_id" bson:"display_id"`
 	Items       []OrderItem `json:"items" bson:"items"`
 	Discount    float64     `json:"discount" bson:"discount"`

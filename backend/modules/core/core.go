@@ -123,6 +123,7 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix st
 	router.Handle(prefix+"/api/orderstash", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderStash(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orderremovestash", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderRemoveFromStash(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/ordergetstashed", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetStashedOrders(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/ordercancel", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CancelOrder(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/submitorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.SubmitOrder(cmb.Config, cmb.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/finishorder", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(cmb.Config, cmb.Logger), "admin", "chef"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/recipeavailability", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(cmb.Config, cmb.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")

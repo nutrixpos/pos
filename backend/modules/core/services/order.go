@@ -25,6 +25,39 @@ type OrderService struct {
 	Settings config.Settings
 }
 
+func (os *OrderService) CancelOrder(order_id string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("orders")
+
+	filter := bson.M{"id": order_id}
+	update := bson.M{"$set": bson.M{"state": "cancelled"}}
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err error) {
 
 	stashed_orders = make([]models.Order, 0)
@@ -224,12 +257,8 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 	os.Logger.Info("Connected to MongoDB!")
 
 	collection := client.Database("waha").Collection("orders")
-	Id, err := primitive.ObjectIDFromHex(finish_order_request.Id)
-	if err != nil {
-		return err
-	}
 
-	filter := bson.M{"_id": Id}
+	filter := bson.M{"id": finish_order_request.Id}
 	update := bson.M{"$set": bson.M{"state": "finished"}}
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -371,6 +400,8 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 		"items":        order.Items,
 		"submitted_at": time.Now(),
 		"display_id":   order.DisplayId,
+		"id":           primitive.NewObjectID().Hex(),
+		"state":        "pending",
 	}
 	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order_data)
 	if err != nil {
@@ -491,12 +522,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 
 	var order models.Order
 
-	order_id, err := primitive.ObjectIDFromHex(order_start_request.Id)
-	if err != nil {
-		panic(err)
-	}
-
-	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"_id": order_id}).Decode(&order)
+	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"id": order_start_request.Id}).Decode(&order)
 	if err != nil {
 		return err
 	}
@@ -549,7 +575,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 		},
 	}
 
-	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"_id": order_id}, update)
+	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"id": order_start_request.Id}, update)
 	if err != nil {
 		return err
 	}

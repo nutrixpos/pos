@@ -30,15 +30,15 @@ const loadOrders =  () => {
         }
     })
     .then((result)=>{
-        orders.value = result.data
+        orders.value = result.data.orders
     })
 };
 
 
 setInterval(() => {
-    if (openedDialogs.value == 0)
+    if (openedDialogs.value <= 0)
         loadOrders()
-}, 3000);
+}, 5000);
 
 
 loadOrders()
