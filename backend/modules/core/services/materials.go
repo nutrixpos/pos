@@ -437,6 +437,7 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 			"quantity":          entry.Quantity,
 			"company":           entry.Company,
 			"sku":               entry.SKU,
+			"expiration_date":   entry.ExpirationDate,
 		}
 
 		update := bson.M{"$push": bson.M{"entries": entry_data}}

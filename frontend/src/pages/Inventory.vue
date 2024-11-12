@@ -37,13 +37,18 @@
                                         <InputText class="m-1" placeholder="Company" v-model="new_entry_company" aria-describedby="name-help" />
                                         <InputText class="m-1" placeholder="Purchase Quantity" v-model="new_entry_quantity" aria-describedby="name-help" />
                                         <InputText class="m-1" placeholder="Purchase Price" v-model="new_entry_price" aria-describedby="name-help" />
-                                        <Button icon="pi pi-plus" label="Add Entry" @click="addNewEntry(slotProps.data.id)" severity="info" raised />
+                                        <FloatLabel>
+                                            <Calendar inputId="new_entry_expiration_date" v-model="new_entry_expiration_date" showIcon />
+                                            <label for="new_entry_expiration_date">Expiration date</label>
+                                        </FloatLabel>
+                                        <Button icon="pi pi-plus" label="Add Entry" class="ml-2" @click="addNewEntry(slotProps.data.id)" severity="info" raised />
                                     </div>
                                     <DataTable :value="slotProps.data.entries">
                                         <Column field="company" header="Company"></Column>
                                         <Column field="quantity" header="Quantity" sortable></Column>
                                         <Column field="purchase_quantity" header="Purchase Quantity" sortable></Column>
                                         <Column field="purchase_price" header="Purchase Price" sortable></Column>
+                                        <Column field="expiration_date" header="Expiration date" sortable></Column>
                                         <Column header="Actions" style="width:30rem">
                                             <template #body="slotProps">
                                                 <ButtonGroup>
@@ -154,6 +159,8 @@ import { useConfirm } from "primevue/useconfirm";
 import ConfirmPopup from 'primevue/confirmpopup';
 import Tag from 'primevue/tag'
 import { Material } from '@/classes/OrderItem';
+import Calendar from 'primevue/calendar';
+import FloatLabel from 'primevue/floatlabel'
 // import Message from 'primevue/message'
   
 import { ref,getCurrentInstance } from "vue";
@@ -196,6 +203,7 @@ const confirm = useConfirm();
   const new_entry_company = ref("")
   const new_entry_quantity = ref("")
   const new_entry_price = ref("")
+  const new_entry_expiration_date = ref("")
 
   const expanded_component_id = ref("")
 
@@ -264,7 +272,8 @@ const confirm = useConfirm();
     var newEntry = {
                 "quantity": parseFloat(new_entry_quantity.value),
                 "purchase_price": parseFloat(new_entry_price.value),
-                "company": new_entry_company.value
+                "company": new_entry_company.value,
+                "expiration_date": new_entry_expiration_date.value
             }
 
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/materialentry`, {

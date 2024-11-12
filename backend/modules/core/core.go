@@ -1,6 +1,8 @@
 package core
 
 import (
+	"time"
+
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
@@ -28,10 +30,11 @@ type Core struct {
 }
 
 type CoreModuleBuilder struct {
-	Logger   logger.ILogger
-	Config   config.Config
-	Settings config.Settings
-	Prompter userio.Prompter
+	Logger          logger.ILogger
+	Config          config.Config
+	Settings        config.Settings
+	Prompter        userio.Prompter
+	NotificationSvc services.INotificationService
 }
 
 func (cmb *CoreModuleBuilder) SetLogger(logger logger.ILogger) modules.IModuleBuilder {
@@ -101,6 +104,29 @@ func (c *Core) GetSeedables() (entities []string, err error) {
 	}, nil
 }
 
+func (cmb *CoreModuleBuilder) RegisterBackgroundWorkers() []modules.Worker {
+
+	if cmb.NotificationSvc == nil {
+		notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)
+		if err != nil {
+			cmb.Logger.Error(err.Error())
+			panic(err)
+		}
+		cmb.NotificationSvc = notification_service
+	}
+
+	workers := []modules.Worker{
+		{
+			Interval: 1 * time.Hour,
+			Task: func() {
+				services.CheckExpirationDates(cmb.Logger, cmb.Config, cmb.NotificationSvc)
+			},
+		},
+	}
+
+	return workers
+}
+
 func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix string) modules.IModuleBuilder {
 
 	auth_svc := auth_mw.NewZitadelAuth(cmb.Config)
@@ -135,13 +161,16 @@ func (cmb *CoreModuleBuilder) RegisterHttpHandlers(router *mux.Router, prefix st
 	router.Handle(prefix+"/api/productgetready", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProductReadyNumber(cmb.Config, cmb.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/editmaterial", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(cmb.Config, cmb.Logger), "admin"))).Methods("POST", "OPTIONS")
 
-	notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)
-	if err != nil {
-		cmb.Logger.Error(err.Error())
-		panic(err)
+	if cmb.NotificationSvc == nil {
+		notification_service, err := services.SpawnNotificationService("melody", cmb.Logger, cmb.Config)
+		if err != nil {
+			cmb.Logger.Error(err.Error())
+			panic(err)
+		}
+		cmb.NotificationSvc = notification_service
 	}
 
-	router.Handle(prefix+"/ws", handlers.HandleNotificationsWsRequest(cmb.Config, cmb.Logger, notification_service))
+	router.Handle(prefix+"/ws", handlers.HandleNotificationsWsRequest(cmb.Config, cmb.Logger, cmb.NotificationSvc))
 
 	return cmb
 }

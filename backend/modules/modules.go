@@ -2,6 +2,7 @@ package modules
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/elmawardy/nutrix/common/customerrors"
 	"github.com/elmawardy/nutrix/common/logger"
@@ -13,8 +14,17 @@ type ModulesManager struct {
 	Modules map[string]BaseModule
 }
 
+type Worker struct {
+	Interval time.Duration
+	Task     func()
+}
+
 type IHttpModuleBuilder interface {
 	RegisterHttpHandlers(r *mux.Router, prefix string) IModuleBuilder
+}
+
+type IBackgroundWorkerBuilder interface {
+	RegisterBackgroundWorkers() []Worker
 }
 
 type IModuleBuilder interface {
@@ -32,6 +42,8 @@ type SeederModule interface {
 }
 
 func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger, module_builder IModuleBuilder, prompter userio.Prompter, r ...*mux.Router) error {
+
+	workers := make([]Worker, 0)
 
 	if manager.Modules == nil {
 		manager.Modules = make(map[string]BaseModule)
@@ -54,7 +66,20 @@ func (manager *ModulesManager) RegisterModule(name string, logger logger.ILogger
 		}
 	}
 
+	if m, ok := module_builder.(IBackgroundWorkerBuilder); ok {
+		workers = append(workers, m.RegisterBackgroundWorkers()...)
+	}
+
 	manager.Modules[name] = new_module_builder.Build()
+
+	if len(workers) > 0 {
+		bw_svc := &background_worker_svc{
+			Logger:  logger,
+			Workers: workers,
+		}
+
+		go bw_svc.Start()
+	}
 
 	logger.Info("Successfully registered module (" + name + ")")
 
