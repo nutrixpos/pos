@@ -17,6 +17,43 @@
             </template>
 
             <template #end>
+
+                <Button  severity="secondary" size="large"  text rounded aria-label="Stashed"  @click.stop="chats_toggle">
+                    <span class="p-button-icon pi pi-comments"></span>
+                    <Badge class="p-badge-danger" v-if="has_new_message"  />
+                </Button>
+                <OverlayPanel ref="chats_op" class="w-5 lg:w-4" style="max-height:90vh;overflow-y: auto;">
+                    <Panel header="Chats">
+
+                        <div style="height:40vh;overflow-y: auto;" ref="chat_container">                            
+                            <div v-for="(chat,index) in chats" :key="index">
+                                <Message severity="success" v-if="chat.user_sub != user.sub">
+                                    <template #container>
+                                        <div class="p-3 flex flex-column">
+                                            <strong>{{ chat.sender_name }}</strong>
+                                            <span class="pt-2 px-2">{{ chat.message }}</span>
+                                        </div>
+                                    </template>
+                                </Message>
+    
+                                <Message severity="info" v-if="chat.user_sub == user.sub">
+                                    <template #container>
+                                        <div class="p-3 flex flex-column">
+                                            <strong>{{ chat.sender_name }}</strong>
+                                            <span class="pt-2 px-2">{{ chat.message }}</span>
+                                        </div>
+                                    </template>
+                                </Message>
+                            </div>
+                        </div>
+
+                    </Panel>
+
+                    <InputGroup class="mt-2">
+                        <InputText v-model="chat_text" placeholder="Write message.." @keyup.enter="SendChatMessage(chat_text)" />
+                        <Button icon="pi pi-send" severity="info" @click="SendChatMessage(chat_text)" />
+                    </InputGroup>
+                </OverlayPanel>
                 <Button  severity="secondary" size="large"  text rounded aria-label="Stashed" label="Stashed"  @click.stop="stashed_toggle">
                     <span class="p-button-icon pi pi-bookmark"></span>
                     <Badge :value="stashedOrders.length" class="p-badge-success"  />
@@ -155,8 +192,11 @@
   import NotificationView from '@/components/NotificationView.vue';
   import OverlayPanel from 'primevue/overlaypanel';
   import { Notification} from '@/classes/Notification';
-  import { ref,watch,computed,getCurrentInstance  } from "vue";
+  import { ref,watch,computed,getCurrentInstance, nextTick, useTemplateRef  } from "vue";
   import StashedOrder from '@/components/StashedOrder.vue'
+  import InputGroup from 'primevue/inputgroup';
+  import Message from 'primevue/message'
+
 
   const { proxy } = getCurrentInstance();
 
@@ -168,6 +208,10 @@ const toast = useToast();
 const itemToEditIndex = ref(0)
 const edit_item_dialog = ref(false)
 const is_order_valid = ref(true)
+const chat_text = ref("")
+const chats = ref<any[]>([])
+const has_new_message = ref(false)
+const chat_container = useTemplateRef("chat_container")
 
 
 import MealCard from '@/components/MealCard.vue';
@@ -188,6 +232,7 @@ const stashedOrders = ref<Order[]>([])
 
 const notifications_op = ref();
 const stashed_orders_op = ref();
+const chats_op = ref();
 const user_profile_op = ref();
 
 
@@ -282,6 +327,16 @@ const stashed_toggle = (event: any) => {
     stashed_orders_op.value.toggle(event);
 }
 
+const chats_toggle = async (event: any) => {
+    has_new_message.value = false
+    chats_op.value.toggle(event);
+    await nextTick()
+
+    if (chat_container.value != null)
+        chat_container.value.scrollTop = chat_container.value?.scrollHeight
+
+}
+
 const notifications = ref<Notification[]>([])
 
 
@@ -364,6 +419,16 @@ const clearNotifications = () => {
 let socket : WebSocket
 
 
+const SendChatMessage = (msg: string) => {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(`{"type":"chat_message","message":"${msg}","sender_name":"${user.value.name}","user_sub":"${user.value.sub}","to":"*","date": "${new Date().toLocaleString()}"}`)
+    }else {
+        console.log("WS closed")
+    }
+    chat_text.value = ""
+}
+
+
 const startWebsocket = () => {
     socket = new WebSocket(`ws://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/ws`);
     socket.onopen = () => {
@@ -371,7 +436,7 @@ const startWebsocket = () => {
         socket.send(`{"type":"subscribe","topic_name":"all"}`);
     }
 
-    socket.onmessage = (event) => {
+    socket.onmessage = async (event) => {
         console.log("Received message: " + event.data);
 
         const data = JSON.parse(event.data);
@@ -399,6 +464,27 @@ const startWebsocket = () => {
                 toast.removeGroup('br')
                 toast.add({ severity: data.severity, summary: data.topic_name, detail: data.message, life: 30000,group:'br' });
             }
+        }
+
+        if (data.type == "chat_message") {
+
+            if (!chats_op.value?.visible) {
+                has_new_message.value = true
+            }
+
+            chats.value.push({
+                message:data.message,
+                sender_name: data.sender_name,
+                user_sub: data.user_sub,
+                date: data.date,
+            })
+
+
+            if (chat_container.value != null){
+                await nextTick()
+                chat_container.value.scrollTop = chat_container.value?.scrollHeight + 100
+            }
+            
         }
 
     }

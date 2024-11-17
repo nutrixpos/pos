@@ -142,6 +142,10 @@ func (ws *MelodyWebsocket) HandleMessages() {
 			}
 		}
 
+		if message.Type == "chat_message" {
+			ws.SendToTopic("chat_message", string(msg))
+		}
+
 	})
 }
 
