@@ -7,15 +7,6 @@
                 </router-link>
             </template>
 
-            <template #center>
-                <IconField iconPosition="left">
-                    <InputIcon>
-                        <i class="pi pi-search" />
-                    </InputIcon>
-                    <InputText placeholder="Search" />
-                </IconField>
-            </template>
-
             <template #end>
 
                 <Button  severity="secondary" size="large"  text rounded aria-label="Stashed"  @click.stop="chats_toggle">
@@ -178,8 +169,6 @@
   import Panel from 'primevue/panel';
   import InputText from 'primevue/inputtext';
   import Chip from 'primevue/chip';
-  import InputIcon from 'primevue/inputicon';
-  import IconField from 'primevue/iconfield';
   import Button from 'primevue/button';
   import { useToast } from "primevue/usetoast";
   import axios from 'axios'

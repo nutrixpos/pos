@@ -345,14 +345,9 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 
 	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
 
-	settings_obj_id, err := primitive.ObjectIDFromHex(settings.Id)
-	if err != nil {
-		return order_display_id, err
-	}
-
 	_, err = client.Database("waha").Collection("settings").UpdateOne(
 		ctx,
-		bson.M{"_id": settings_obj_id, "orders.queues.prefix": random_queue.Prefix},
+		bson.M{"id": settings.Id, "orders.queues.prefix": random_queue.Prefix},
 		bson.M{
 			"$inc": bson.M{
 				"orders.queues.$.next": 1,

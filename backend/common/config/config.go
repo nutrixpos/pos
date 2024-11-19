@@ -32,7 +32,7 @@ type IConfig interface {
 }
 
 type Settings struct {
-	Id        string `bson:"_id,omitempty" json:"id"`
+	Id        string `bson:"id,omitempty" json:"id"`
 	Inventory struct {
 		DefaultInventoryQuantityWarn float64 `json:"default_inventory_quantity_warn" bson:"default_inventory_quantity_warn"`
 	} `bson:"inventory" json:"inventory"`

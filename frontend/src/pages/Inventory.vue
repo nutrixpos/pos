@@ -25,7 +25,7 @@
                             <Column header="Actions" style="width:30rem">
                                 <template #body="slotProps">
                                     <ButtonGroup>
-                                        <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data._id)" severity="secondary" aria-label="Save"  />
+                                        <Button icon="pi pi-clock" label="History" @click="loadComponentLogs(slotProps.data.id)" severity="secondary" aria-label="Save"  />
                                         <Button icon="pi pi-cog" class="ml-2" severity="secondary" aria-label="Edit" @click="material_settings = slotProps.data; material_settings_dialog=true"  />
                                     </ButtonGroup>
                                 </template>
@@ -125,7 +125,7 @@
                             <h4>Order Items</h4>
                             <DataTable :value="slotProps.data.order.items" v-if="slotProps.data.order">
                                 <Column field="product.name" header="Name"></Column>
-                                <Column header="Ingredients">
+                                <Column header="Materials">
                                     <template #body="slotProps">
                                         <ul>
                                             <li v-for="(material,index) in slotProps.data.materials" :key="index">
@@ -254,8 +254,8 @@ const confirm = useConfirm();
             .then(() => {
                     toast.add({ severity: 'success', summary: 'Done', detail: "Entry deleted !",life: 3000,group:'br' });
                     inventory_components.value.forEach((component) => {
-                        if (component._id == expanded_component_id.value){
-                            component.entries.splice(component.entries.findIndex(el => el._id == entry_id), 1)
+                        if (component.id == expanded_component_id.value){
+                            component.entries.splice(component.entries.findIndex(el => el.id == entry_id), 1)
                         }
                     })
             })
@@ -290,7 +290,7 @@ const confirm = useConfirm();
         toast.add({ severity: 'success', summary: 'Success', detail: 'Entry saved successfully !', life: 3000,group:'br' });
 
         inventory_components.value.forEach((component) => {
-            if (component._id == component_id)
+            if (component.id == component_id)
             {
                 component.entries.push(newEntry)
             }
@@ -343,11 +343,8 @@ const confirm = useConfirm();
     .then((result)=>{
 
         component_logs.value.forEach((log) => {
-            if (log._id == event.data._id){
+            if (log.id == event.data.id){
                 log.order = result.data
-                log.order.items.forEach((_,index) => {
-                    log.order.items[index].ingredients = log.order.ingredients[index]
-                })
             }
         })
 

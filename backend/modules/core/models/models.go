@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"math"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type JSONFloat float64
@@ -38,14 +36,14 @@ type SalesPerDay struct {
 }
 
 type ComponentConsumeLogs struct {
-	Id             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Date           time.Time          `json:"date" bson:"date"`
-	Name           string             `json:"component_name" bson:"name"`
-	Quantity       float32            `json:"quantity" bson:"quantity"`
-	Company        string             `json:"company" bson:"company"`
-	ItemName       string             `json:"item_name" bson:"item_name"`
-	ItemOrderIndex uint               `json:"item_order_index" bson:"item_order_index"`
-	OrderId        string             `json:"order_id" bson:"order_id"`
+	Id             string    `json:"id,omitempty" bson:"id,omitempty"`
+	Date           time.Time `json:"date" bson:"date"`
+	Name           string    `json:"component_name" bson:"name"`
+	Quantity       float32   `json:"quantity" bson:"quantity"`
+	Company        string    `json:"company" bson:"company"`
+	ItemName       string    `json:"item_name" bson:"item_name"`
+	ItemOrderIndex uint      `json:"item_order_index" bson:"item_order_index"`
+	OrderId        string    `json:"order_id" bson:"order_id"`
 }
 
 type CategoryProduct struct {
@@ -131,7 +129,7 @@ type Material struct {
 }
 
 type ProductEntry struct {
-	Id               string  `json:"_id,omitempty" bson:"_id,omitempty"`
+	Id               string  `json:"id,omitempty" bson:"id,omitempty"`
 	PurchaseQuantity float32 `json:"purchase_quantity" bson:"purchase_quantity"`
 	PurchasePrice    float64 `json:"purchase_price"`
 	Quantity         float32 `json:"quantity"`
@@ -154,7 +152,7 @@ type Product struct {
 }
 
 type SalesLogs struct {
-	Id           string    `json:"_id" bson:"_id,omitempty"`
+	Id           string    `json:"id" bson:"id,omitempty"`
 	SalePrice    JSONFloat `json:"sale_price" bson:"sale_price"`
 	Items        []ItemCost
 	OrderId      string    `json:"order_id"`
