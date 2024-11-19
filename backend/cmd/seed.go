@@ -16,7 +16,7 @@ type SeedProcess struct {
 	Logger    logger.ILogger
 	Settings  config.Settings
 	Router    *mux.Router
-	Modules   map[string]modules.BaseModule
+	Modules   map[string]modules.IBaseModule
 	IsNewOnly bool
 }
 
@@ -41,13 +41,13 @@ func (sp *SeedProcess) GetCmd(prompter userio.Prompter) (*cobra.Command, error) 
 
 }
 
-func (sp *SeedProcess) Seed(mods map[string]modules.BaseModule, prompter userio.Prompter) error {
+func (sp *SeedProcess) Seed(mods map[string]modules.IBaseModule, prompter userio.Prompter) error {
 	sp.Logger.Info("Seeding database...")
 	seedable_modules_prompt_elements := []userio.PromptTreeElement{}
-	seedableModules := map[string]modules.SeederModule{}
+	seedableModules := map[string]modules.ISeederModule{}
 
 	for moduleName, module := range mods {
-		if seederModule, ok := module.(modules.SeederModule); ok {
+		if seederModule, ok := module.(modules.ISeederModule); ok {
 
 			seedable_module_prompt_element := userio.PromptTreeElement{
 				Title:       moduleName,

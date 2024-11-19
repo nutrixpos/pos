@@ -27,10 +27,20 @@ func main() {
 
 	router := mux.NewRouter()
 
-	modules_manager := modules.ModulesManager{}
-	modules_manager.RegisterModule("core", &logger, core.NewBuilder(conf, settings), prompter, router)
+	appmanager := modules.AppManager{
+		Logger: &logger,
+	}
 
-	modules, err := modules_manager.GetModules()
+	appmanager.LoadModule(&core.Core{
+		Logger:   &logger,
+		Config:   conf,
+		Prompter: prompter,
+		Settings: settings,
+	}, "core").RegisterHttpHandlers(router).RegisterBackgroundWorkers().Save()
+
+	appmanager.Ignite()
+
+	modules, err := appmanager.GetModules()
 	if err != nil {
 		logger.Error(err.Error())
 		panic(err)

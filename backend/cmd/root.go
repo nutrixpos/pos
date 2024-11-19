@@ -19,7 +19,7 @@ type RootProcess struct {
 	Settings config.Settings
 	cmd      *cobra.Command
 	Router   *mux.Router
-	Modules  map[string]modules.BaseModule
+	Modules  map[string]modules.IBaseModule
 	Prompter userio.Prompter
 }
 
