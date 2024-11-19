@@ -618,13 +618,7 @@ func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 	coll := client.Database("waha").Collection("orders")
 	var order models.Order
 
-	objID, err := primitive.ObjectIDFromHex(order_id)
-	if err != nil {
-		os.Logger.Error(err.Error())
-		return order, err
-	}
-
-	err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&order)
+	err = coll.FindOne(ctx, bson.M{"id": order_id}).Decode(&order)
 	if err != nil {
 		os.Logger.Error(err.Error())
 		return order, err
