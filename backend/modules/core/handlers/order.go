@@ -12,6 +12,68 @@ import (
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
+func PayUnpaidOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderId := r.URL.Query().Get("id")
+		if orderId == "" {
+			http.Error(w, "id query string is required", http.StatusBadRequest)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err := orderService.PayUnpaidOrder(orderId)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+
+}
+
+func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		unpaidOrders, err := orderService.GetUnpaidOrders()
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, "Failed to get unpaid orders", http.StatusInternalServerError)
+			return
+		}
+
+		response := struct {
+			Orders []models.Order `json:"orders"`
+		}{
+			Orders: unpaidOrders,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, "Failed to marshal unpaid orders response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +222,38 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		display_id, err := orderService.GetOrderDisplayId()
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		msg := models.WebsocketOrderFinishServerMessage{
+			OrderId: display_id,
+			WebsocketTopicServerMessage: models.WebsocketTopicServerMessage{
+				Type:      "topic_message",
+				TopicName: "order_finished",
+				Severity:  "info",
+			},
+		}
+
+		msgJson, err := json.Marshal(msg)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		notifications_svc, err := services.SpawnNotificationSingletonSvc("melody", logger, config)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		notifications_svc.SendToTopic("order_finished", string(msgJson))
 
 		w.WriteHeader(http.StatusOK)
 

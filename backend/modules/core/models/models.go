@@ -103,6 +103,8 @@ type Order struct {
 	Comment     string      `json:"comment" bson:"comment"`
 	Cost        float64     `json:"cost" bson:"cost"`
 	SalePrice   float64     `json:"sale_price" bson:"sale_price"`
+	IsPayLater  bool        `json:"is_pay_later" bson:"is_pay_later"`
+	IsPaid      bool        `json:"is_paid" bson:"is_paid"`
 }
 
 type MaterialEntry struct {

@@ -183,7 +183,8 @@ const startWebsocket = () => {
 
 
 const orderFinished = (index) => {
-    orders.value.splice(index,1)
+    if (orders.value.length > 0)
+        orders.value.splice(index,1)
 }
 
 
@@ -194,7 +195,11 @@ const loadOrders =  () => {
         }
     })
     .then((result)=>{
-        orders.value = result.data.orders
+        if (result.data.orders == null){
+            orders.value = []
+        }else {
+            orders.value = result.data.orders
+        }
     })
 };
 

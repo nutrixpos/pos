@@ -94,7 +94,7 @@ func (c *Core) GetSeedables() (entities []string, err error) {
 func (c *Core) RegisterBackgroundWorkers() []modules.Worker {
 
 	if c.NotificationSvc == nil {
-		notification_service, err := services.SpawnNotificationService("melody", c.Logger, c.Config)
+		notification_service, err := services.SpawnNotificationSingletonSvc("melody", c.Logger, c.Config)
 		if err != nil {
 			c.Logger.Error(err.Error())
 			panic(err)
@@ -124,6 +124,8 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/materialentry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/material", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/order", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/unpaidorders", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetUnpaidOrders(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/orderpayunpaid", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PayUnpaidOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materiallogs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materialcost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialCost(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
@@ -149,7 +151,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/editmaterial", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 
 	if c.NotificationSvc == nil {
-		notification_service, err := services.SpawnNotificationService("melody", c.Logger, c.Config)
+		notification_service, err := services.SpawnNotificationSingletonSvc("melody", c.Logger, c.Config)
 		if err != nil {
 			c.Logger.Error(err.Error())
 			panic(err)

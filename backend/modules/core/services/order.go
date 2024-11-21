@@ -25,6 +25,82 @@ type OrderService struct {
 	Settings config.Settings
 }
 
+func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("orders")
+
+	filter := bson.M{"id": order_id}
+	update := bson.M{"$set": bson.M{"is_paid": true}}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return
+}
+
+func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
+
+	orders = make([]models.Order, 0)
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("orders")
+
+	cursor, err := collection.Find(ctx, bson.M{"is_pay_later": true, "is_paid": false, "state": bson.M{"$not": bson.M{"$in": []string{"cancelled"}}}})
+	if err != nil {
+		return
+	}
+
+	for cursor.Next(ctx) {
+		var order models.Order
+		err = cursor.Decode(&order)
+		if err != nil {
+			return
+		}
+		orders = append(orders, order)
+	}
+
+	return
+}
+
 func (os *OrderService) CancelOrder(order_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -391,14 +467,30 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 		return err
 	}
 
-	order_data := bson.M{
-		"items":        order.Items,
-		"submitted_at": time.Now(),
-		"display_id":   order.DisplayId,
-		"id":           primitive.NewObjectID().Hex(),
-		"state":        "pending",
+	totalCost := 0.0
+	totalSalePrice := 0.0
+
+	items_cost, err := os.CalculateCost(order.Items)
+	if err != nil {
+		return err
 	}
-	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order_data)
+
+	for index, recipe_cost := range items_cost {
+
+		order.Items[index].Cost = recipe_cost.Cost
+		order.Items[index].SalePrice = recipe_cost.SalePrice
+
+		totalCost += recipe_cost.Cost
+		totalSalePrice += recipe_cost.SalePrice
+	}
+
+	order.SalePrice = totalSalePrice - order.Discount
+	order.Cost = totalCost
+	order.SubmittedAt = time.Now()
+	order.Id = primitive.NewObjectID().Hex()
+	order.State = "pending"
+
+	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order)
 	if err != nil {
 		return err
 	}
@@ -541,7 +633,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 		}
 
 		if len(refined_notifications) > 0 {
-			notificationService, err := SpawnNotificationService("melody", os.Logger, os.Config)
+			notificationService, err := SpawnNotificationSingletonSvc("melody", os.Logger, os.Config)
 			if err != nil {
 				return err
 			}

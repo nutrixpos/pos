@@ -9,6 +9,14 @@
 
             <template #end>
 
+                <Button  severity="secondary" size="large"  text rounded aria-label="PayLater" @click.stop="paylater_toggle">
+                    <span class="p-button-icon pi pi-hourglass"></span>
+                    <Badge :value="payLaterOrders.length" class="p-badge-warning"  />
+                </Button>
+                <OverlayPanel ref="paylater_orders_op" class="w-5 lg:w-3" style="max-height:60vh;overflow-y: auto;">
+                    <h4 class="my-0 mx-2" style="color:#c2c2c2">Paylater Orders</h4>
+                    <PayLaterOrder @order_paid="PayLaterOrderPaid(index)" :order="order" v-for="(order,index) in payLaterOrders" :key="index" />
+                </OverlayPanel>
                 <Button  severity="secondary" size="large"  text rounded aria-label="Stashed"  @click.stop="chats_toggle">
                     <span class="p-button-icon pi pi-comments"></span>
                     <Badge class="p-badge-danger" v-if="has_new_message"  />
@@ -17,24 +25,24 @@
                     <Panel header="Chats">
 
                         <div style="height:40vh;overflow-y: auto;" ref="chat_container">                            
-                            <div v-for="(chat,index) in chats" :key="index">
-                                <Message severity="success" v-if="chat.user_sub != user.sub">
-                                    <template #container>
-                                        <div class="p-3 flex flex-column">
+                            <div v-for="(chat,index) in chats" :key="index" :class="`flex ${chat.user_sub == user.sub ? 'justify-content-end' : ''}`">
+                                <InlineMessage severity="success" v-if="chat.user_sub != user.sub" class="mt-2">
+                                    <template #default>
+                                        <div class="px-3 flex flex-column">
                                             <strong>{{ chat.sender_name }}</strong>
                                             <span class="pt-2 px-2">{{ chat.message }}</span>
                                         </div>
                                     </template>
-                                </Message>
+                                </InlineMessage>
     
-                                <Message severity="info" v-if="chat.user_sub == user.sub">
-                                    <template #container>
-                                        <div class="p-3 flex flex-column">
+                                <InlineMessage severity="info" v-if="chat.user_sub == user.sub" class="mt-2">
+                                    <template #default>
+                                        <div class="px-3 flex flex-column">
                                             <strong>{{ chat.sender_name }}</strong>
                                             <span class="pt-2 px-2">{{ chat.message }}</span>
                                         </div>
                                     </template>
-                                </Message>
+                                </InlineMessage>
                             </div>
                         </div>
 
@@ -142,8 +150,9 @@
                             </div>
                             <ButtonGroup class="mb-4">
                                 <Button icon="pi pi-bookmark" @click="stashOrder" severity="secondary" />
+                                <Button class="ml-2" icon="pi pi-hourglass" @click="payLaterStart" severity="secondary" />
                             </ButtonGroup>
-                            <Button label="Checkout" :disabled="!is_order_valid" @click="goOrder" />
+                            <Button label="Checkout" :disabled="!is_order_valid" @click="goOrder()" />
                         </div>
                     </div>
                 </Panel>
@@ -183,8 +192,9 @@
   import { Notification} from '@/classes/Notification';
   import { ref,watch,computed,getCurrentInstance, nextTick, useTemplateRef  } from "vue";
   import StashedOrder from '@/components/StashedOrder.vue'
+  import PayLaterOrder from '@/components/PayLaterOrder.vue'
   import InputGroup from 'primevue/inputgroup';
-  import Message from 'primevue/message'
+  import InlineMessage from 'primevue/inlinemessage'
 
 
   const { proxy } = getCurrentInstance();
@@ -217,12 +227,13 @@ const visible = ref(false)
 const selectedCategory = ref();
 
 const stashedOrders = ref<Order[]>([])
-
+const payLaterOrders = ref<Order[]>([])
 
 const notifications_op = ref();
 const stashed_orders_op = ref();
 const chats_op = ref();
 const user_profile_op = ref();
+const paylater_orders_op = ref()
 
 
 const user : any = computed(() => {
@@ -230,6 +241,26 @@ const user : any = computed(() => {
     return proxy.$zitadel.oidcAuth.userProfile
 
 })
+
+
+const PayLaterOrderPaid = (index:number) => {
+    payLaterOrders.value.splice(index,1)
+}
+
+const payLaterStart = () => {
+    goOrder(true)
+}
+
+const getUnpaidOrders = () => {
+    axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/unpaidorders`,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        payLaterOrders.value = response.data.orders
+    })
+}
 
 const claims : any = computed(() => {
 
@@ -314,6 +345,10 @@ const notifications_toggle = (event: any) => {
 
 const stashed_toggle = (event: any) => {
     stashed_orders_op.value.toggle(event);
+}
+
+const paylater_toggle = (event: any) => {
+    paylater_orders_op.value.toggle(event);
 }
 
 const chats_toggle = async (event: any) => {
@@ -434,14 +469,17 @@ const startWebsocket = () => {
             if (data.topic_name == "order_finished"){
 
                 toast.removeGroup('br')
-                toast.add({ severity: 'success', summary: 'Order Finished', detail: `order with id ( ${data.order_id} ) finished and is ready to be served !`, life: 3000,group:'br' });
+                toast.add({ severity: 'success', summary: 'Order Finished', detail: `order ( ${data.order_id} ) finished and is ready to be served !`, life: 3000,group:'br' });
 
                 const notification = new Notification();
-                notification.description = `order with id #${data.order_id} finished and is ready to be served !`
+                notification.description = `order (${data.order_id}) finished and is ready to be served !`
                 notification.severity = "success"
                 notification.topic_name = "Order Finished"
                 notification.type = "topic_message"
                 notifications.value.push(notification);
+
+
+                getUnpaidOrders()
             }else {
                 const notification = new Notification();
                 notification.description = data.message
@@ -497,6 +535,7 @@ const startWebsocket = () => {
 const init = () => {
     startWebsocket()
     getStashedOrders()
+    getUnpaidOrders()
 
     console.log("user:")
     console.log(user.value)
@@ -580,14 +619,20 @@ const getCategories = async () => {
 getCategories();
 
 
-const goOrder = () => {
+const goOrder = (isPaylater:boolean = false) => {
+
+    let order : any =  {
+        items:orderItems.value,
+        discount:discount.value,
+    }
+
+    if (isPaylater) {
+        order.is_pay_later = true
+    }
 
     if (orderItems.value.length > 0){
         axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/submitorder`,
-            {
-                items:orderItems.value,
-                discount:discount.value, 
-            },
+            order,
             {
                 headers:{
                     Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
@@ -596,6 +641,10 @@ const goOrder = () => {
         ).then((response) => {
             console.log(response.data)
             toast.add({ severity: 'success', summary: 'Success', detail: 'Order in progress !', life: 3000,group:'br' });
+
+            if (isPaylater){
+                getUnpaidOrders()
+            }
         })
     
         orderItems.value = []

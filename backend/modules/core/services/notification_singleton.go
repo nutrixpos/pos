@@ -163,7 +163,7 @@ func (ws *MelodyWebsocket) GetTopic(topic_name string) (topic models.Topic, inde
 var melody_ws *MelodyWebsocket
 var once sync.Once
 
-func SpawnNotificationService(name string, logger logger.ILogger, config config.Config) (INotificationService, error) {
+func SpawnNotificationSingletonSvc(name string, logger logger.ILogger, config config.Config) (INotificationService, error) {
 
 	switch name {
 	case "melody":
