@@ -101,7 +101,7 @@
                             </div>
                             <div class="flex flex-column gap-2 w-5 mt-2">
                                 <label for="name">Ready Quantity</label>
-                                <InputText v-model="productToEdit.ready" type="number" aria-describedby="ready" />
+                                <InputText v-model.number="productToEdit.ready" type="number" aria-describedby="ready" />
                             </div>
                             <div class="flex flex-column gap-2 w-10 mt-3">
                                 <label for="name">Materials</label>
