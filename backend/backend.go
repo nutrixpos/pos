@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"github.com/elmawardy/nutrix/backend/cmd"
