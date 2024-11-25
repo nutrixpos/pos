@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/backend/common/config"
 
 	"github.com/zitadel/zitadel-go/v3/pkg/authorization"
 	"github.com/zitadel/zitadel-go/v3/pkg/authorization/oauth"

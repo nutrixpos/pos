@@ -3,7 +3,7 @@ package config
 import (
 	"log"
 
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/backend/common/logger"
 	"github.com/spf13/viper"
 )
 

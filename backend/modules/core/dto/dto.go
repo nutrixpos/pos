@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/elmawardy/nutrix/backend/modules/core/models"
 )
 
 type HttpComponent struct {

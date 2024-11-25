@@ -3,8 +3,8 @@ package modules
 import (
 	"time"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/backend/common/config"
+	"github.com/elmawardy/nutrix/backend/common/logger"
 )
 
 type background_worker_svc struct {

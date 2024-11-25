@@ -3,8 +3,8 @@ package modules
 import (
 	"fmt"
 
-	"github.com/elmawardy/nutrix/common/customerrors"
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/backend/common/customerrors"
+	"github.com/elmawardy/nutrix/backend/common/logger"
 )
 
 type AppManager struct {

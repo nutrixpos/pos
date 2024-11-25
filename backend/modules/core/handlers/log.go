@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/elmawardy/nutrix/backend/common/config"
+	"github.com/elmawardy/nutrix/backend/common/logger"
+	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
 func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {

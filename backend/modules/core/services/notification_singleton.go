@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/elmawardy/nutrix/backend/common/config"
+	"github.com/elmawardy/nutrix/backend/common/logger"
+	"github.com/elmawardy/nutrix/backend/modules/core/models"
 	"github.com/google/uuid"
 	"github.com/olahol/melody"
 )

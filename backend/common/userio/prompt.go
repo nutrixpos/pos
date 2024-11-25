@@ -5,7 +5,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/backend/common/logger"
 )
 
 type Prompter interface {
