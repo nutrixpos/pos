@@ -35,8 +35,6 @@ func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-
 	}
 }
 
@@ -60,7 +58,6 @@ func DeleteCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -88,7 +85,6 @@ func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -130,8 +126,6 @@ func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 
 	}
 

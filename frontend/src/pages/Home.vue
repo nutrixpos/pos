@@ -370,11 +370,13 @@ const BackStashedOrderToCheckout = async (stashed_order_index:number) => {
 
 
     axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderremovestash`,{
+        order_display_id:order.display_id
+    },
+    {
         headers:{
             Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
         },
-        order_display_id:order.display_id
-    })
+    },)
     .then(()=>{
         stashedOrders.value.splice(stashed_order_index,1)
 
@@ -458,11 +460,14 @@ const stashOrder = () => {
     order.discount = discount.value == null ? 0 : discount.value
 
 
-    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderstash`,{
+    axios.post(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orderstash`,
+    {
+        order:order
+    },
+    {
         headers:{
             Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
         },
-        order:order
     }).then(async (response) => {
         orderItems.value=[]
         discount.value = 0

@@ -50,6 +50,5 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }

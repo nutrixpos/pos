@@ -33,7 +33,6 @@ func PayUnpaidOrder(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 
 }
@@ -70,7 +69,6 @@ func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFu
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResponse)
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -96,7 +94,6 @@ func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -255,8 +252,6 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		notifications_svc.SendToTopic("order_finished", string(msgJson))
 
-		w.WriteHeader(http.StatusOK)
-
 	}
 }
 
@@ -284,9 +279,6 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
-
 	}
 
 }
@@ -329,7 +321,6 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 
 }
@@ -374,8 +365,6 @@ func StartOrder(config config.Config, logger logger.ILogger, settings config.Set
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
 	}
 }
 

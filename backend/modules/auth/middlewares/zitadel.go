@@ -57,6 +57,8 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		authorized := false
+
 		for _, role := range roles {
 
 			reqToken := r.Header.Get("Authorization")
@@ -68,12 +70,15 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 			_, err := za.AuthZ.CheckAuthorization(r.Context(), reqToken, authorization.WithRole(role))
 
 			if err == nil {
+				authorized = true
 				next.ServeHTTP(w, r)
-				break
 			}
 		}
 
-		w.WriteHeader(http.StatusUnauthorized)
+		if !authorized {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+
 	})
 
 	// checkpoints := []authorization.CheckOption{}

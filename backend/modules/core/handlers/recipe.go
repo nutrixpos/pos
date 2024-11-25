@@ -33,7 +33,6 @@ func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -58,7 +57,6 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -82,8 +80,6 @@ func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerF
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 
 	}
 }
@@ -155,7 +151,6 @@ func GetProductReadyNumber(config config.Config, logger logger.ILogger) http.Han
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -186,7 +181,6 @@ func GetRecipeTree(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 

@@ -112,7 +112,6 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		// Return a success response
-		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "component adding saved successfully")
 
 	}
@@ -137,7 +136,6 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		// Send a success response
-		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Entry deleted successfully"))
 
 	}
@@ -164,7 +162,6 @@ func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc 
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -190,7 +187,6 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 
 }
