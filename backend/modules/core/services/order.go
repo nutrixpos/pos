@@ -25,6 +25,10 @@ type OrderService struct {
 	Settings config.Settings
 }
 
+type GetOrdersParameters struct {
+	OrderDisplayIdContains string
+}
+
 func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -498,7 +502,9 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	return err
 }
 
-func (os *OrderService) GetOrders() (orders []models.Order, err error) {
+func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.Order, err error) {
+
+	orders = make([]models.Order, 0)
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -520,12 +526,19 @@ func (os *OrderService) GetOrders() (orders []models.Order, err error) {
 
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
-
-	cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), bson.M{
+	filter := bson.M{
 		"state": bson.M{
 			"$ne": "finished",
 		},
-	})
+	}
+
+	if params.OrderDisplayIdContains != "" {
+		filter["display_id"] = bson.M{
+			"$regex": fmt.Sprintf("(?i).*%s.*", params.OrderDisplayIdContains),
+		}
+	}
+
+	cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), filter)
 	if err != nil {
 		return orders, err
 	}

@@ -295,12 +295,19 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		params := services.GetOrdersParameters{}
+
+		orderDisplayId := r.URL.Query().Get("display_id")
+		if orderDisplayId != "" {
+			params.OrderDisplayIdContains = orderDisplayId
+		}
+
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		orders, err := orderService.GetOrders()
+		orders, err := orderService.GetOrders(params)
 
 		if err != nil {
 			logger.Error(err.Error())

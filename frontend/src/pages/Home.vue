@@ -7,6 +7,18 @@
                 </router-link>
             </template>
 
+            <template #center>
+                <IconField iconPosition="left">
+                    <InputIcon>
+                        <i class="pi pi-search" />
+                    </InputIcon>
+                    <InputText placeholder="Search" v-model="mainSearchText" @keyup.stop="mainSearchTextChanged" />
+                </IconField>
+                <OverlayPanel ref="mainsearch_op" class="w-5 lg:w-3" style="max-height:60vh;overflow-y: auto;">
+                    <MainSearchResultView @view-order-pressed="order_to_show = result; order_details_dialog=true" v-for="(result,index) in mainSearchResult" :key="index" :order="result" />
+                </OverlayPanel>
+            </template>
+
             <template #end>
 
                 <Button  severity="secondary" size="large"  text rounded aria-label="PayLater" @click.stop="paylater_toggle">
@@ -160,6 +172,9 @@
             <Dialog v-model:visible="edit_item_dialog" modal header="Edit item" class="xs:w-12 md:w-10 lg:w-8">
                 <OrderItemView v-model="orderItems[itemToEditIndex]"  />
             </Dialog>
+            <Dialog v-model:visible="order_details_dialog" modal header="Order details" class="xs:w-12 md:w-10 lg:w-8">
+                <OrderView :order="order_to_show" @order-cancelled="order_details_dialog=false" />
+            </Dialog>
             <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
                 <InputText v-model="comment" placeholder="Comment" class="mb-4" />
                 <div class="flex justify-content-end gap-2">
@@ -172,6 +187,8 @@
 </template>
 
 <script setup lang="ts">
+  import InputIcon from 'primevue/inputicon';
+  import IconField from 'primevue/iconfield';
   import Toolbar from 'primevue/toolbar';
   import Dialog from 'primevue/dialog';
   import Listbox from 'primevue/listbox';
@@ -195,6 +212,8 @@
   import PayLaterOrder from '@/components/PayLaterOrder.vue'
   import InputGroup from 'primevue/inputgroup';
   import InlineMessage from 'primevue/inlinemessage'
+  import MainSearchResultView from '@/components/MainSearchResultView.vue';
+  import OrderView from '@/components/OrderView.vue';
 
 
   const { proxy } = getCurrentInstance();
@@ -211,7 +230,9 @@ const chat_text = ref("")
 const chats = ref<any[]>([])
 const has_new_message = ref(false)
 const chat_container = useTemplateRef("chat_container")
-
+const mainSearchText = ref("")
+const order_details_dialog = ref(false)
+const order_to_show = ref<Order>()
 
 import MealCard from '@/components/MealCard.vue';
 
@@ -234,6 +255,9 @@ const stashed_orders_op = ref();
 const chats_op = ref();
 const user_profile_op = ref();
 const paylater_orders_op = ref()
+const mainsearch_op = ref()
+
+const mainSearchResult = ref<any[]>([])
 
 
 const user : any = computed(() => {
@@ -241,6 +265,36 @@ const user : any = computed(() => {
     return proxy.$zitadel.oidcAuth.userProfile
 
 })
+
+
+const mainSearchTextChanged = (event:any) => {
+
+    if (mainSearchText.value != ""){
+        mainsearch_op.value.show(event)
+
+        axios.get(`http://${process.env.VUE_APP_BACKEND_HOST}${process.env.VUE_APP_MODULE_CORE_API_PREFIX}/api/orders?display_id=${mainSearchText.value}`, {
+            headers: {
+                Authorization: `Bearer ${proxy.$zitadel.oidcAuth.accessToken}`
+            }
+        })
+        .then(response => {
+            mainSearchResult.value = []
+            for (var i=0;i<response.data.orders.length;i++){
+                mainSearchResult.value.push(response.data.orders[i])
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+    }else{
+        mainSearchResult.value = []
+        mainsearch_op.value.hide()
+    }
+
+
+    console.log(mainSearchText.value)
+}
 
 
 const PayLaterOrderPaid = (index:number) => {
@@ -350,6 +404,7 @@ const stashed_toggle = (event: any) => {
 const paylater_toggle = (event: any) => {
     paylater_orders_op.value.toggle(event);
 }
+
 
 const chats_toggle = async (event: any) => {
     has_new_message.value = false
