@@ -19,5 +19,3 @@
     > **Warning**  quiting the prompt with `ctrl+q` or `esc` will run the seeding process, if you want to quit, just deselect all the entities
 
 
-
-
