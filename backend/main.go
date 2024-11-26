@@ -1,4 +1,4 @@
-package backend
+package main
 
 import (
 	"github.com/elmawardy/nutrix/backend/cmd"
@@ -20,6 +20,8 @@ func main() {
 		logger.Error(err.Error())
 		panic("Can't load settings from DB")
 	}
+
+	logger.Info("Successfully connected to DB")
 
 	prompter := &userio.BubbleTeaSeedablesPrompter{
 		Logger: &logger,

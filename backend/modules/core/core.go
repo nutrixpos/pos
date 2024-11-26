@@ -118,6 +118,8 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 
 	auth_svc := auth_mw.NewZitadelAuth(c.Config)
 
+	c.Logger.Info("Successfully conntected to Zitadel")
+
 	router.Handle(prefix+"/api/sales_logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesLog(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/salesperday", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesPerDay(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/entry", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")

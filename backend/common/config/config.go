@@ -80,11 +80,18 @@ func (s *Settings) LoadFromDB(config Config) error {
 
 }
 
+type ZitadelConfig struct {
+	Domain  string `mapstructure:"domain"`
+	Port    uint8  `mapstructure:"port"`
+	KeyPath string `mapstructure:"key_path"`
+}
+
 type Config struct {
 	Databases    []Database
-	Env          string `mapstructure:"env"`
-	JwtSecretKey string `mapstructure:"jwt_secret_key"`
-	TimeZone     string `mapstructure:"timezone"`
+	Zitadel      ZitadelConfig `mapstructure:"zitadel"`
+	Env          string        `mapstructure:"env"`
+	JwtSecretKey string        `mapstructure:"jwt_secret_key"`
+	TimeZone     string        `mapstructure:"timezone"`
 }
 
 type Database struct {

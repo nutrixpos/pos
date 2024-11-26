@@ -6,6 +6,11 @@ databases:
     database: waha
     username: 
     password: 
+zitadel:
+  domain: "localhost"
+  port: 2020
+  key_path: "zitadel-key.json" # this is the path to your zitadel key related to your root directory of backend
+  
 timezone: Africa/Cairo
 jwt_secret_key: "my_secret_key"
 env: dev

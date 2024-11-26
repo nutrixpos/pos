@@ -19,8 +19,8 @@ func NewZitadelAuth(conf config.Config) ZitadelAuth {
 	ctx := context.Background()
 
 	za := ZitadelAuth{
-		Domain: "localhost",
-		Key:    "zitadel-key.json",
+		Domain: conf.Zitadel.Domain,
+		Key:    conf.Zitadel.KeyPath,
 	}
 
 	authZ, err := authorization.New(ctx, zitadel.New(za.Domain, zitadel.WithInsecure("2020")), oauth.DefaultAuthorization(za.Key))
