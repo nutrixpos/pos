@@ -8,8 +8,8 @@ package modules
 import (
 	"fmt"
 
-	"github.com/elmawardy/nutrix/backend/common/customerrors"
-	"github.com/elmawardy/nutrix/backend/common/logger"
+	"github.com/elmawardy/nutrix/common/customerrors"
+	"github.com/elmawardy/nutrix/common/logger"
 )
 
 // AppManager is a struct that manages the modules of the application.

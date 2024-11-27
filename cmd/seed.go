@@ -5,10 +5,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/common/userio"
-	"github.com/elmawardy/nutrix/backend/modules"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
+	"github.com/elmawardy/nutrix/modules"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 )

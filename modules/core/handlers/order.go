@@ -15,11 +15,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/modules/core/dto"
-	"github.com/elmawardy/nutrix/backend/modules/core/models"
-	"github.com/elmawardy/nutrix/backend/modules/core/services"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/modules/core/dto"
+	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
 // PayUnpaidOrder returns a HTTP handler function to pay an unpaid order.

@@ -1,4 +1,4 @@
-module github.com/elmawardy/nutrix/backend
+module github.com/elmawardy/nutrix
 
 go 1.23
 

@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/modules/core/models"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

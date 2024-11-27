@@ -4,7 +4,7 @@
 package dto
 
 import (
-	"github.com/elmawardy/nutrix/backend/modules/core/models"
+	"github.com/elmawardy/nutrix/modules/core/models"
 )
 
 // OrderStartRequest is a DTO used in the request body in the POST /order/start endpoint.

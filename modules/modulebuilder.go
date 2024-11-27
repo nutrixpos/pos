@@ -8,8 +8,8 @@
 package modules
 
 import (
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/common/userio"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/gorilla/mux"
 )
 

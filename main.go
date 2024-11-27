@@ -7,12 +7,12 @@
 package main
 
 import (
-	"github.com/elmawardy/nutrix/backend/cmd"
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/common/userio"
-	"github.com/elmawardy/nutrix/backend/modules"
-	"github.com/elmawardy/nutrix/backend/modules/core"
+	"github.com/elmawardy/nutrix/cmd"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
+	"github.com/elmawardy/nutrix/modules"
+	"github.com/elmawardy/nutrix/modules/core"
 	"github.com/gorilla/mux"
 )
 

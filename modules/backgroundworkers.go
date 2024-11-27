@@ -10,8 +10,8 @@ package modules
 import (
 	"time"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
 )
 
 // background_worker_svc is a service that runs background workers as goroutines.

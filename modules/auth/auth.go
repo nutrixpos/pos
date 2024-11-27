@@ -4,9 +4,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/common/userio"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
 )
 
 // IHttpAuth is an interface for the HTTP authentication

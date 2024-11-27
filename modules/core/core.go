@@ -8,14 +8,14 @@ package core
 import (
 	"time"
 
-	"github.com/elmawardy/nutrix/backend/common/config"
-	"github.com/elmawardy/nutrix/backend/common/logger"
-	"github.com/elmawardy/nutrix/backend/common/userio"
-	"github.com/elmawardy/nutrix/backend/modules"
-	auth_mw "github.com/elmawardy/nutrix/backend/modules/auth/middlewares"
-	"github.com/elmawardy/nutrix/backend/modules/core/handlers"
-	"github.com/elmawardy/nutrix/backend/modules/core/middlewares"
-	"github.com/elmawardy/nutrix/backend/modules/core/services"
+	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/elmawardy/nutrix/common/userio"
+	"github.com/elmawardy/nutrix/modules"
+	auth_mw "github.com/elmawardy/nutrix/modules/auth/middlewares"
+	"github.com/elmawardy/nutrix/modules/core/handlers"
+	"github.com/elmawardy/nutrix/modules/core/middlewares"
+	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
 )
 

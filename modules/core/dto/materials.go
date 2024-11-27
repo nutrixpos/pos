@@ -3,7 +3,7 @@
 package dto
 
 import (
-	"github.com/elmawardy/nutrix/backend/modules/core/models"
+	"github.com/elmawardy/nutrix/modules/core/models"
 )
 
 // MaterialEditRequest is a DTO used for editing material details.
