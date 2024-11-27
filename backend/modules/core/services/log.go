@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -13,11 +18,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Log represents the logging service in the core module.
+// It holds the logger and configuration required for logging operations.
 type Log struct {
+	// Logger is used to log messages with different levels of severity.
 	Logger logger.ILogger
+	// Config holds the configuration settings for the logging service.
 	Config config.Config
 }
 
+// GetComponentLogs gets all logs for a given component_id.
 func (l *Log) GetComponentLogs(component_id string) (logs []models.ComponentConsumeLogs, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
@@ -58,6 +68,7 @@ func (l *Log) GetComponentLogs(component_id string) (logs []models.ComponentCons
 	return logs, nil
 }
 
+// GetSalesLogs gets all logs for a given component_id.
 func (l *Log) GetSalesLogs() []models.SalesLogs {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 

@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -16,12 +21,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// MaterialService provides methods to manage and manipulate materials.
+// It contains methods for calculating costs, checking availability, and
+// updating material entries in the database. It relies on a logger for
+// logging operations and a configuration for database connectivity.
 type MaterialService struct {
 	Logger   logger.ILogger
 	Config   config.Config
 	Settings config.Settings
 }
 
+// CalculateMaterialCost calculates the cost of a material entry based on its ID, material ID, and quantity.
+// It connects to the MongoDB database, retrieves the specific material entry, and calculates the cost
+// using the purchase price and purchase quantity.
 func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -63,6 +75,12 @@ func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, q
 	return cost, nil
 }
 
+// GetMaterialEntryAvailability retrieves the quantity of a specific material entry
+// from the database.
+//
+// The function takes a material ID and an entry ID as parameters and returns the
+// quantity of the specified entry in the material. If the entry is not found in
+// the material, the function returns an error.
 func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float32, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -102,6 +120,8 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 
 }
 
+// ConsumeItemComponentsForOrder consumes components for an order item, and returns the notifications to be sent via websocket.
+// It returns an error if something goes wrong.
 func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -214,6 +234,15 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 	return notifications, nil
 }
 
+// GetComponentAvailability retrieves the total quantity of a specific component.
+//
+// The function takes a component ID as a parameter and returns the total
+// quantity of the specified component in the database. If the component is not
+// found in the database, the function returns an error.
+//
+// The function is used to check the availability of a specific component before
+// consuming it. The component quantity is calculated by summing up the quantity
+// of all entries of the component.
 func (cs *MaterialService) GetComponentAvailability(componentid string) (amount float32, err error) {
 
 	amount = 0.0
@@ -259,6 +288,9 @@ func (cs *MaterialService) GetComponentAvailability(componentid string) (amount 
 
 }
 
+// GetMaterials retrieves all materials from the database.
+//
+// The function returns a slice of Material structs.
 func (cs *MaterialService) GetMaterials() (materials []models.Material, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -307,6 +339,12 @@ func (cs *MaterialService) GetMaterials() (materials []models.Material, err erro
 
 }
 
+// EditMaterial updates a material in the database.
+//
+// The function takes a MaterialEditRequest as a parameter and updates the
+// corresponding material in the database with the provided information.
+//
+// The function is used to edit an existing material in the database.
 func (cs *MaterialService) EditMaterial(materialEditRequest dto.MaterialEditRequest) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -351,6 +389,10 @@ func (cs *MaterialService) EditMaterial(materialEditRequest dto.MaterialEditRequ
 	return nil
 }
 
+// AddComponent adds a new material component to the database.
+// It first inserts the material into the "materials" collection,
+// then logs the addition of each entry into the "logs" collection.
+// If there is any error during the database operations, it returns the error.
 func (cs *MaterialService) AddComponent(material models.Material) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -374,7 +416,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	// Insert the DBComponent struct into the "components" collection
+	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database("waha").Collection("materials")
 	_, err = collection.InsertOne(ctx, material)
 	if err != nil {
@@ -401,6 +443,11 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 	return nil
 }
 
+// PushMaterialEntry adds a new entry to a material in the database.
+//
+// The function takes a component ID and a slice of MaterialEntry structs as parameters.
+// It then finds the material with the given ID and appends the new entries to the material's
+// entries array. If the material is not found, the function will return an error.
 func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -452,6 +499,12 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 	return nil
 }
 
+// DeleteEntry deletes an entry from a material in the database.
+//
+// The function takes a entry ID and a component ID as parameters. It then finds
+// the material with the given component ID and removes the entry with the given
+// entry ID from the material's entries array. If the material or the entry is not
+// found, the function will return an error.
 func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 

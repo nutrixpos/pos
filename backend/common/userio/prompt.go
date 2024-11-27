@@ -1,3 +1,4 @@
+// Package userio provides an interface for user interaction prompts, and a bubbletea implementation of such an interface.
 package userio
 
 import (
@@ -8,30 +9,68 @@ import (
 	"github.com/elmawardy/nutrix/backend/common/logger"
 )
 
+// Prompter defines an interface for user interaction prompts.
 type Prompter interface {
+	// MultiChooseTree presents a tree of choices to the user and returns the selected elements.
 	MultiChooseTree(msg string, choices []PromptTreeElement) (selected []PromptTreeElement, err error)
+
+	// Confirmation prompts the user with a yes/no question and returns the result.
 	Confirmation(msg string) (bool, error)
 }
 
+// BubbleTeaSeedablesPrompter is a Prompter that uses the BubbleTea library to present interactive prompts to the user.
+//
+// It implements the Prompter interface, and can be used to create prompts for the user to select multiple values from a tree.
 type BubbleTeaSeedablesPrompter struct {
 	cursor int
 
-	Logger                logger.ILogger
-	Message               string
-	TreeChoices           []PromptTreeElement
-	Breadcrump            []string
-	FullySelectedTreeChar string // the character to display when a tree element is fully selected
-	SemiSelectedTreeChar  string // the character to display when a tree element is partially selected
-	UnselectedTreeChar    string // the character to display when a tree element is not selected
-	ElementsCount         int
+	// Logger is the logger to use for logging messages.
+	Logger logger.ILogger
 
-	IsTreeChoices      bool
-	IsConfirmation     bool
+	// Message is the message to display to the user.
+	Message string
+
+	// TreeChoices is the tree of choices to present to the user.
+	TreeChoices []PromptTreeElement
+
+	// Breadcrump is the breadcrumb to display to the user.
+	Breadcrump []string
+
+	// FullySelectedTreeChar is the character to display when a tree element is fully selected.
+	FullySelectedTreeChar string
+
+	// SemiSelectedTreeChar is the character to display when a tree element is partially selected.
+	SemiSelectedTreeChar string
+
+	// UnselectedTreeChar is the character to display when a tree element is not selected.
+	UnselectedTreeChar string
+
+	// ElementsCount is the number of elements in the tree.
+	ElementsCount int
+
+	// IsTreeChoices is true if the prompt is a tree of choices.
+	IsTreeChoices bool
+
+	// IsConfirmation is true if the prompt is a yes/no confirmation.
+	IsConfirmation bool
+
+	// ConfirmationResult is the result of the confirmation prompt.
 	ConfirmationResult bool
-	UserInputText      string
-	isTerminating      bool
+
+	// UserInputText is the text that the user has input.
+	UserInputText string
+
+	// isTerminating is true if the prompt should terminate.
+	isTerminating bool
 }
 
+// PromptTreeElement represents an element in the tree of choices.
+//
+// Title is the title of the element.
+// Selected is true if the element is selected.
+// Level is the level of the element in the tree (0 is the root, 1 is a child of the root, etc).
+// CounterIndex is the index of the element in the tree for use in the BubbleTea prompt.
+// SubElements are the sub-elements of the element.
 type PromptTreeElement struct {
 	Title        string
 	Selected     bool
@@ -40,6 +79,11 @@ type PromptTreeElement struct {
 	SubElements  []PromptTreeElement
 }
 
+// Confirmation prompts the user with a yes/no question and returns the result.
+//
+// It sets the text of the prompt to the given message and then runs the BubbleTea
+// program. When the program finishes, it returns the result of the confirmation
+// prompt.
 func (m *BubbleTeaSeedablesPrompter) Confirmation(msg string) (result bool, err error) {
 
 	m.IsConfirmation = true
@@ -56,6 +100,10 @@ func (m *BubbleTeaSeedablesPrompter) Confirmation(msg string) (result bool, err 
 	return m.ConfirmationResult, err
 }
 
+// MultiChooseTree presents a tree of choices to the user and returns the selected elements.
+//
+// It sets the text of the prompt to the given message and then runs the BubbleTea
+// program. When the program finishes, it returns the selected elements.
 func (m *BubbleTeaSeedablesPrompter) MultiChooseTree(msg string, choices []PromptTreeElement) (selected []PromptTreeElement, err error) {
 
 	m.IsConfirmation = false
@@ -84,6 +132,13 @@ func (m *BubbleTeaSeedablesPrompter) MultiChooseTree(msg string, choices []Promp
 	return m.TreeChoices, err
 }
 
+// PropagateCounterIndexToTree takes a slice of PromptTreeElements and returns the total
+// count of elements in the tree and the same slice with the CounterIndex field of each
+// element set to the correct value. The CounterIndex of each element is the index of the
+// element in the flattened tree.
+//
+// This function is used to set the CounterIndex of each element in the tree so that
+// BubbleTea can use it to determine the index of the selected element.
 func (m *BubbleTeaSeedablesPrompter) PropagateCounterIndexToTree(total int, tree []PromptTreeElement) (int, []PromptTreeElement) {
 
 	counter := 0
@@ -105,6 +160,12 @@ func (m *BubbleTeaSeedablesPrompter) PropagateCounterIndexToTree(total int, tree
 	return total, tree
 }
 
+// ToggleSelectedTreeElement takes a target index and a slice of PromptTreeElements
+// and toggles the `Selected` field of the element at the target index and all
+// of its children. If the target index is not found in the tree, it does nothing.
+//
+// It returns the modified tree and a boolean indicating whether the target index
+// was found.
 func ToggleSelectedTreeElement(targetindex int, tree []PromptTreeElement) (result []PromptTreeElement, found bool) {
 
 	found = false
@@ -127,11 +188,16 @@ func ToggleSelectedTreeElement(targetindex int, tree []PromptTreeElement) (resul
 	return tree, found
 }
 
+// Init is the BubbleTea initialization function. It's called when the program starts.
+// In this case, there's no I/O to be done, so it simply returns `nil`.
 func (m *BubbleTeaSeedablesPrompter) Init() tea.Cmd {
 	// Just return `nil`, which means "no I/O right now, please."
 	return nil
 }
 
+// Update processes incoming messages and updates the state of the BubbleTeaSeedablesPrompter.
+// It handles key presses for quitting the program and delegates to specific update functions
+// based on the current mode (tree selection or confirmation).
 func (m *BubbleTeaSeedablesPrompter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
@@ -158,6 +224,7 @@ func (m *BubbleTeaSeedablesPrompter) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// UpdateConfirmation processes incoming messages and updates the state of the BubbleTeaSeedablesPrompter in confirmation mode.
 func (m *BubbleTeaSeedablesPrompter) UpdateConfirmation(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -194,6 +261,7 @@ func (m *BubbleTeaSeedablesPrompter) UpdateConfirmation(msg tea.Msg) (tea.Model,
 	return m, nil
 }
 
+// UpdateTreeSelection processes incoming messages and updates the state of the BubbleTeaSeedablesPrompter in tree selection mode.
 func UpdateTreeSelection(m *BubbleTeaSeedablesPrompter, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
@@ -236,6 +304,7 @@ func UpdateTreeSelection(m *BubbleTeaSeedablesPrompter, msg tea.Msg) (tea.Model,
 	return m, nil
 }
 
+// View renders the BubbleTeaSeedablesPrompter to a string.
 func (m *BubbleTeaSeedablesPrompter) View() string {
 	// The header
 
@@ -248,6 +317,7 @@ func (m *BubbleTeaSeedablesPrompter) View() string {
 	return ""
 }
 
+// ConfirmationView renders a confirmation prompt to a string.
 func (m *BubbleTeaSeedablesPrompter) ConfirmationView() string {
 	output := m.Message
 
@@ -258,6 +328,7 @@ func (m *BubbleTeaSeedablesPrompter) ConfirmationView() string {
 	return output
 }
 
+// TreeSelectionView renders a tree selection prompt to a string.
 func (m *BubbleTeaSeedablesPrompter) TreeSelectionView(level int, message string, breadcrump []string, choices []PromptTreeElement, finishMessage string) string {
 
 	output := message

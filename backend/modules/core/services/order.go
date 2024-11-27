@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -19,16 +24,20 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// OrderService is the service to interact with the orders collection in the database.
 type OrderService struct {
 	Logger   logger.ILogger
 	Config   config.Config
 	Settings config.Settings
 }
 
+// GetOrdersParameters is the struct to hold the parameters for the GetOrders method.
 type GetOrdersParameters struct {
+	// OrderDisplayIdContains is the string to search for in the orders' display IDs.
 	OrderDisplayIdContains string
 }
 
+// PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
 func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -63,6 +72,7 @@ func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 	return
 }
 
+// GetUnpaidOrders returns all orders that are not paid and their state is not cancelled.
 func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
 
 	orders = make([]models.Order, 0)
@@ -105,9 +115,11 @@ func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
 	return
 }
 
+// CancelOrder sets the state of the order with the given order_id to "cancelled".
 func (os *OrderService) CancelOrder(order_id string) (err error) {
-
+	// Set MongoDB client options
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
 	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
@@ -125,11 +137,13 @@ func (os *OrderService) CancelOrder(order_id string) (err error) {
 	}
 
 	// Connected successfully
-
 	collection := client.Database("waha").Collection("orders")
 
+	// Define filter and update for setting order state to "cancelled"
 	filter := bson.M{"id": order_id}
 	update := bson.M{"$set": bson.M{"state": "cancelled"}}
+
+	// Update the order in the database
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
@@ -138,6 +152,7 @@ func (os *OrderService) CancelOrder(order_id string) (err error) {
 	return err
 }
 
+// GetStashedOrders retrieves all stashed orders from the "stashed_orders" collection in the database.
 func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err error) {
 
 	stashed_orders = make([]models.Order, 0)
@@ -185,6 +200,7 @@ func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err e
 	return stashed_orders, err
 }
 
+// RemoveStashedOrder removes an order from the "stashed_orders" collection based on the provided order display ID.
 func (os *OrderService) RemoveStashedOrder(stash_remove_request dto.OrderRemoveStashRequest) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -217,6 +233,7 @@ func (os *OrderService) RemoveStashedOrder(stash_remove_request dto.OrderRemoveS
 	return nil
 }
 
+// CalculateCost calculates the cost of each item in the provided list of order items.
 func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.ItemCost, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -313,6 +330,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 	return cost, err
 }
 
+// FinishOrder sets the state of the order with the given order_id to "finished".
 func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -394,6 +412,7 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 	return err
 }
 
+// GetOrderDisplayId returns a new order display id and increments the current value in the database.
 func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -443,6 +462,7 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 
 }
 
+// SubmitOrder adds an order to the database and creates a display id.
 func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -502,6 +522,9 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	return err
 }
 
+// GetOrders retrieves all orders from the database.
+// If the OrderDisplayIdContains parameter is not empty,
+// it will filter the orders with a display id that contains the given string.
 func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.Order, err error) {
 
 	orders = make([]models.Order, 0)
@@ -562,6 +585,7 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 
 }
 
+// StashOrder adds an order to the "stashed_orders" collection in the database.
 func (os *OrderService) StashOrder(order_stash_request dto.OrderStashRequest) (models.Order, error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -598,6 +622,9 @@ func (os *OrderService) StashOrder(order_stash_request dto.OrderStashRequest) (m
 	return order_stash_request.Order, err
 }
 
+// StartOrder sets the state of the order with the given order_id to "in_progress",
+// and updates the "started_at" field with the current time.
+// It also consumes the item components from the inventory and sends a notification to the websockets.
 func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -693,6 +720,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 	return nil
 }
 
+// GetOrder retrieves an order from the database with the given order_id.
 func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 

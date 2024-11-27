@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -14,6 +19,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// CheckExpirationDates is a background job that checks all materials if they are expired
+// and informs the admin about it. The function is designed to be called periodically
+// by the job scheduler.
 func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_svc INotificationService) {
 
 	log.Info("core:background: Checking expiration dates")

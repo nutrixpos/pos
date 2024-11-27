@@ -1,3 +1,21 @@
+// Package models contains the data models for the application.
+//
+// The models are used to store data in the database and to marshal/unmarshal
+// data to/from JSON.
+//
+// The models are divided into the following categories:
+//
+// - Sales: Models related to sales, such as SalesPerDay and SalesPerDayOrder.
+//
+// - Items: Models related to items, such as ItemCost and OrderItem.
+//
+// - Orders: Models related to orders, such as Order and OrderItem.
+//
+// - Materials: Models related to materials, such as Material and MaterialEntry.
+//
+// - Products: Models related to products, such as Product and ProductEntry.
+//
+// - SalesLogs: Models related to sales logs, such as SalesLogs.
 package models
 
 import (
@@ -6,8 +24,11 @@ import (
 	"time"
 )
 
+// JSONFloat is a float64 that is marshaled to JSON as a string
+// to avoid the JSON number type limitations.
 type JSONFloat float64
 
+// MarshalJSON implements the json.Marshaler interface.
 func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	v := float64(j)
 	if math.IsInf(v, 0) {
@@ -22,11 +43,13 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v) // marshal result as standard float64
 }
 
+// SalesPerDayOrder represents an order and its associated costs for a specific day.
 type SalesPerDayOrder struct {
 	Order Order      `json:"order" bson:"order,inline"`
 	Costs []ItemCost `json:"costs" bson:"costs"`
 }
 
+// SalesPerDay aggregates sales data for a specific day, including total costs and sales.
 type SalesPerDay struct {
 	Id         string             `json:"id" bson:"id,omitempty"`
 	Date       string             `json:"date" bson:"date"`
@@ -46,17 +69,21 @@ type ComponentConsumeLogs struct {
 	OrderId        string    `json:"order_id" bson:"order_id"`
 }
 
+// CategoryProduct represents the product in a category.
 type CategoryProduct struct {
 	Id   string `json:"id" bson:"id"`
 	Name string `json:"name" bson:"name"`
 }
 
+// Category represents the category of products.
 type Category struct {
 	Id       string            `json:"id" bson:"id"`
 	Name     string            `json:"name"`
 	Products []CategoryProduct `json:"products"` // product ids
 }
 
+// ItemCost represents the cost of an item, including the recipe cost, sale price, quantity,
+// and the costs of the components.
 type ItemCost struct {
 	RecipeId   string
 	ItemName   string
@@ -73,12 +100,14 @@ type ItemCost struct {
 	DownstreamCost []ItemCost
 }
 
+// OrderItemMaterial represents the material, entry, and quantity associated with an order item.
 type OrderItemMaterial struct {
 	Material Material      `json:"material"`
 	Entry    MaterialEntry `json:"entry"`
 	Quantity float64       `json:"quantity" bson:"quantity"`
 }
 
+// OrderItem represents an item in an order, including product details, materials, and pricing.
 type OrderItem struct {
 	Id                 string              `json:"id" bson:"id"`
 	Product            Product             `json:"product"`
@@ -92,6 +121,7 @@ type OrderItem struct {
 	Cost               float64             `json:"cost" bson:"cost"`
 }
 
+// Order represents a customer order, containing order details, items, and financial information.
 type Order struct {
 	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`
 	Id          string      `json:"id" bson:"id,omitempty"`
@@ -107,6 +137,7 @@ type Order struct {
 	IsPaid      bool        `json:"is_paid" bson:"is_paid"`
 }
 
+// MaterialEntry represents an entry of material, detailing purchase and quantity information.
 type MaterialEntry struct {
 	Id               string    `json:"id,omitempty" bson:"id,omitempty"`
 	PurchaseQuantity float32   `json:"purchase_quantity" bson:"purchase_quantity"`
@@ -117,10 +148,12 @@ type MaterialEntry struct {
 	ExpirationDate   time.Time `json:"expiration_date" bson:"expiration_date"`
 }
 
+// MaterialSettings represents settings associated with a material, such as stock alert threshold.
 type MaterialSettings struct {
 	StockAlertTreshold float64 `json:"stock_alert_treshold" bson:"stock_alert_treshold"`
 }
 
+// Material represents a material with its details, including entries and settings.
 type Material struct {
 	Id       string           `json:"id,omitempty" bson:"id,omitempty"`
 	Name     string           `json:"name"`
@@ -130,6 +163,7 @@ type Material struct {
 	Unit     string           `json:"unit" bson:"unit"`
 }
 
+// ProductEntry represents an entry of a product, detailing purchase and quantity information.
 type ProductEntry struct {
 	Id               string  `json:"id,omitempty" bson:"id,omitempty"`
 	PurchaseQuantity float32 `json:"purchase_quantity" bson:"purchase_quantity"`
@@ -140,6 +174,7 @@ type ProductEntry struct {
 	SKU              string  `json:"sku"`
 }
 
+// Product represents a product with its details, including materials, entries, and pricing.
 type Product struct {
 	Id          string         `bson:"id,omitempty" json:"id"`
 	Name        string         `bson:"name" json:"name"`
@@ -153,6 +188,7 @@ type Product struct {
 	Ready       float64        `bson:"ready" json:"ready"`
 }
 
+// SalesLogs represents logs of sales, capturing sale price, items, and consumption details.
 type SalesLogs struct {
 	Id           string    `json:"id" bson:"id,omitempty"`
 	SalePrice    JSONFloat `json:"sale_price" bson:"sale_price"`

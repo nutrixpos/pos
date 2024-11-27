@@ -1,3 +1,5 @@
+// Package middlewares provides a set of middleware functions used to check
+// Zitadel access token for auth and roles.
 package middlewares
 
 import (
@@ -14,6 +16,8 @@ import (
 	"github.com/zitadel/zitadel-go/v3/pkg/zitadel"
 )
 
+// NewZitadelAuth creates a new ZitadelAuth object with the given configuration.
+// It sets up the Zitadel SDK with the given domain and key path.
 func NewZitadelAuth(conf config.Config) ZitadelAuth {
 
 	ctx := context.Background()
@@ -35,12 +39,14 @@ func NewZitadelAuth(conf config.Config) ZitadelAuth {
 	return za
 }
 
+// ZitadelAuth holds the configuration for Zitadel and the Authorizer
 type ZitadelAuth struct {
 	Domain string // Zitadel instance domain
 	Key    string // path to key.json
 	AuthZ  *authorization.Authorizer[*oauth.IntrospectionContext]
 }
 
+// AllowAuthenticated middleware checks if the given request has a valid acess token.
 func (za *ZitadelAuth) AllowAuthenticated(next http.Handler) http.Handler {
 
 	mw := middleware.New(za.AuthZ)
@@ -50,6 +56,8 @@ func (za *ZitadelAuth) AllowAuthenticated(next http.Handler) http.Handler {
 	return handler(next)
 }
 
+// AllowAnyOfRoles middleware checks if the given request has a valid access token
+// and if the user has any of the given roles.
 func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.Handler {
 
 	// Initialize the HTTP middleware by providing the authorization

@@ -1,3 +1,8 @@
+// Package core contains the core module of the nutrix application.
+//
+// The core module contains the main business logic of the application, including
+// the data models, services, and handlers for the core features of the
+// application.
 package core
 
 import (
@@ -14,26 +19,42 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Core is the main struct for the core module.
+//
+// It contains the necessary fields for the core module to function, including
+// the logger, config, settings, prompter, and notification service.
 type Core struct {
-	Logger          logger.ILogger
-	Config          config.Config
-	Settings        config.Settings
-	Prompter        userio.Prompter
+	// Logger is the logger object for the core module.
+	Logger logger.ILogger
+
+	// Config is the config object for the core module.
+	Config config.Config
+
+	// Settings is the settings object for the core module.
+	Settings config.Settings
+
+	// Prompter is the prompter object for the core module.
+	Prompter userio.Prompter
+
+	// NotificationSvc is the notification service object for the core module.
 	NotificationSvc services.INotificationService
 }
 
+// OnStart is called when the core module is started.
 func (c *Core) OnStart() func() {
 	return func() {
 
 	}
 }
 
+// OnEnd is called when the core module is ended.
 func (c *Core) OnEnd() func() {
 	return func() {
 
 	}
 }
 
+// Seed seeds the database with sample data.
 func (c *Core) Seed(entities []string, is_new_only bool) error {
 
 	seedService := services.Seeder{
@@ -79,6 +100,7 @@ func (c *Core) Seed(entities []string, is_new_only bool) error {
 	return nil
 }
 
+// GetSeedables returns a list of seedables.
 func (c *Core) GetSeedables() (entities []string, err error) {
 	c.Logger.Info("Getting seedables...")
 
@@ -91,6 +113,7 @@ func (c *Core) GetSeedables() (entities []string, err error) {
 	}, nil
 }
 
+// RegisterBackgroundWorkers registers background workers.
 func (c *Core) RegisterBackgroundWorkers() []modules.Worker {
 
 	if c.NotificationSvc == nil {
@@ -114,6 +137,7 @@ func (c *Core) RegisterBackgroundWorkers() []modules.Worker {
 	return workers
 }
 
+// RegisterHttpHandlers registers HTTP handlers.
 func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 
 	auth_svc := auth_mw.NewZitadelAuth(c.Config)

@@ -1,3 +1,9 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// It implements the required interfaces for the core module of nutrix.
+//
+// The services in this package are used to interact with the database using the
+// models package, and to interact with the outside world using the dto package.
 package services
 
 import (
@@ -18,11 +24,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// RecipeService provides methods to manage recipes, including logging and configuration.
 type RecipeService struct {
 	Logger logger.ILogger
 	Config config.Config
 }
 
+// UpdateProduct updates a product in the database.
+//
+// It takes a product and updates it in the database.
+//
+// If the product is not found, it will return an error.
 func (rs *RecipeService) UpdateProduct(product models.Product) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -60,6 +72,9 @@ func (rs *RecipeService) UpdateProduct(product models.Product) (err error) {
 	return err
 }
 
+// DeleteProduct deletes a product from the database.
+//
+// It takes a product_id and deletes it from the database.
 func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -88,6 +103,10 @@ func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
 
 }
 
+// InsertNew inserts a new product into the database.
+//
+// It takes a product and inserts it into the database.
+// It returns an error if the product could not be inserted.
 func (rs *RecipeService) InsertNew(product models.Product) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -118,6 +137,11 @@ func (rs *RecipeService) InsertNew(product models.Product) (err error) {
 	return err
 }
 
+// GetProducts retrieves a list of products from the database.
+//
+// It takes a first_index and rows and returns a slice of products.
+// It also returns the total number of records in the database.
+// It returns an error if the products could not be retrieved.
 func (rs *RecipeService) GetProducts(first_index int, rows int) (products []models.Product, totalRecords int64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -175,6 +199,7 @@ func (rs *RecipeService) GetProducts(first_index int, rows int) (products []mode
 	return products, totalRecords, err
 }
 
+// ConsumeFromReady consumes a quantity from the ready stock of a product.
 func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -225,6 +250,7 @@ func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) e
 	return nil
 }
 
+// FillRecipeDesign fills the recipe design for an order item with its product and sub products.
 func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderItem, error) {
 
 	self_recipe, err := rs.GetRecipeTree(item.Product.Id)
@@ -246,6 +272,7 @@ func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderIt
 
 }
 
+// GetRecipeMaterials returns all materials for a given recipe.
 func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []models.Material, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -279,6 +306,7 @@ func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []model
 	return recipe.Materials, nil
 }
 
+// GetRecipeTree returns the recipe tree for a given recipe_id.
 func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, err error) {
 
 	self_materials := []models.Material{}
@@ -357,6 +385,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	return tree, nil
 }
 
+// GetReadyNumber returns the ready number of a given recipe
 func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
@@ -391,6 +420,8 @@ func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err er
 	return ready, nil
 }
 
+// CheckRecipesAvailability checks the availability of a list of recipes.
+// It returns a slice of RecipeAvailability with the available and ready number for each recipe.
 func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabilities []dto.RecipeAvailability, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))

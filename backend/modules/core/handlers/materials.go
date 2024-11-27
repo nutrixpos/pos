@@ -1,3 +1,12 @@
+// Package handlers contains HTTP handlers for the core module of nutrix.
+//
+// The handlers in this package are used to handle incoming HTTP requests for
+// the core module of nutrix. The handlers are used to interact with the services
+// package, which contains the business logic of the core module.
+//
+// The handlers in this package are used to create a RESTful API for the core
+// module of nutrix. The API endpoints are documented using the Swagger
+// specification.
 package handlers
 
 import (
@@ -13,6 +22,10 @@ import (
 	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
+// CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
+//
+// This handler retrieves the entry ID, material ID, and quantity from the query string,
+// and uses the MaterialService to calculate and return the cost.
 func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -56,6 +69,7 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 	}
 }
 
+// GetMaterials returns a HTTP handler function to retrieve a list of materials from the database.
 func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +100,7 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 }
 
+// AddMaterial returns a HTTP handler function to add a new material to the database.
 func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -117,6 +132,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+// DeleteEntry returns a HTTP handler function to delete an entry in the material database.
 func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Retrieve the entry ID from the query string
@@ -141,6 +157,7 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+// EditMaterial returns a HTTP handler function to edit an existing material in the database.
 func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -165,6 +182,7 @@ func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc 
 	}
 }
 
+// PushMaterialEntry returns a HTTP handler function to add a new entry to a material in the database.
 func PushMaterialEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

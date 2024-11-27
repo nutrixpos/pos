@@ -1,3 +1,9 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the models package,
+// which contains the data models of the core module of nutrix. The services
+// are used to create a RESTful API for the core module of nutrix. The API
+// endpoints are documented using the Swagger specification.
 package services
 
 import (
@@ -17,15 +23,20 @@ import (
 )
 
 type Seeder struct {
-	Logger    logger.ILogger
-	Config    config.Config
-	Settings  config.Settings
-	Prompter  userio.Prompter
+	// Logger provides logging capabilities for the seeding process.
+	Logger logger.ILogger
+	// Config holds the configuration settings needed for database connections.
+	Config config.Config
+	// Settings contains additional configuration settings used during seeding.
+	Settings config.Settings
+	// Prompter is used to interact with the user through prompts.
+	Prompter userio.Prompter
+	// IsNewOnly indicates whether only new data should be seeded, leaving existing data untouched.
 	IsNewOnly bool
 }
 
+// SeedProducts seeds products into the database, optionally creating new products if they don't exist.
 func (s *Seeder) SeedProducts() error {
-
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -53,7 +64,6 @@ func (s *Seeder) SeedProducts() error {
 	var product models.Product
 	err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": bson.M{"$in": []string{"ProductSeeded 1", "ProductSeeded 2"}}}).Decode(&product)
 	if err == nil {
-
 		if s.IsNewOnly {
 			s.Logger.Info("product already exists, skipping seeding")
 			return nil
@@ -70,13 +80,11 @@ func (s *Seeder) SeedProducts() error {
 	}
 
 	// Connected successfully
-
 	// Get the material with name Motzarilla from the DB
 	var material models.Material
 	err = client.Database("waha").Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
 
 	if err != nil {
-
 		if err == mongo.ErrNoDocuments {
 			confirmation, err := s.Prompter.Confirmation("no seeded materials found, would you like to create them?")
 			if err != nil {
@@ -97,7 +105,6 @@ func (s *Seeder) SeedProducts() error {
 		} else {
 			return err
 		}
-
 	}
 
 	material.Quantity = 15
@@ -105,7 +112,6 @@ func (s *Seeder) SeedProducts() error {
 	sub_product_id := primitive.NewObjectID().Hex()
 
 	sub_product := models.Product{
-
 		Id:    sub_product_id,
 		Name:  "ProductSeeded 1",
 		Price: 100.0,
@@ -153,8 +159,8 @@ func (s *Seeder) SeedProducts() error {
 	return nil
 }
 
+// SeedCategories seeds categories into the database, optionally creating new categories if they don't exist.
 func (s *Seeder) SeedCategories() error {
-
 	categories := []models.Category{
 		{
 			Name:     "CategorySeeded",
@@ -192,7 +198,6 @@ func (s *Seeder) SeedCategories() error {
 	count, err := collection.CountDocuments(ctx, bson.M{"name": "CategorySeeded"})
 
 	if count > 0 {
-
 		if s.IsNewOnly {
 			s.Logger.Info("categories already seeded, skipping..")
 			return nil
@@ -259,7 +264,6 @@ func (s *Seeder) SeedCategories() error {
 
 		return nil
 	} else if err == mongo.ErrNoDocuments || err == nil {
-
 		var product models.Product
 		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 
@@ -287,7 +291,6 @@ func (s *Seeder) SeedCategories() error {
 					})
 				}
 			}
-
 		} else if err != nil {
 			return err
 		} else {
@@ -317,8 +320,8 @@ func (s *Seeder) SeedCategories() error {
 	return nil
 }
 
+// SeedMaterials seeds materials into the database, optionally creating new materials if they don't exist.
 func (s *Seeder) SeedMaterials(seedEntries bool) error {
-
 	entries := []models.MaterialEntry{
 		{
 			Id:               primitive.NewObjectID().Hex(),
@@ -419,7 +422,6 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 	var component models.Material
 	err = collection.FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&component)
 	if err == mongo.ErrNoDocuments {
-
 		newValue := make([]interface{}, len(materials))
 
 		for i := range materials {

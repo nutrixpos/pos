@@ -1,3 +1,13 @@
+// Package handlers contains HTTP handlers for the core module of nutrix.
+//
+// The handlers in this package are used to handle incoming HTTP requests for
+// the core module of nutrix. They interact with the services package, which
+// contains the business logic of the core module.
+//
+// The handlers in this package create a RESTful API for the core module of
+// nutrix. The API endpoints are documented using the Swagger specification.
+// Each handler function is responsible for processing HTTP requests, calling
+// the appropriate service methods, and returning HTTP responses.
 package handlers
 
 import (
@@ -12,6 +22,7 @@ import (
 	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
+// PayUnpaidOrder returns a HTTP handler function to pay an unpaid order.
 func PayUnpaidOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +48,7 @@ func PayUnpaidOrder(config config.Config, logger logger.ILogger) http.HandlerFun
 
 }
 
+// GetUnpaidOrders returns a HTTP handler function to get all unpaid orders.
 func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +84,7 @@ func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFu
 	}
 }
 
+// CancelOrder returns a HTTP handler function to cancel an order.
 func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +110,7 @@ func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+// GetStashedOrders returns a HTTP handler function to get all orders in stash.
 func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -126,8 +140,8 @@ func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerF
 	}
 }
 
+// OrderRemoveFromStash returns a HTTP handler function to remove an order from the stash.
 func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		decoder := json.NewDecoder(r.Body)
@@ -153,8 +167,8 @@ func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.Hand
 	}
 }
 
+// OrderStash returns a HTTP handler function to stash an order.
 func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		decoder := json.NewDecoder(r.Body)
@@ -195,8 +209,8 @@ func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+// FinishOrder returns a HTTP handler function to finish an order.
 func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		decoder := json.NewDecoder(r.Body)
@@ -251,10 +265,10 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		notifications_svc.SendToTopic("order_finished", string(msgJson))
-
 	}
 }
 
+// SubmitOrder returns a HTTP handler function to submit an order.
 func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -283,6 +297,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 }
 
+// GetOrders returns a HTTP handler function to retrieve a list of orders.
 func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -325,6 +340,7 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 }
 
+// StartOrder returns a HTTP handler function to start an order.
 func StartOrder(config config.Config, logger logger.ILogger, settings config.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -368,6 +384,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings config.Set
 	}
 }
 
+// GetOrder returns a HTTP handler function to retrieve an order.
 func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

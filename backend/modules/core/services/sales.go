@@ -1,3 +1,7 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the persistence layer
+// and perform operations on the data models of the core module.
 package services
 
 import (
@@ -13,12 +17,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// SalesService contains the configuration and logger for the sales service.
 type SalesService struct {
+	// Logger is the logger for the sales service.
 	Logger logger.ILogger
+	// Config is the configuration for the sales service.
 	Config config.Config
 }
 
 // format 2006-01-02
+// GetSalesPerday returns a slice of models.SalesPerDay and the total count of records in the database.
+// It takes two parameters, first and rows, which determine the offset and limit of the query.
+// It returns an error if the query fails.
 func (ss *SalesService) GetSalesPerday(first int, rows int) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
@@ -67,6 +77,9 @@ func (ss *SalesService) GetSalesPerday(first int, rows int) (salesPerDay []model
 	return salesPerDay, totalRecords, nil
 }
 
+// AddOrderToSalesDay adds an order to the "sales" collection in the database.
+// It takes two parameters, order and items_cost, which are the order and its associated item costs.
+// It returns an error if the query fails.
 func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []models.ItemCost) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))

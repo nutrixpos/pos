@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -19,6 +24,7 @@ type CategoryService struct {
 	Config config.Config
 }
 
+// InsertCategory inserts a new category into the database.
 func (cs *CategoryService) InsertCategory(category models.Category) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -49,6 +55,7 @@ func (cs *CategoryService) InsertCategory(category models.Category) (err error) 
 	return err
 }
 
+// DeleteCategory deletes a category from the database.
 func (cs *CategoryService) DeleteCategory(category_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -77,6 +84,7 @@ func (cs *CategoryService) DeleteCategory(category_id string) (err error) {
 	return err
 }
 
+// UpdateCategory updates a category in the database.
 func (cs *CategoryService) UpdateCategory(category models.Category) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
@@ -109,6 +117,7 @@ func (cs *CategoryService) UpdateCategory(category models.Category) (err error) 
 
 }
 
+// GetCategories returns a list of categories from the database.
 func (cs *CategoryService) GetCategories(first int, rows int) (categories []models.Category, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))

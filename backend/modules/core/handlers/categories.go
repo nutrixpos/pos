@@ -11,6 +11,7 @@ import (
 	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
+// InsertCategory returns a HTTP handler function to insert a Category into the database.
 func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -38,6 +39,7 @@ func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 	}
 }
 
+// DeleteCategory returns a HTTP handler function to delete a Category from the database.
 func DeleteCategory(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -61,6 +63,7 @@ func DeleteCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 	}
 }
 
+// UpdateCategory returns a HTTP handler function to update a Category in the database.
 func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -88,6 +91,7 @@ func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 	}
 }
 
+// GetCategories returns a HTTP handler function to retrieve a list of Categories from the database.
 func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

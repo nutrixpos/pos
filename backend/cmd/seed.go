@@ -1,3 +1,5 @@
+// This file contains the command for seeding the database with
+// initial data for development or testing purposes.
 package cmd
 
 import (
@@ -11,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// SeedProcess represents the process of seeding the db with initial data.
 type SeedProcess struct {
 	Config    config.Config
 	Logger    logger.ILogger
@@ -20,6 +23,7 @@ type SeedProcess struct {
 	IsNewOnly bool
 }
 
+// GetCmd returns the cobra command for seeding the db.
 func (sp *SeedProcess) GetCmd(prompter userio.Prompter) (*cobra.Command, error) {
 
 	cmd := &cobra.Command{
@@ -41,6 +45,7 @@ func (sp *SeedProcess) GetCmd(prompter userio.Prompter) (*cobra.Command, error) 
 
 }
 
+// Seed seeds the database with the given modules.
 func (sp *SeedProcess) Seed(mods map[string]modules.IBaseModule, prompter userio.Prompter) error {
 	sp.Logger.Info("Seeding database...")
 	seedable_modules_prompt_elements := []userio.PromptTreeElement{}

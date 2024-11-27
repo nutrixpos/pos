@@ -9,6 +9,7 @@ import (
 	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
+// GetMaterialLogs returns a HTTP handler function to retrieve a list of logs for a material.
 func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -41,6 +42,7 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 	}
 }
 
+// GetSalesLog returns a HTTP handler function to retrieve a sales log.
 func GetSalesLog(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

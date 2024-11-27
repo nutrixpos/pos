@@ -1,3 +1,8 @@
+// Package modules is the package for managing the modules of the application.
+//
+// Modules are the building blocks of the application, and they can be used to
+// extend the application with new features. The package provides functions and
+// interfaces for managing the modules of the application.
 package modules
 
 import (
@@ -7,11 +12,20 @@ import (
 	"github.com/elmawardy/nutrix/backend/common/logger"
 )
 
+// AppManager is a struct that manages the modules of the application.
+//
+// It contains a map of strings to IBaseModule, where the key is the name of the module
+// and the value is the module itself. It also contains a logger.ILogger, which is
+// used to log messages.
 type AppManager struct {
+	// Modules is a map of strings to IBaseModule, where the key is the name of the module
+	// and the value is the module itself.
 	Modules map[string]IBaseModule
-	Logger  logger.ILogger
+	// Logger is a logger.ILogger, which is used to log messages.
+	Logger logger.ILogger
 }
 
+// Ignite starts all saved module builders by igniting each module.
 func (manager *AppManager) Ignite() (err error) {
 
 	for _, saved_module_builder := range saved_module_builders {
@@ -21,6 +35,7 @@ func (manager *AppManager) Ignite() (err error) {
 	return err
 }
 
+// LoadModule initializes a ModuleBuilder with the specified module and name.
 func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *ModuleBuilder {
 
 	builder := &ModuleBuilder{
@@ -33,6 +48,7 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 	return builder
 }
 
+// IgniteModule initializes and registers a module from the module builder.
 func (manager *AppManager) IgniteModule(name string, logger logger.ILogger, module_builder *ModuleBuilder) error {
 
 	if manager.Modules == nil {
@@ -75,6 +91,7 @@ func (manager *AppManager) IgniteModule(name string, logger logger.ILogger, modu
 	return nil
 }
 
+// GetModules retrieves all registered modules.
 func (manager *AppManager) GetModules() (modules map[string]IBaseModule, err error) {
 
 	if manager.Modules == nil {

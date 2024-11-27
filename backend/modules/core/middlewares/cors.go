@@ -1,7 +1,15 @@
+// Package middlewares contains middleware functions for the web server.
+//
+// The functions are meant to be used with the net/http package.
+//
+// The functions are:
+//
+//   - AllowCors: adds CORS headers to the response.
 package middlewares
 
 import "net/http"
 
+// AllowCors adds CORS headers to the response.
 func AllowCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := w.Header()

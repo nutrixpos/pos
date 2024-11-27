@@ -1,3 +1,12 @@
+// Package handlers contains HTTP handlers for the core module of nutrix.
+//
+// The handlers in this package are used to handle incoming HTTP requests for
+// the core module of nutrix. The handlers are used to interact with the services
+// package, which contains the business logic of the core module.
+//
+// The handlers in this package are used to create a RESTful API for the core
+// module of nutrix. The API endpoints are documented using the Swagger
+// specification.
 package handlers
 
 import (
@@ -12,6 +21,7 @@ import (
 	"github.com/elmawardy/nutrix/backend/modules/core/services"
 )
 
+// UpdateProduct returns a HTTP handler function to update a product in the database.
 func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -36,6 +46,7 @@ func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 	}
 }
 
+// DeleteProduct returns a HTTP handler function to delete a product from the database.
 func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +71,7 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 	}
 }
 
+// InesrtNewProduct returns a HTTP handler function to insert a new product in the database.
 func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -84,6 +96,10 @@ func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerF
 	}
 }
 
+// GetProducts returns a HTTP handler function to retrieve a list of products from the database.
+// It requires two query string parameters:
+// first_index: the index of the first product to be retrieved
+// rows: the number of products to be retrieved
 func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +140,8 @@ func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
+// GetProductReadyNumber returns a HTTP handler function to retrieve the ready number for a product.
+// The product ID is required as query string.
 func GetProductReadyNumber(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +172,8 @@ func GetProductReadyNumber(config config.Config, logger logger.ILogger) http.Han
 	}
 }
 
+// GetRecipeTree returns a HTTP handler function to retrieve a recipe tree.
+// The recipe ID is required as query string.
 func GetRecipeTree(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -184,6 +204,8 @@ func GetRecipeTree(config config.Config, logger logger.ILogger) http.HandlerFunc
 	}
 }
 
+// GetRecipeAvailability returns a HTTP handler function to check the availability of multiple recipes.
+// The recipe IDs are required as query string, comma separated.
 func GetRecipeAvailability(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

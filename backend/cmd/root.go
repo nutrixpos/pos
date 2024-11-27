@@ -1,3 +1,4 @@
+// Package cmd handles the command-line interface and operations for the application.
 package cmd
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RootProcess holds the root process configuration.
 type RootProcess struct {
 	Config   config.Config
 	Logger   logger.ILogger
@@ -24,6 +26,7 @@ type RootProcess struct {
 	Prompter userio.Prompter
 }
 
+// Execute starts the root process.
 func (root *RootProcess) Execute() error {
 
 	root.cmd = &cobra.Command{

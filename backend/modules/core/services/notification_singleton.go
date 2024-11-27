@@ -1,3 +1,8 @@
+// Package services contains the business logic of the core module of nutrix.
+//
+// The services in this package are used to interact with the database and
+// external services. They are used to implement the HTTP handlers in the
+// handlers package.
 package services
 
 import (
@@ -13,18 +18,29 @@ import (
 	"github.com/olahol/melody"
 )
 
+// INotificationService is an interface for sending notifications to connected clients.
+// It is used by the HTTP handlers in the handlers package to send notifications.
 type INotificationService interface {
+	// HandleHttpRequest handles a HTTP request to the WebSocket endpoint.
 	HandleHttpRequest(w http.ResponseWriter, r *http.Request) error
+	// SendToTopic sends a message to all subscribers of a topic.
 	SendToTopic(topic_name string, message string) error
 }
 
+// MelodyWebsocket is a struct that implements the INotificationService interface.
+// It uses the Melody library to handle WebSocket connections and send messages.
 type MelodyWebsocket struct {
+	// Logger is a logger object used to log messages.
 	Logger logger.ILogger
+	// Config is a configuration object used to configure the WebSocket endpoint.
 	Config config.Config
+	// melody is a Melody object used to handle WebSocket connections and send messages.
 	melody *melody.Melody
+	// Topics is a slice of Topic objects used to store the topics and their subscribers.
 	Topics []models.Topic
 }
 
+// HandleHttpRequest handles a HTTP request to the WebSocket endpoint.
 func (ws *MelodyWebsocket) HandleHttpRequest(w http.ResponseWriter, r *http.Request) error {
 
 	err := ws.melody.HandleRequest(w, r)
@@ -35,6 +51,7 @@ func (ws *MelodyWebsocket) HandleHttpRequest(w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+// SendToTopic sends a message to all subscribers of a topic.
 func (ws *MelodyWebsocket) SendToTopic(topic_name string, message string) error {
 
 	for _, topic := range ws.Topics {
@@ -48,6 +65,7 @@ func (ws *MelodyWebsocket) SendToTopic(topic_name string, message string) error 
 	return nil
 }
 
+// SendToSession sends a message to a specific session.
 func (ws *MelodyWebsocket) SendToSession(msg string, session_id string) {
 
 	ws.melody.BroadcastFilter([]byte(msg), func(q *melody.Session) bool {
@@ -61,6 +79,7 @@ func (ws *MelodyWebsocket) SendToSession(msg string, session_id string) {
 	})
 }
 
+// HandleConnect sets up the session context when a new WebSocket connection is established.
 func (ws *MelodyWebsocket) HandleConnect() {
 	ws.melody.HandleConnect(func(s *melody.Session) {
 		sessionID := uuid.New().String()
@@ -68,6 +87,7 @@ func (ws *MelodyWebsocket) HandleConnect() {
 	})
 }
 
+// AddSessionToTopic adds a session to a topic.
 func (ws *MelodyWebsocket) AddSessionToTopic(topic_name string, session_id string) {
 	if _, index, err := ws.GetTopic(topic_name); err == nil {
 		ws.Topics[index].Subscribers = append(ws.Topics[index].Subscribers, session_id)
@@ -79,6 +99,7 @@ func (ws *MelodyWebsocket) AddSessionToTopic(topic_name string, session_id strin
 	}
 }
 
+// HandleMessages handles messages received from clients.
 func (ws *MelodyWebsocket) HandleMessages() {
 	ws.melody.HandleMessage(func(s *melody.Session, msg []byte) {
 
@@ -149,6 +170,7 @@ func (ws *MelodyWebsocket) HandleMessages() {
 	})
 }
 
+// GetTopic returns a topic and its index in the Topics slice.
 func (ws *MelodyWebsocket) GetTopic(topic_name string) (topic models.Topic, index int, err error) {
 
 	for _, t := range ws.Topics {
@@ -163,6 +185,8 @@ func (ws *MelodyWebsocket) GetTopic(topic_name string) (topic models.Topic, inde
 var melody_ws *MelodyWebsocket
 var once sync.Once
 
+// SpawnNotificationSingletonSvc returns an INotificationService object that can be used to send notifications.
+// The function is designed to be used as a Singleton pattern.
 func SpawnNotificationSingletonSvc(name string, logger logger.ILogger, config config.Config) (INotificationService, error) {
 
 	switch name {
