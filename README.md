@@ -14,7 +14,7 @@
 - Run `go run .` in the backend root directory to run the server
 
 
-#### DB Seeding
+### DB Seeding
 - Run `go run . seed` in the backend directory which will prompt for entities to seed.
     > **Warning**  quiting the prompt with `ctrl+q` or `esc` will run the seeding process, if you want to quit, just deselect all the entities
 
