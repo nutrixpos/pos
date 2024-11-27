@@ -1,5 +1,10 @@
-retract v1.0.7
-retract v1.0.6
+retract (
+    v1.0.3
+    v1.0.5
+    v1.0.6
+    v1.0.7
+)
+
 module github.com/elmawardy/nutrix/backend
 
 go 1.23
