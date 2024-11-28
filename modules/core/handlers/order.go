@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
@@ -298,6 +299,9 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 }
 
 // GetOrders returns a HTTP handler function to retrieve a list of orders.
+// to use pagination, send a "first" and "rows" query string
+// to select all rows, send a "rows" query string with value -1
+// to filter for orders that contains a specific display_id, just send a display_id query string
 func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -309,12 +313,24 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			params.OrderDisplayIdContains = orderDisplayId
 		}
 
+		first := r.URL.Query().Get("first")
+		if i, err := strconv.Atoi(first); err == nil {
+			params.First = i
+		}
+
+		rows := r.URL.Query().Get("rows")
+		if i, err := strconv.Atoi(rows); err == nil {
+			if i != -1 {
+				params.Rows = i
+			}
+		}
+
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		orders, err := orderService.GetOrders(params)
+		orders, total_records, err := orderService.GetOrders(params)
 
 		if err != nil {
 			logger.Error(err.Error())
@@ -324,10 +340,10 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		response := struct {
 			Orders       []models.Order `json:"orders"`
-			TotalRecords int            `json:"total_records"`
+			TotalRecords int64          `json:"total_records"`
 		}{
 			Orders:       orders,
-			TotalRecords: len(orders),
+			TotalRecords: total_records,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

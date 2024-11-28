@@ -31,12 +31,6 @@ type OrderService struct {
 	Settings config.Settings
 }
 
-// GetOrdersParameters is the struct to hold the parameters for the GetOrders method.
-type GetOrdersParameters struct {
-	// OrderDisplayIdContains is the string to search for in the orders' display IDs.
-	OrderDisplayIdContains string
-}
-
 // PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
 func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 
@@ -522,10 +516,21 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	return err
 }
 
-// GetOrders retrieves all orders from the database.
+// GetOrdersParameters is the struct to hold the parameters for the GetOrders method.
+type GetOrdersParameters struct {
+	// OrderDisplayIdContains is the string to search for in the display_id field.
+	OrderDisplayIdContains string
+	// First is used in pagination to set the index of the first record to be returned.
+	First int
+	// Rows is to set the desired row count limit.
+	Rows int
+}
+
+// GetOrders retrieves all orders from the database by default,
 // If the OrderDisplayIdContains parameter is not empty,
-// it will filter the orders with a display id that contains the given string.
-func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.Order, err error) {
+// the function will check if display_id is not ""
+// then it will filter for all order that contains the specified string
+func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.Order, totalRecords int64, err error) {
 
 	orders = make([]models.Order, 0)
 
@@ -538,21 +543,27 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 	// Connect to MongoDB
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return orders, err
+		return orders, 0, err
 	}
 
 	// Ping the database to check connectivity
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return orders, err
+		return orders, 0, err
 	}
 
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
-	filter := bson.M{
-		"state": bson.M{
-			"$ne": "finished",
-		},
+	filter := bson.M{}
+
+	findOptions := options.Find()
+
+	if params.First != 0 {
+		findOptions.SetSkip(int64(params.First))
+	}
+
+	if params.Rows != 0 {
+		findOptions.SetLimit(int64(params.Rows))
 	}
 
 	if params.OrderDisplayIdContains != "" {
@@ -561,16 +572,23 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		}
 	}
 
-	cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), filter)
+	totalRecords, err = client.Database("waha").Collection("orders").CountDocuments(ctx, bson.D{})
 	if err != nil {
-		return orders, err
+		os.Logger.Error(err.Error())
+		return
 	}
+
+	cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), filter, findOptions)
+	if err != nil {
+		return orders, 0, err
+	}
+
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
 		var order models.Order
 		if err := cursor.Decode(&order); err != nil {
-			return orders, err
+			return orders, 0, err
 		}
 
 		orders = append(orders, order)
@@ -578,10 +596,10 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 
 	// Check for errors during iteration
 	if err := cursor.Err(); err != nil {
-		return orders, err
+		return orders, 0, err
 	}
 
-	return orders, nil
+	return orders, totalRecords, nil
 
 }
 
