@@ -28,7 +28,7 @@ import (
 type OrderService struct {
 	Logger   logger.ILogger
 	Config   config.Config
-	Settings config.Settings
+	Settings models.Settings
 }
 
 // PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
@@ -427,7 +427,7 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 		return order_display_id, err
 	}
 
-	var settings config.Settings
+	var settings models.Settings
 	err = client.Database("waha").Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
 	if err != nil {
 		return order_display_id, err

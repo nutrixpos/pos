@@ -13,6 +13,7 @@ import (
 	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/elmawardy/nutrix/modules"
 	"github.com/elmawardy/nutrix/modules/core"
+	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
 )
 
@@ -24,11 +25,13 @@ func main() {
 	// Create the configuration using the Viper config backend
 	conf := config.ConfigFactory("viper", "config.yaml", &logger)
 
-	// Initialize settings structure
-	settings := config.Settings{}
+	settings_svc := services.SettingsService{
+		Config: conf,
+	}
 
 	// Load settings from the database
-	err := settings.LoadFromDB(conf)
+	settings, err := settings_svc.GetSettings()
+
 	if err != nil {
 		// Log and panic if settings can't be loaded
 		logger.Error(err.Error())

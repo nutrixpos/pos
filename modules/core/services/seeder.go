@@ -28,7 +28,7 @@ type Seeder struct {
 	// Config holds the configuration settings needed for database connections.
 	Config config.Config
 	// Settings contains additional configuration settings used during seeding.
-	Settings config.Settings
+	Settings models.Settings
 	// Prompter is used to interact with the user through prompts.
 	Prompter userio.Prompter
 	// IsNewOnly indicates whether only new data should be seeded, leaving existing data untouched.

@@ -9,6 +9,7 @@ import (
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/elmawardy/nutrix/modules"
+	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,7 @@ import (
 type SeedProcess struct {
 	Config    config.Config
 	Logger    logger.ILogger
-	Settings  config.Settings
+	Settings  models.Settings
 	Router    *mux.Router
 	Modules   map[string]modules.IBaseModule
 	IsNewOnly bool

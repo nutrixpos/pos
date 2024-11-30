@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/modules/core/models"
 
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
@@ -19,7 +20,7 @@ import (
 type RootProcess struct {
 	Config   config.Config
 	Logger   logger.ILogger
-	Settings config.Settings
+	Settings models.Settings
 	cmd      *cobra.Command
 	Router   *mux.Router
 	Modules  map[string]modules.IBaseModule

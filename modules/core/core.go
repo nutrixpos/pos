@@ -15,6 +15,7 @@ import (
 	auth_mw "github.com/elmawardy/nutrix/modules/auth/middlewares"
 	"github.com/elmawardy/nutrix/modules/core/handlers"
 	"github.com/elmawardy/nutrix/modules/core/middlewares"
+	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
 )
@@ -31,7 +32,7 @@ type Core struct {
 	Config config.Config
 
 	// Settings is the settings object for the core module.
-	Settings config.Settings
+	Settings models.Settings
 
 	// Prompter is the prompter object for the core module.
 	Prompter userio.Prompter
@@ -175,6 +176,8 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/updateproduct", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/productgetready", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProductReadyNumber(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/editmaterial", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/getsettings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSettings(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/updatesettings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateSettings(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 
 	if c.NotificationSvc == nil {
 		notification_service, err := services.SpawnNotificationSingletonSvc("melody", c.Logger, c.Config)

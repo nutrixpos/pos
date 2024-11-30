@@ -357,7 +357,7 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 }
 
 // StartOrder returns a HTTP handler function to start an order.
-func StartOrder(config config.Config, logger logger.ILogger, settings config.Settings) http.HandlerFunc {
+func StartOrder(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		decoder := json.NewDecoder(r.Body)

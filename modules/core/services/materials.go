@@ -28,7 +28,7 @@ import (
 type MaterialService struct {
 	Logger   logger.ILogger
 	Config   config.Config
-	Settings config.Settings
+	Settings models.Settings
 }
 
 // CalculateMaterialCost calculates the cost of a material entry based on its ID, material ID, and quantity.

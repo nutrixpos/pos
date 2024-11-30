@@ -7,6 +7,7 @@ import (
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/common/userio"
+	"github.com/elmawardy/nutrix/modules/core/models"
 )
 
 // IHttpAuth is an interface for the HTTP authentication
@@ -19,7 +20,7 @@ type IHttpAuth interface {
 }
 
 // NewBuilder creates a new AuthModuleBuilder
-func NewBuilder(config config.Config, settings config.Settings) *AuthModuleBuilder {
+func NewBuilder(config config.Config, settings models.Settings) *AuthModuleBuilder {
 	mb := new(AuthModuleBuilder)
 	mb.Config = config
 	mb.Settings = settings
@@ -31,7 +32,7 @@ func NewBuilder(config config.Config, settings config.Settings) *AuthModuleBuild
 type Auth struct {
 	Logger   logger.ILogger
 	Config   config.Config
-	Settings config.Settings
+	Settings models.Settings
 	Prompter userio.Prompter
 }
 
@@ -39,6 +40,6 @@ type Auth struct {
 type AuthModuleBuilder struct {
 	Logger   logger.ILogger
 	Config   config.Config
-	Settings config.Settings
+	Settings models.Settings
 	Prompter userio.Prompter
 }
