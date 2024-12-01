@@ -4,6 +4,8 @@
 // data to/from JSON.
 package models
 
+import "time"
+
 // Topic represents a group of subscribers for a specific topic.
 type Topic struct {
 	Name        string
@@ -36,11 +38,12 @@ type WebsocketOrderFinishClientMessage struct {
 
 // WebsocketTopicServerMessage is a message sent by the server to a specific topic.
 type WebsocketTopicServerMessage struct {
-	Type      string `json:"type"`
-	TopicName string `json:"topic_name"`
-	Severity  string `json:"severity"`
-	Message   string `json:"message"`
-	Key       string `json:"key"` // unqique label to prevent message duplications
+	Type      string    `json:"type"`
+	Date      time.Time `json:"date"`
+	TopicName string    `json:"topic_name"`
+	Severity  string    `json:"severity"`
+	Message   string    `json:"message"`
+	Key       string    `json:"key"` // unqique label to prevent message duplications
 }
 
 // WebsocketOrderFinishServerMessage is a message sent by the server to finish

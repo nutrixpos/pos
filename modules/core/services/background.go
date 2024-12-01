@@ -79,6 +79,7 @@ func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_s
 					TopicName: "expire_soon",
 					Message:   msg,
 					Severity:  "warn",
+					Date:      time.Now(),
 				}
 
 				jsonstr, err := json.Marshal(topic_msg)
