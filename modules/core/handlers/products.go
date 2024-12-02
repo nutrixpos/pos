@@ -113,12 +113,20 @@ func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			rows = 7
 		}
 
+		search := r.URL.Query().Get("search")
+
 		recipeService := services.RecipeService{
 			Logger: logger,
 			Config: config,
 		}
 
-		products, totalRecords, err := recipeService.GetProducts(first_index, rows)
+		args := services.GetProductsParams{
+			FirstIndex: first_index,
+			Rows:       rows,
+			Search:     search,
+		}
+
+		products, totalRecords, err := recipeService.GetProducts(args)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

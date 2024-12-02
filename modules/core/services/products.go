@@ -137,12 +137,21 @@ func (rs *RecipeService) InsertNew(product models.Product) (err error) {
 	return err
 }
 
+type GetProductsParams struct {
+	// FirstIndex sets the first index of the record to begin with in the select transaction
+	FirstIndex int
+	// Rows sets the limit of the number of desired rows
+	Rows int
+	// Search is a text that the function should use to search for products that has a title contains the contians string
+	Search string
+}
+
 // GetProducts retrieves a list of products from the database.
 //
 // It takes a first_index and rows and returns a slice of products.
 // It also returns the total number of records in the database.
 // It returns an error if the products could not be retrieved.
-func (rs *RecipeService) GetProducts(first_index int, rows int) (products []models.Product, totalRecords int64, err error) {
+func (rs *RecipeService) GetProducts(params GetProductsParams) (products []models.Product, totalRecords int64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -163,16 +172,23 @@ func (rs *RecipeService) GetProducts(first_index int, rows int) (products []mode
 	collection := client.Database("waha").Collection("recipes")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.M{"name": 1})
-	findOptions.SetSkip(int64(first_index))
-	findOptions.SetLimit(int64(rows))
+	findOptions.SetSkip(int64(params.FirstIndex))
+	findOptions.SetLimit(int64(params.Rows))
 
-	totalRecords, err = collection.CountDocuments(ctx, bson.D{})
+	filter := bson.M{}
+	if params.Search != "" {
+		filter["name"] = bson.M{
+			"$regex": fmt.Sprintf("(?i).*%s.*", params.Search),
+		}
+	}
+
+	totalRecords, err = collection.CountDocuments(ctx, filter)
 	if err != nil {
 		rs.Logger.Error(err.Error())
 		return products, totalRecords, err
 	}
 
-	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
+	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		rs.Logger.Error(err.Error())
 		return products, totalRecords, err
