@@ -1,5 +1,10 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/elmawardy/nutrix.svg)](https://pkg.go.dev/github.com/elmawardy/nutrix)
 
+Nutrix is a point of sale management system api. It is a RESTful API that allows you to manage inventory, sales and products for your restaurant or shop.
+
+You will need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the GUI section.
+
+
 # Getting started
 
 ### Prerequisites
@@ -19,5 +24,13 @@
 ### DB Seeding
 - Run `go run . seed` in the backend directory which will prompt for entities to seed.
     > **Warning**  quiting the prompt with `ctrl+q` or `esc` will run the seeding process, if you want to quit, just deselect all the entities
+
+
+### GUI
+Since nutrix is an api based project, you will need a GUI to let end users interact with the api, you are free to create your own GUI and integrate it with the api. if you have an api you can open a discussion with a reference url.
+
+Following are suggested GUI(s) :
+
+- [https://github.com/elmawardy/nutrix-frontend](https://github.com/elmawardy/nutrix-frontend)
 
 
