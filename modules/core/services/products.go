@@ -30,12 +30,38 @@ type RecipeService struct {
 	Config config.Config
 }
 
+func (rs *RecipeService) GetProduct(product_id string) (product models.Product, err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return product, err
+	}
+	// connected to db
+
+	collection := client.Database("waha").Collection("recipes")
+	err = collection.FindOne(ctx, bson.M{"id": product_id}).Decode(&product)
+	if err != nil {
+		return product, err
+	}
+
+	return product, nil
+}
+
 // UpdateProduct updates a product in the database.
 //
 // It takes a product and updates it in the database.
 //
 // If the product is not found, it will return an error.
-func (rs *RecipeService) UpdateProduct(product models.Product) (err error) {
+func (rs *RecipeService) UpdateProduct(product_id string, product models.Product) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -56,7 +82,7 @@ func (rs *RecipeService) UpdateProduct(product models.Product) (err error) {
 
 	_, err = collection.UpdateOne(
 		ctx,
-		bson.M{"id": product.Id},
+		bson.M{"id": product_id},
 		bson.M{
 			"$set": bson.M{
 				"name":         product.Name,
@@ -107,7 +133,7 @@ func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
 //
 // It takes a product and inserts it into the database.
 // It returns an error if the product could not be inserted.
-func (rs *RecipeService) InsertNew(product models.Product) (err error) {
+func (rs *RecipeService) InsertNew(product models.Product) (afterInsert models.Product, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -121,7 +147,7 @@ func (rs *RecipeService) InsertNew(product models.Product) (err error) {
 
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return err
+		return afterInsert, err
 	}
 	// connected to db
 
@@ -129,19 +155,24 @@ func (rs *RecipeService) InsertNew(product models.Product) (err error) {
 
 	product.Id = primitive.NewObjectID().Hex()
 
-	_, err = collection.InsertOne(ctx, product)
+	result, err := collection.InsertOne(ctx, product)
 	if err != nil {
-		return err
+		return afterInsert, err
 	}
 
-	return err
+	err = collection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&afterInsert)
+	if err != nil {
+		return afterInsert, err
+	}
+
+	return afterInsert, err
 }
 
 type GetProductsParams struct {
-	// FirstIndex sets the first index of the record to begin with in the select transaction
-	FirstIndex int
-	// Rows sets the limit of the number of desired rows
-	Rows int
+	// PageNumber sets the first index of the record to begin with in the select transaction
+	PageNumber int
+	// PageSize sets the limit of the number of desired rows
+	PageSize int
 	// Search is a text that the function should use to search for products that has a title contains the contians string
 	Search string
 }
@@ -172,8 +203,8 @@ func (rs *RecipeService) GetProducts(params GetProductsParams) (products []model
 	collection := client.Database("waha").Collection("recipes")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.M{"name": 1})
-	findOptions.SetSkip(int64(params.FirstIndex))
-	findOptions.SetLimit(int64(params.Rows))
+	findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
+	findOptions.SetLimit(int64(params.PageSize))
 
 	filter := bson.M{}
 	if params.Search != "" {

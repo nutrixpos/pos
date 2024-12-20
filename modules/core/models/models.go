@@ -65,7 +65,7 @@ type ComponentConsumeLogs struct {
 	Quantity       float32   `json:"quantity" bson:"quantity"`
 	Company        string    `json:"company" bson:"company"`
 	ItemName       string    `json:"item_name" bson:"item_name"`
-	ItemOrderIndex uint      `json:"item_order_index" bson:"item_order_index"`
+	OrderItemIndex uint      `json:"order_item_index" bson:"order_item_index"`
 	OrderId        string    `json:"order_id" bson:"order_id"`
 }
 

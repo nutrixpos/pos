@@ -1,0 +1,1443 @@
+openapi: 3.0.0
+info:
+  title: Nutrix API
+  description: This is the RESTful API for the Nutrix application, providing access to core functionalities.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4010
+    description: Prism default url (https://github.com/stoplightio/prism)
+  - url: http://localhost:8000
+    description: local nutrix api
+
+paths:
+
+  /categories:
+    get:
+      summary: Retrieve a list of categories
+      security:
+        - oidcAuth:
+          - admin
+      parameters:
+        - in: query
+          name: page[number]
+          schema:
+            type: integer
+          description: The page number to retrieve
+          required: false
+        - in: query
+          name: page[size]
+          schema:
+            type: integer
+          description: The number of items per page
+          required: false
+      responses:
+        '200':
+          description: Succesfully returned categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page[number]:
+                        description: current page
+                        type: integer
+                      page[size]:
+                        type: integer
+                      page[count]:
+                        description: last page
+                        type: integer
+
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string    
+
+    post:
+      summary: Create a new category
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Category'
+      responses:
+        '201':
+          description: Succesfully created new category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+
+  /categories/{id}:
+
+    patch:
+      summary: Update a category
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the category to update
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Category'
+                          
+      responses:
+        '200':
+          description: Successfully update category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+
+
+    delete:
+      summary: Delete a category
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the category to delete
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content - The category was successfully deleted
+        '404':
+          description: Not Found - The category with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+        '400':
+          description: Bad Request - The request could not be understood
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+
+  /materials:
+    get:
+      summary: Retrieve a list of materials
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: page[number]
+          in: query
+          required: false
+          description: The page number to retrieve
+          schema:
+            type: integer
+            default: 1
+        - name: page[size]
+          in: query
+          required: false
+          description: The number of items to display per page
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: OK - The list of materials was successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Material'
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page:
+                        description: current page
+                        type: integer
+                      records_per_page:
+                        type: integer
+                      last_page:
+                        description: last page
+                        type: integer
+                        
+    post:
+      summary: Add new material
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Material'
+      responses:
+        '201':
+          description: Done creating material
+    
+  /materials/{id}:
+    patch:
+      summary: Edit material
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The id of the material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Material'
+              required:
+                - data
+      responses:
+        '200':
+          description: OK - The material was successfully edited
+  
+  /materials/{id}/entries:
+    post:
+      summary: push material entry to material
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The id of the material entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/MaterialEntry'
+
+      responses:
+        '201':
+          description: Material entry successfully inserted to material
+
+  /materials/{material_id}/entries/{entry_id}:
+    delete:
+      summary: delete entry from material entries
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: material_id
+          in: path
+          required: true
+          description: The ID of the material
+          schema:
+            type: integer
+        - name: entry_id
+          in: path
+          required: true
+          description: The ID of the material entry
+          schema:
+            type: integer
+
+      responses:
+        '204':
+          description: Material entry successfully deleted
+
+  /materials/{material_id}/entries/{entry_id}/cost:
+    get:
+      summary: Get material cost
+      security:
+        - oidcAuth: []
+      operationId: materialEntryCost
+      parameters:
+        - in: path
+          name: material_id
+          schema:
+            type: integer
+          description: material id
+          required: true
+        - in: path
+          name: entry_id
+          schema:
+            type: integer
+          description: material entry id
+          required: true
+        - in: query
+          name: quantity
+          required: true
+          schema:
+            type: number
+          description: quantity of the material entry
+      responses:
+        '200':
+          description: A JSON object with the material cost
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: number
+
+              examples:
+                example1:
+                  value:
+                    data: 12.5
+  
+  /materials/{id}/logs:
+    get:
+      summary: Get material consumption logs
+      security:
+        - oidcAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          description: material id
+          required: true
+      responses:
+        '200':
+          description: A JSON array of material consumption logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaterialConsumeLogs'
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page:
+                        description: current page
+                        type: integer
+                      records_per_page:
+                        type: integer
+                      last_page:
+                        description: last page
+                        type: integer
+                          
+  /orders:
+    get:
+      summary: Retrieve a list of orders
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: page[number]
+          in: query
+          required: false
+          description: The page number to retrieve
+          schema:
+            type: integer
+            default: 1
+        - name: page[size]
+          in: query
+          required: false
+          description: The number of items to display per page
+          schema:
+            type: integer
+            default: 10
+        - name: filter[is_paid]
+          in: query
+          required: false
+          description: Filter by is_paid = false or true
+          schema:
+            type: boolean
+        - name: filter[is_stashed]
+          in: query
+          required: false
+          description: Filter by is_stashed = false or true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: A JSON array of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page:
+                        description: current page
+                        type: integer
+                      records_per_page:
+                        type: integer
+                      last_page:
+                        description: last page
+                        type: integer
+                      
+    post:
+      summary: Create a new order
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: "#/components/schemas/Order"
+      responses:
+        '201':
+          description: Succeffully created the order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    delete:
+      summary: Delete Order
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to delete
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Order deleted
+  
+  /orders/{id}/start:
+    post:
+      summary: Start an order
+      security:
+        - oidcAuth: []
+      operationId: orderStart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to start
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Order started successfully
+  
+  /orders/{id}/finish:
+    post:
+      summary: Finish order
+      security:
+        - oidcAuth: []
+      operationId: orderFinish
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to finish
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Order finished successfully
+  
+  /orders/{id}/cancel:
+    post:
+      summary: Cancel order
+      security:
+        - oidcAuth: []
+      operationId: orderCancel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to cancel
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Order cancelled successfully
+  
+  /orders/{id}/pay:
+    post:
+      summary: Pay amount for order
+      security:
+        - oidcAuth: []
+      operationId: orderPay
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Payment was successful
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        code:
+                          type: string
+                        title:
+                          type: string
+                        detail:
+                          type: string
+
+  /products:
+    get:
+      summary: Get products
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: page[number]
+          in: query
+          required: false
+          description: The page number to retrieve
+          schema:
+            type: integer
+            default: 1
+        - name: page[size]
+          in: query
+          required: false
+          description: The number of items to display per page
+          schema:
+            type: integer
+            default: 10
+        - name: filter[search]
+          in: query
+          required: false
+          description: Search product by name or description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page:
+                        description: current page
+                        type: integer
+                      records_per_page:
+                        type: integer
+                      last_page:
+                        description: last page
+                        type: integer
+
+    post:
+      summary: Create a new product
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+
+  /products/availability:
+    get:
+      summary: Get products availability
+      parameters:
+        - in: query
+          name: ids
+          schema:
+            type: string
+          required: true
+          description: comma separated list of product ids to return the availability of
+      security:
+        - oidcAuth: []
+      responses:
+        '200':
+          description: A JSON array of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductAvailability'
+  
+  /products/{id}:
+    get:
+      summary: Get a product
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the product to retrieve
+          schema:
+            type: integer
+        - name: filter[fields]
+          in: query
+          required: false
+          description: Comma separated list of fields to only get in the response
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A product to return
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+    
+    patch:
+      summary: Update a product
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the product to update
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Product'
+      responses:
+        '204':
+          description: Product update successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        details:
+                          type: string
+        '404':
+          description: Not Found - The product with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        details:
+                          type: string
+
+
+    delete:
+      summary: Delete a product
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the product to delete
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content - The product was successfully deleted
+        '404':
+          description: Not Found - The product with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        details:
+                          type: string
+                          
+        '400':
+          description: Bad Request - The request could not be understood
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        details:
+                          type: string
+  
+  /salesperday:
+    get:
+      summary: Retrieve sales per day
+      security:
+        - oidcAuth: []
+      parameters:
+        - in: query
+          name: page[number]
+          schema:
+            type: integer
+          description: The page number to retrieve
+          required: false
+        - in: query
+          name: page[size]
+          schema:
+            type: integer
+          description: The number of items per page
+          required: false
+      responses:
+        '200':
+          description: A JSON array of sales per day
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SalesPerDay'
+                  meta:
+                    type: object
+                    properties:
+                      total_records:
+                        description: total number of available categories in the db
+                        type: integer
+                      page:
+                        description: current page
+                        type: integer
+                      records_per_page:
+                        type: integer
+                      last_page:
+                        description: last page
+                        type: integer
+  
+
+  /settings:
+    get:
+      summary: Retrieve settings
+      security:
+        - oidcAuth: []
+      responses:
+        '200':
+          description: A JSON:API compliant response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Settings'
+    
+    patch:
+      summary: Update settings
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Settings'
+      responses:
+        '204':
+          description: Succeffully updated settings
+
+
+components:
+
+  securitySchemes:
+    oidcAuth:
+      type: oauth2
+      description: This API uses OAuth 2 with the implicit grant flow.
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:2020/oauth/v2/authorize
+          tokenUrl: http://localhost:2020/oauth/v2/token
+          scopes:
+            admin: general admin of the app
+            cashier: cashier related role
+            chef: chef related role
+
+
+  schemas:
+
+    Material:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material
+          readOnly: true
+        name:
+          type: string
+          description: Name of the material
+        settings:
+          type: object
+          properties:
+            stock_alert_treshold:
+              type: number
+              format: float
+              description: Stock alert threshold
+        unit:
+          type: string
+          description: Unit of the material
+        
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialEntry'
+
+    MaterialEntry:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material entry
+          readOnly: true
+        purchase_quantity:
+          type: number
+          format: float
+          description: Quantity of the material purchased
+        purchase_price:
+          type: number
+          format: double
+          description: Price of the material purchased
+        quantity:
+          type: number
+          format: float
+          description: current quantity of the material entry in the inventory
+        title:
+          type: string
+          description: Title of the material entry
+        sku:
+          type: string
+          description: SKU of the material
+        expiration_date:
+          type: string
+          format: date-time
+          description: Expiration date of the material
+
+
+    MaterialConsumeLogs:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        date:
+          type: string
+          format: date-time
+          description: Date of the log entry
+        quantity:
+          type: number
+          format: float
+          description: Quantity consumed
+        order_item_index:
+          type: integer
+
+        material:
+          type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Material'
+        material_entry:
+          type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/MaterialEntry'
+        product:
+          type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Product'
+        order:
+          type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Order'
+
+
+    ItemCost:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        cost:
+          type: number
+          format: float
+        sale_price:
+          type: number
+          format: float
+        quantity:
+          type: number
+          format: float
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              quantity:
+                type: number
+                format: float
+              cost:
+                type: number
+                format: float
+              material:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Material'
+              material_entry:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MaterialEntry'
+              downstream_cost:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemCost'
+        product:
+          type: object
+          $ref: '#/components/schemas/Product'
+
+
+
+    ProductEntry:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        purchase_quantity:
+          type: number
+          format: float
+        purchase_price:
+          type: number
+          format: float
+        quantity:
+          type: number
+          format: float
+        title:
+          type: string
+        sku:
+          type: string
+      
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        image_url:
+          type: string
+        unit:
+          type: string
+        quantity:
+          description: current quantity in the db (doesn't include materials in the inventory)
+          type: number
+          format: float
+        materials:
+          type: array
+          items:
+            type: object
+            properties:
+              quantity:
+                type: number
+              material:
+                $ref: '#/components/schemas/Material'
+        sub_products:
+          type: array
+          items:
+            type: object
+            properties:
+              quantity:
+                type: number
+              product: 
+                $ref: '#/components/schemas/Product'
+        
+
+    OrderItemMaterial:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        quantity:
+          type: number
+          format: float
+        material:
+          type: object
+          $ref: '#/components/schemas/Material'
+
+        material_entry:
+          type: object
+          $ref: '#/components/schemas/MaterialEntry'
+
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        price:
+          type: number
+          format: float
+        is_consume_from_ready:
+          type: boolean
+        quantity:
+          type: number
+          format: float
+        comment:
+          type: string
+        sale_price:
+          type: number
+          format: float
+        cost:
+          type: number
+
+        sub_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemMaterial'
+
+        product:
+          type: object
+          $ref: "#/components/schemas/Product"
+
+
+
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+        display_id:
+          type: string
+        discount:
+          type: number
+          format: float
+        state:
+          type: string
+          enum:
+            - pending
+            - finished
+            - cancelled
+            - stashed
+        started_at:
+          type: string
+          format: date-time
+        comment:
+          type: string
+        cost:
+          type: number
+          format: float
+        price:
+          description: total price before discount
+          type: number
+          format: float
+        paid_amount:
+          type: number
+          format: float
+        is_pay_later:
+          type: boolean
+        is_paid:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        name:
+          type: string
+
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+    
+    SalesPerDayOrder:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        
+        order:
+          type: object
+          $ref: '#/components/schemas/Order'
+
+        costs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemCost'
+
+
+    SalesPerDay:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+        date:
+          type: string
+        costs:
+          type: number
+          format: float
+        total_sales:
+          type: number
+          format: float
+
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesPerDayOrder'
+
+    Settings:
+      type: object
+      properties:
+
+        id:
+          type: number
+          description: Id of the material consume log
+          readOnly: true
+
+        inventory:
+          type: object
+          properties:
+            default_inventory_quantity_warn:
+              type: number
+              format: float
+        orders:
+          type: object
+          properties:
+            queues:
+              type: array
+              items:
+                type: object
+                properties:
+                  prefix:
+                    type: string
+                  next:
+                    type: integer
+                    format: uint32
+
+    ProductAvailability:
+      type: object
+      properties:
+        recipe_id:
+          type: string
+        available:
+          type: number
+          format: float
+        ready:
+          type: number
+          format: float
+        component_requirements:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+
+security:
+  - oidcAuth:
+    - chef
+    - admin
+    - cashier

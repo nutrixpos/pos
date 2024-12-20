@@ -16,7 +16,6 @@ import (
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
 )
 
@@ -26,14 +25,15 @@ import (
 // rows: the number of records to be retrieved
 func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		first_index, err := strconv.Atoi(r.URL.Query().Get("first_index"))
-		if err != nil {
-			first_index = 0
+
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil || page_number == 0 {
+			page_number = 1
 		}
 
-		rows, err := strconv.Atoi(r.URL.Query().Get("rows"))
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
 		if err != nil {
-			rows = 7
+			page_size = 50
 		}
 
 		salesService := services.SalesService{
@@ -41,18 +41,17 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			Config: config,
 		}
 
-		sales, totalRecords, err := salesService.GetSalesPerday(first_index, rows)
+		sales, totalRecords, err := salesService.GetSalesPerday(page_number, page_size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		response := struct {
-			TotalRecords int                  `json:"total_records"`
-			Sales        []models.SalesPerDay `json:"sales"`
-		}{
-			TotalRecords: totalRecords,
-			Sales:        sales,
+		response := JSONApiOkResponse{
+			Meta: JSONAPIMeta{
+				TotalRecords: totalRecords,
+			},
+			Data: sales,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

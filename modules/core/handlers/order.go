@@ -13,37 +13,64 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/gorilla/mux"
 )
 
-// PayUnpaidOrder returns a HTTP handler function to pay an unpaid order.
-func PayUnpaidOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+// DeleteOrder an http handler to delete an order resource
+func DeleteOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		orderId := r.URL.Query().Get("id")
-		if orderId == "" {
-			http.Error(w, "id query string is required", http.StatusBadRequest)
-			return
-		}
+
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := orderService.PayUnpaidOrder(orderId)
+		err := orderService.DeleteOrder(id_param)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		w.WriteHeader(http.StatusNoContent)
+
+	}
+
+}
+
+// Payorder returns a HTTP handler function to pay an unpaid order.
+func Payorder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err := orderService.PayUnpaidOrder(id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 
 	}
 
@@ -90,123 +117,22 @@ func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "id quert string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := orderService.CancelOrder(id)
+		err := orderService.CancelOrder(id_param)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-	}
-}
-
-// GetStashedOrders returns a HTTP handler function to get all orders in stash.
-func GetStashedOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
-		stashed_orders, err := orderService.GetStashedOrders()
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		jsonResponse, err := json.Marshal(stashed_orders)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Write the JSON to the response
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
-	}
-}
-
-// OrderRemoveFromStash returns a HTTP handler function to remove an order from the stash.
-func OrderRemoveFromStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		decoder := json.NewDecoder(r.Body)
-		var order_remove_stash_request dto.OrderRemoveStashRequest
-		err := decoder.Decode(&order_remove_stash_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
-		err = orderService.RemoveStashedOrder(order_remove_stash_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-// OrderStash returns a HTTP handler function to stash an order.
-func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		decoder := json.NewDecoder(r.Body)
-		var order_stash_request dto.OrderStashRequest
-		err := decoder.Decode(&order_stash_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		orderService := services.OrderService{
-			Logger: logger,
-			Config: config,
-		}
-
-		order, err := orderService.StashOrder(order_stash_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		response := dto.OrderStashResponse{
-			Order: order,
-		}
-
-		jsonResponse, err := json.Marshal(response)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Write the JSON to the response
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -214,21 +140,15 @@ func OrderStash(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		decoder := json.NewDecoder(r.Body)
-		var finish_order_request dto.FinishOrderRequest
-		err := decoder.Decode(&finish_order_request)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err = orderService.FinishOrder(finish_order_request)
+		err := orderService.FinishOrder(id_param)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -266,6 +186,8 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		notifications_svc.SendToTopic("order_finished", string(msgJson))
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -276,7 +198,12 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		decoder := json.NewDecoder(r.Body)
 		var order models.Order
-		err := decoder.Decode(&order)
+
+		request := struct {
+			Data models.Order `json:"data"`
+		}{}
+
+		err := decoder.Decode(&request)
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -288,12 +215,29 @@ func SubmitOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			Config: config,
 		}
 
-		err = orderService.SubmitOrder(order)
+		order, err = orderService.SubmitOrder(request.Data)
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		response := JSONApiOkResponse{
+			Data: order,
+			Meta: JSONAPIMeta{
+				TotalRecords: 1,
+			},
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
 	}
 
 }
@@ -308,21 +252,39 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		params := services.GetOrdersParameters{}
 
-		orderDisplayId := r.URL.Query().Get("display_id")
-		if orderDisplayId != "" {
-			params.OrderDisplayIdContains = orderDisplayId
+		filter_displayId := r.URL.Query().Get("filter[display_id]")
+		if filter_displayId != "" {
+			params.OrderDisplayIdContains = filter_displayId
 		}
 
-		first := r.URL.Query().Get("first")
-		if i, err := strconv.Atoi(first); err == nil {
-			params.First = i
-		}
-
-		rows := r.URL.Query().Get("rows")
-		if i, err := strconv.Atoi(rows); err == nil {
-			if i != -1 {
-				params.Rows = i
+		filter_isPaid := r.URL.Query().Get("filter[is_paid]")
+		if filter_isPaid != "" {
+			filter_isPaid_bool, err := strconv.ParseBool(filter_isPaid)
+			if err == nil {
+				params.FilterIsPaid = filter_isPaid_bool
 			}
+		}
+
+		filter_isStashed := r.URL.Query().Get("filter[is_stashed]")
+		if filter_isStashed != "" {
+			filter_isStashed_bool, err := strconv.ParseBool(filter_isStashed)
+			if err == nil {
+				params.FilterIsStashed = filter_isStashed_bool
+			}
+		}
+
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil {
+			params.PageNumber = 1
+		} else {
+			params.PageNumber = page_number
+		}
+
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
+		if err != nil {
+			params.PageSize = 50
+		} else {
+			params.PageSize = page_size
 		}
 
 		orderService := services.OrderService{
@@ -338,12 +300,14 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		response := struct {
-			Orders       []models.Order `json:"orders"`
-			TotalRecords int64          `json:"total_records"`
-		}{
-			Orders:       orders,
-			TotalRecords: total_records,
+		response := JSONApiOkResponse{
+			Data: orders,
+			Meta: JSONAPIMeta{
+				TotalRecords: int(total_records),
+				PageNumber:   params.PageNumber,
+				PageSize:     params.PageSize,
+				PageCount:    int(math.Ceil(float64(total_records) / float64(params.PageSize))),
+			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -360,9 +324,15 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func StartOrder(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		request_body := struct {
+			Data []models.OrderItem `json:"data"`
+		}{}
+
 		decoder := json.NewDecoder(r.Body)
-		var order_start_request dto.OrderStartRequest
-		err := decoder.Decode(&order_start_request)
+		err := decoder.Decode(&request_body)
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -375,7 +345,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 			Settings: settings,
 		}
 
-		err = orderService.StartOrder(order_start_request)
+		err = orderService.StartOrder(id_param, request_body.Data)
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -404,24 +374,25 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "id quert string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		order, err := orderService.GetOrder(id)
+		order, err := orderService.GetOrder(id_param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		jsonOrder, err := json.Marshal(order)
+		response := JSONApiOkResponse{
+			Data: order,
+		}
+
+		jsonOrder, err := json.Marshal(response)
 		if err != nil {
 			log.Fatal(err)
 		}

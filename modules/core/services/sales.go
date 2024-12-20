@@ -29,7 +29,7 @@ type SalesService struct {
 // GetSalesPerday returns a slice of models.SalesPerDay and the total count of records in the database.
 // It takes two parameters, first and rows, which determine the offset and limit of the query.
 // It returns an error if the query fails.
-func (ss *SalesService) GetSalesPerday(first int, rows int) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
+func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -49,8 +49,10 @@ func (ss *SalesService) GetSalesPerday(first int, rows int) (salesPerDay []model
 	collection := client.Database("waha").Collection("sales")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.M{"date": -1})
-	findOptions.SetSkip(int64(first))
-	findOptions.SetLimit(int64(rows))
+
+	skip := (page_number - 1) * page_size
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(page_size))
 	count, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		ss.Logger.Error(err.Error())

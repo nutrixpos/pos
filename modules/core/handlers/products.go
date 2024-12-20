@@ -19,14 +19,21 @@ import (
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/gorilla/mux"
 )
 
 // UpdateProduct returns a HTTP handler function to update a product in the database.
 func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var product models.Product
-		err := json.NewDecoder(r.Body).Decode(&product)
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		request := struct {
+			Data models.Product `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -37,12 +44,13 @@ func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 			Config: config,
 		}
 
-		err = recipeService.UpdateProduct(product)
+		err = recipeService.UpdateProduct(id_param, request.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -51,23 +59,21 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "id query string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		recipeService := services.RecipeService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := recipeService.DeleteProduct(id)
+		err := recipeService.DeleteProduct(id_param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -75,8 +81,11 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var product models.Product
-		err := json.NewDecoder(r.Body).Decode(&product)
+		request := struct {
+			Data models.Product `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -87,8 +96,50 @@ func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerF
 			Config: config,
 		}
 
-		err = recipeService.InsertNew(product)
+		new_product, err := recipeService.InsertNew(request.Data)
 		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: new_product,
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	}
+}
+
+// GetProduct gets a single product from the db
+func GetProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		recipeService := services.RecipeService{
+			Logger: logger,
+			Config: config,
+		}
+
+		product, err := recipeService.GetProduct(id_param)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: product,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -103,17 +154,18 @@ func InesrtNewProduct(config config.Config, logger logger.ILogger) http.HandlerF
 func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		first_index, err := strconv.Atoi(r.URL.Query().Get("first_index"))
+
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
 		if err != nil {
-			first_index = 0
+			page_number = 1
 		}
 
-		rows, err := strconv.Atoi(r.URL.Query().Get("rows"))
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
 		if err != nil {
-			rows = 7
+			page_size = 50
 		}
 
-		search := r.URL.Query().Get("search")
+		search := r.URL.Query().Get("filter[search]")
 
 		recipeService := services.RecipeService{
 			Logger: logger,
@@ -121,8 +173,8 @@ func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		args := services.GetProductsParams{
-			FirstIndex: first_index,
-			Rows:       rows,
+			PageNumber: page_number,
+			PageSize:   page_size,
 			Search:     search,
 		}
 
@@ -132,12 +184,11 @@ func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		response := struct {
-			TotalRecords int64            `json:"total_records"`
-			Products     []models.Product `json:"products"`
-		}{
-			TotalRecords: totalRecords,
-			Products:     products,
+		response := JSONApiOkResponse{
+			Data: products,
+			Meta: JSONAPIMeta{
+				TotalRecords: int(totalRecords),
+			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -148,63 +199,32 @@ func GetProducts(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
-// GetProductReadyNumber returns a HTTP handler function to retrieve the ready number for a product.
-// The product ID is required as query string.
-func GetProductReadyNumber(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "id query string is required", http.StatusBadRequest)
-			return
-		}
-
-		recipeService := services.RecipeService{
-			Logger: logger,
-			Config: config,
-		}
-
-		ready, err := recipeService.GetReadyNumber(id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(ready); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-	}
-}
-
 // GetRecipeTree returns a HTTP handler function to retrieve a recipe tree.
 // The recipe ID is required as query string.
 func GetRecipeTree(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "recipe id query string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		recipeService := services.RecipeService{
 			Logger: logger,
 			Config: config,
 		}
 
-		tree, err := recipeService.GetRecipeTree(id)
+		tree, err := recipeService.GetRecipeTree(id_param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		response := JSONApiOkResponse{
+			Data: tree,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(tree); err != nil {
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -237,12 +257,18 @@ func GetRecipeAvailability(config config.Config, logger logger.ILogger) http.Han
 			return
 		}
 
-		if err := json.NewEncoder(w).Encode(availabilities); err != nil {
-			w.Header().Set("Content-Type", "application/json")
+		response := JSONApiOkResponse{
+			Data: availabilities,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
 	}
 
 }

@@ -1,8 +1,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/elmawardy/nutrix.svg)](https://pkg.go.dev/github.com/elmawardy/nutrix)
 
-Nutrix is a point of sale management system api. It is a RESTful API that allows you to manage inventory, sales and products for your restaurant or shop.
+Nutrix is a point of sale management system RESTful api. It allows you to manage inventory, sales and products for your restaurant or shop.
 
-You will need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the GUI section.
+You need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the [GUI](#gui) section.
 
 
 # Getting started

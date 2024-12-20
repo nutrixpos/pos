@@ -80,6 +80,7 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 			if err == nil {
 				authorized = true
 				next.ServeHTTP(w, r)
+				break
 			}
 		}
 

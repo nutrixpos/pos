@@ -2,6 +2,7 @@
 node_modules
 /dist
 zitadel-key.json
+.42c
 
 
 # local env files

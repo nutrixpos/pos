@@ -16,7 +16,6 @@ import (
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -29,6 +28,33 @@ type OrderService struct {
 	Logger   logger.ILogger
 	Config   config.Config
 	Settings models.Settings
+}
+
+func (os *OrderService) DeleteOrder(order_id string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	collection := client.Database("waha").Collection("orders")
+	_, err = collection.DeleteOne(ctx, bson.M{"id": order_id})
+
+	return
 }
 
 // PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
@@ -146,87 +172,6 @@ func (os *OrderService) CancelOrder(order_id string) (err error) {
 	return err
 }
 
-// GetStashedOrders retrieves all stashed orders from the "stashed_orders" collection in the database.
-func (os *OrderService) GetStashedOrders() (stashed_orders []models.Order, err error) {
-
-	stashed_orders = make([]models.Order, 0)
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return stashed_orders, err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return stashed_orders, err
-	}
-
-	// Connected successfully
-
-	collection := client.Database("waha").Collection("stashed_orders")
-	cursor, err := collection.Find(context.Background(), bson.D{})
-	if err != nil {
-		return stashed_orders, err
-	}
-	defer cursor.Close(context.Background())
-
-	for cursor.Next(context.Background()) {
-		var order models.Order
-		if err := cursor.Decode(&order); err != nil {
-			return stashed_orders, err
-		}
-
-		stashed_orders = append(stashed_orders, order)
-	}
-
-	// Check for errors during iteration
-	if err := cursor.Err(); err != nil {
-		return stashed_orders, err
-	}
-
-	return stashed_orders, err
-}
-
-// RemoveStashedOrder removes an order from the "stashed_orders" collection based on the provided order display ID.
-func (os *OrderService) RemoveStashedOrder(stash_remove_request dto.OrderRemoveStashRequest) error {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
-
-	collection := client.Database("waha").Collection("stashed_orders")
-	filter := bson.M{"display_id": stash_remove_request.OrderDisplayId}
-
-	_, err = collection.DeleteOne(ctx, filter)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // CalculateCost calculates the cost of each item in the provided list of order items.
 func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.ItemCost, err error) {
 
@@ -325,7 +270,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 }
 
 // FinishOrder sets the state of the order with the given order_id to "finished".
-func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest) (err error) {
+func (os *OrderService) FinishOrder(order_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -350,7 +295,7 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 
 	collection := client.Database("waha").Collection("orders")
 
-	filter := bson.M{"id": finish_order_request.Id}
+	filter := bson.M{"id": order_id}
 	update := bson.M{"$set": bson.M{"state": "finished"}}
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -386,7 +331,7 @@ func (os *OrderService) FinishOrder(finish_order_request dto.FinishOrderRequest)
 		"cost":          totalCost,
 		"sale_price":    totalSalePrice,
 		"items":         items_cost,
-		"order_id":      finish_order_request.Id,
+		"order_id":      order_id,
 		"time_consumed": time.Since(order.SubmittedAt),
 	}
 	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
@@ -433,7 +378,11 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 		return order_display_id, err
 	}
 
-	random_queue_index := rand.Intn((len(settings.Orders.Queues)-1)-0) + 0
+	random_queue_index := 0
+
+	if len(settings.Orders.Queues) > 1 {
+		random_queue_index = rand.Intn((len(settings.Orders.Queues)-1)-0) + 0
+	}
 	random_queue := settings.Orders.Queues[random_queue_index]
 
 	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
@@ -457,7 +406,7 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 }
 
 // SubmitOrder adds an order to the database and creates a display id.
-func (os *OrderService) SubmitOrder(order models.Order) (err error) {
+func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -482,7 +431,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	order.DisplayId, err = os.GetOrderDisplayId()
 	if err != nil {
-		return err
+		return order, err
 	}
 
 	totalCost := 0.0
@@ -490,7 +439,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 
 	items_cost, err := os.CalculateCost(order.Items)
 	if err != nil {
-		return err
+		return order, err
 	}
 
 	for index, recipe_cost := range items_cost {
@@ -506,24 +455,31 @@ func (os *OrderService) SubmitOrder(order models.Order) (err error) {
 	order.Cost = totalCost
 	order.SubmittedAt = time.Now()
 	order.Id = primitive.NewObjectID().Hex()
-	order.State = "pending"
+
+	if order.State != "stashed" {
+		order.State = "pending"
+	}
 
 	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order)
 	if err != nil {
-		return err
+		return order, err
 	}
 
-	return err
+	return order, err
 }
 
 // GetOrdersParameters is the struct to hold the parameters for the GetOrders method.
 type GetOrdersParameters struct {
 	// OrderDisplayIdContains is the string to search for in the display_id field.
 	OrderDisplayIdContains string
-	// First is used in pagination to set the index of the first record to be returned.
-	First int
+	// page_number is used in pagination to set the index of the first record to be returned.
+	PageNumber int
 	// Rows is to set the desired row count limit.
-	Rows int
+	PageSize int
+	// FilterIsPaid is to filter for orders that are paid
+	FilterIsPaid bool
+	// FilterIsStashed is to filter for orders that are stashed
+	FilterIsStashed bool
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -557,13 +513,14 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 	filter := bson.M{}
 
 	findOptions := options.Find()
+	findOptions.SetLimit(int64(params.PageSize))
+	findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
 
-	if params.First != 0 {
-		findOptions.SetSkip(int64(params.First))
+	if params.FilterIsPaid {
+		filter["is_paid"] = true
 	}
-
-	if params.Rows != 0 {
-		findOptions.SetLimit(int64(params.Rows))
+	if params.FilterIsStashed {
+		filter["state"] = "stashed"
 	}
 
 	if params.OrderDisplayIdContains != "" {
@@ -603,47 +560,10 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 
 }
 
-// StashOrder adds an order to the "stashed_orders" collection in the database.
-func (os *OrderService) StashOrder(order_stash_request dto.OrderStashRequest) (models.Order, error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return order_stash_request.Order, err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return order_stash_request.Order, err
-	}
-
-	// Connected successfully
-
-	order_stash_request.Order.DisplayId, err = os.GetOrderDisplayId()
-	if err != nil {
-		return order_stash_request.Order, err
-	}
-
-	collection := client.Database("waha").Collection("stashed_orders")
-	_, err = collection.InsertOne(ctx, order_stash_request.Order)
-	if err != nil {
-		return order_stash_request.Order, err
-	}
-
-	return order_stash_request.Order, err
-}
-
 // StartOrder sets the state of the order with the given order_id to "in_progress",
 // and updates the "started_at" field with the current time.
 // It also consumes the item components from the inventory and sends a notification to the websockets.
-func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) error {
+func (os *OrderService) StartOrder(order_id string, order_items []models.OrderItem) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -667,7 +587,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 
 	var order models.Order
 
-	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"id": order_start_request.Id}).Decode(&order)
+	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
 	if err != nil {
 		return err
 	}
@@ -682,7 +602,7 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 
 	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
 
-	for itemIndex, item := range order_start_request.Items {
+	for itemIndex, item := range order_items {
 		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex)
 		for _, notification := range notifications {
 			if _, ok := refined_notifications[notification.Key]; !ok {
@@ -714,13 +634,13 @@ func (os *OrderService) StartOrder(order_start_request dto.OrderStartRequest) er
 
 	update := bson.M{
 		"$set": bson.M{
-			"items":      order_start_request.Items,
+			"items":      order_items,
 			"state":      "in_progress",
 			"started_at": time.Now(),
 		},
 	}
 
-	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"id": order_start_request.Id}, update)
+	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"id": order_id}, update)
 	if err != nil {
 		return err
 	}

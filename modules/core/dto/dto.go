@@ -39,19 +39,6 @@ type Order struct {
 	Ingredients  [][]OrderStartRequestIngredient `json:"ingredients"`
 }
 
-// RequestComponentEntryAdd is a DTO used in the request body in the POST /material/entry endpoint.
-// It contains the component id and the entries.
-type RequestComponentEntryAdd struct {
-	ComponentId string                 `json:"component_id"`
-	Entries     []models.MaterialEntry `json:"entries"`
-}
-
-// FinishOrderRequest is a DTO used in the request body in the POST /order/finish endpoint.
-// It contains the order id.
-type FinishOrderRequest struct {
-	Id string `json:"order_id"`
-}
-
 // GetComponentConsumeLogsRequest is a DTO used in the request body in the GET /material/consume_logs endpoint.
 // It contains the material name.
 type GetComponentConsumeLogsRequest struct {

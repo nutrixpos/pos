@@ -17,9 +17,9 @@ import (
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/gorilla/mux"
 )
 
 // CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
@@ -29,18 +29,10 @@ import (
 func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// Retrieve the entry ID from the query string
-		entryIDStr := r.URL.Query().Get("entry_id")
-		if entryIDStr == "" {
-			http.Error(w, "entry_id query string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
 
-		materialIdStr := r.URL.Query().Get("material_id")
-		if materialIdStr == "" {
-			http.Error(w, "material_id query string is required", http.StatusBadRequest)
-			return
-		}
+		material_id_param := params["material_id"]
+		entry_id_param := params["entry_id"]
 
 		quantityStr := r.URL.Query().Get("quantity")
 		if quantityStr == "" {
@@ -60,12 +52,25 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 			Config: config,
 		}
 
-		cost, err := materialService.CalculateMaterialCost(entryIDStr, materialIdStr, quantity)
+		cost, err := materialService.CalculateMaterialCost(entry_id_param, material_id_param, quantity)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte(fmt.Sprintf("%f", cost)))
+
+		response := JSONApiOkResponse{
+			Data: cost,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
 	}
 }
 
@@ -74,19 +79,36 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil {
+			page_number = 1
+		}
+
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
+		if err != nil {
+			page_size = 50
+		}
+
 		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		materials, err := materialService.GetMaterials()
+		materials, err := materialService.GetMaterials(page_number, page_size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		response := JSONApiOkResponse{
+			Data: materials,
+			Meta: JSONAPIMeta{
+				TotalRecords: len(materials),
+			},
+		}
+
 		// Convert the slice to JSON
-		jsonMaterials, err := json.Marshal(materials)
+		jsonMaterials, err := json.Marshal(response)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -105,22 +127,26 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// Parse the request body into a DBComponent struct
-		var dbComponent models.Material
-		err := json.NewDecoder(r.Body).Decode(&dbComponent)
+
+		request := struct {
+			Data models.Material `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		for index, entry := range dbComponent.Entries {
-			dbComponent.Entries[index].PurchaseQuantity = entry.Quantity
+		for index, entry := range request.Data.Entries {
+			request.Data.Entries[index].PurchaseQuantity = entry.Quantity
 		}
 
 		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
-		err = materialService.AddComponent(dbComponent)
+		err = materialService.AddComponent(request.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -129,31 +155,32 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		// Return a success response
 		fmt.Fprint(w, "component adding saved successfully")
 
+		w.WriteHeader(http.StatusCreated)
+
 	}
 }
 
 // DeleteEntry returns a HTTP handler function to delete an entry in the material database.
 func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Retrieve the entry ID from the query string
-		entryIDStr := r.URL.Query().Get("entry_id")
-		componentIdStr := r.URL.Query().Get("component_id")
+
+		params := mux.Vars(r)
+		material_id_param := params["material_id"]
+		entry_id_param := params["entry_id"]
 
 		materialService := services.MaterialService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := materialService.DeleteEntry(entryIDStr, componentIdStr)
+		err := materialService.DeleteEntry(entry_id_param, material_id_param)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error(err.Error())
 			return
 		}
 
-		// Send a success response
-		w.Write([]byte("Entry deleted successfully"))
-
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -161,8 +188,14 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var material_edit_request dto.MaterialEditRequest
-		err := json.NewDecoder(r.Body).Decode(&material_edit_request)
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		request := struct {
+			Data models.Material `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -173,12 +206,13 @@ func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc 
 			Config: config,
 		}
 
-		err = materialService.EditMaterial(material_edit_request)
+		err = materialService.EditMaterial(id_param, request.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -187,8 +221,14 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var componentEntryRequest dto.RequestComponentEntryAdd
-		err := json.NewDecoder(r.Body).Decode(&componentEntryRequest)
+		params := mux.Vars(r)
+		material_id := params["id"]
+
+		request := struct {
+			Data []models.MaterialEntry `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -199,12 +239,45 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 			Config: config,
 		}
 
-		err = materialService.PushMaterialEntry(componentEntryRequest.ComponentId, componentEntryRequest.Entries)
+		err = materialService.PushMaterialEntry(material_id, request.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		w.WriteHeader(http.StatusOK)
 	}
 
+}
+
+func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		material_id := params["id"]
+
+		logService := services.Log{
+			Logger: logger,
+			Config: config,
+		}
+
+		logs, err := logService.GetComponentLogs(material_id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: logs,
+		}
+
+		jsonLogs, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonLogs)
+	}
 }

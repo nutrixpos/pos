@@ -9,14 +9,27 @@ import (
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/gorilla/mux"
 )
+
+type JSONAPIMeta struct {
+	TotalRecords int `json:"total_records"`
+	PageNumber   int `json:"page_number"`
+	PageSize     int `json:"page_size"`
+	PageCount    int `json:"page_count"`
+}
+
+type JSONApiOkResponse struct {
+	Data interface{} `json:"data"`
+	Meta JSONAPIMeta `json:"meta"`
+}
 
 // InsertCategory returns a HTTP handler function to insert a Category into the database.
 func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		request := struct {
-			Category models.Category `json:"category"`
+			Data models.Category `json:"data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&request)
@@ -30,11 +43,13 @@ func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 			Config: config,
 		}
 
-		err = categoryService.InsertCategory(request.Category)
+		err = categoryService.InsertCategory(request.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		w.WriteHeader(http.StatusCreated)
 
 	}
 }
@@ -43,18 +58,15 @@ func InsertCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 func DeleteCategory(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "id query string is required", http.StatusBadRequest)
-			return
-		}
+		params := mux.Vars(r)
+		id_param := params["id"]
 
 		categoryService := services.CategoryService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := categoryService.DeleteCategory(id)
+		err := categoryService.DeleteCategory(id_param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -68,7 +80,7 @@ func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		body := struct {
-			Category models.Category `json:"category"`
+			Data models.Category `json:"data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&body)
@@ -82,12 +94,28 @@ func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 			Config: config,
 		}
 
-		err = categoryService.UpdateCategory(body.Category)
+		category, err := categoryService.UpdateCategory(body.Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		w.WriteHeader(http.StatusCreated)
+		jsonResponse, err := json.Marshal(JSONApiOkResponse{
+			Data: category,
+			Meta: JSONAPIMeta{
+				TotalRecords: 1,
+			},
+		})
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(jsonResponse)
 	}
 }
 
@@ -96,14 +124,14 @@ func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		first_index, err := strconv.Atoi(r.URL.Query().Get("first_index"))
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
 		if err != nil {
-			first_index = 0
+			page_number = 1
 		}
 
-		rows, err := strconv.Atoi(r.URL.Query().Get("rows"))
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
 		if err != nil {
-			rows = 9999999
+			page_size = 50
 		}
 
 		categoryService := services.CategoryService{
@@ -111,18 +139,17 @@ func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc
 			Config: config,
 		}
 
-		categories, err := categoryService.GetCategories(first_index, rows)
+		categories, err := categoryService.GetCategories(page_number, page_size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		response := struct {
-			Categories   []models.Category `json:"categories"`
-			TotalRecords int               `json:"total_records"`
-		}{
-			Categories:   categories,
-			TotalRecords: len(categories),
+		response := JSONApiOkResponse{
+			Data: categories,
+			Meta: JSONAPIMeta{
+				TotalRecords: len(categories),
+			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")

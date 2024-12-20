@@ -13,7 +13,6 @@ import (
 
 	"github.com/elmawardy/nutrix/common/config"
 	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/dto"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -291,7 +290,7 @@ func (cs *MaterialService) GetComponentAvailability(componentid string) (amount 
 // GetMaterials retrieves all materials from the database.
 //
 // The function returns a slice of Material structs.
-func (cs *MaterialService) GetMaterials() (materials []models.Material, err error) {
+func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materials []models.Material, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -315,8 +314,14 @@ func (cs *MaterialService) GetMaterials() (materials []models.Material, err erro
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
+	findOptions := options.Find()
+
+	skip := (page_number - 1) * page_size
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(page_size))
+
 	// Get the "test" collection from the database
-	cur, err := client.Database("waha").Collection("materials").Find(ctx, bson.D{})
+	cur, err := client.Database("waha").Collection("materials").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return materials, err
@@ -345,7 +350,7 @@ func (cs *MaterialService) GetMaterials() (materials []models.Material, err erro
 // corresponding material in the database with the provided information.
 //
 // The function is used to edit an existing material in the database.
-func (cs *MaterialService) EditMaterial(materialEditRequest dto.MaterialEditRequest) error {
+func (cs *MaterialService) EditMaterial(material_id string, material_to_edit models.Material) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -371,16 +376,16 @@ func (cs *MaterialService) EditMaterial(materialEditRequest dto.MaterialEditRequ
 
 	// Find material in db
 	var existingMaterial models.Material
-	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": materialEditRequest.Material.Id}).Decode(&existingMaterial)
+	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": material_id}).Decode(&existingMaterial)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
 	}
 
-	existingMaterial.Settings.StockAlertTreshold = materialEditRequest.Material.Settings.StockAlertTreshold
+	existingMaterial.Settings.StockAlertTreshold = material_to_edit.Settings.StockAlertTreshold
 
 	// Update the material
-	_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), bson.M{"id": existingMaterial.Id}, bson.M{"$set": existingMaterial})
+	_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), bson.M{"id": material_id}, bson.M{"$set": existingMaterial})
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err

@@ -16,8 +16,11 @@ func UpdateSettings(conf config.Config, logger logger.ILogger) http.HandlerFunc 
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var settings models.Settings
-		err := json.NewDecoder(r.Body).Decode(&settings)
+		request := struct {
+			Data models.Settings `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -27,12 +30,14 @@ func UpdateSettings(conf config.Config, logger logger.ILogger) http.HandlerFunc 
 			Config: conf,
 		}
 
-		err = settings_svc.UpdateSettings(settings)
+		err = settings_svc.UpdateSettings(request.Data)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		w.WriteHeader(http.StatusNoContent)
 
 	}
 }
@@ -53,10 +58,8 @@ func GetSettings(conf config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		response := struct {
-			Body models.Settings `json:"settings"`
-		}{
-			Body: settings,
+		response := JSONApiOkResponse{
+			Data: settings,
 		}
 
 		jsonResponse, err := json.Marshal(response)
