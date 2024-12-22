@@ -28,7 +28,7 @@ type Log struct {
 }
 
 // GetComponentLogs gets all logs for a given component_id.
-func (l *Log) GetComponentLogs(component_id string) (logs []models.ComponentConsumeLogs, err error) {
+func (l *Log) GetComponentLogs(component_id string, page_number, page_size int) (logs []models.ComponentConsumeLogs, total_records int64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -39,33 +39,48 @@ func (l *Log) GetComponentLogs(component_id string) (logs []models.ComponentCons
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		l.Logger.Error(err.Error())
-		return logs, err
+		return logs, total_records, err
 	}
 
 	// Ping the database to check connectivity
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		l.Logger.Error(err.Error())
-		return logs, err
+		return logs, total_records, err
 	}
 
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
 	filter := bson.M{"type": "component_consume", "component_id": component_id}
-	cur, err := client.Database("waha").Collection("logs").Find(ctx, filter)
+
+	skip := (page_number - 1) * page_size
+	if page_number == 1 {
+		skip = 0
+	}
+
+	findOptions := options.Find().SetSkip(int64(skip)).SetLimit(int64(page_size))
+
+	collection := client.Database("waha").Collection("logs")
+	total_records, err = collection.CountDocuments(ctx, filter)
 	if err != nil {
 		l.Logger.Error(err.Error())
-		return logs, err
+		return logs, 0, err
+	}
+
+	cur, err := client.Database("waha").Collection("logs").Find(ctx, filter, findOptions)
+	if err != nil {
+		l.Logger.Error(err.Error())
+		return logs, total_records, err
 	}
 	defer cur.Close(ctx)
 
 	if err = cur.All(ctx, &logs); err != nil {
 		l.Logger.Error(err.Error())
-		return logs, err
+		return logs, total_records, err
 	}
 
-	return logs, nil
+	return logs, total_records, err
 }
 
 // GetSalesLogs gets all logs for a given component_id.

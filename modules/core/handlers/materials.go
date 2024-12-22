@@ -256,12 +256,22 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 		params := mux.Vars(r)
 		material_id := params["id"]
 
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil {
+			page_number = 1
+		}
+
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
+		if err != nil {
+			page_size = 50
+		}
+
 		logService := services.Log{
 			Logger: logger,
 			Config: config,
 		}
 
-		logs, err := logService.GetComponentLogs(material_id)
+		logs, total_records, err := logService.GetComponentLogs(material_id, page_number, page_size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -269,6 +279,9 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 
 		response := JSONApiOkResponse{
 			Data: logs,
+			Meta: JSONAPIMeta{
+				TotalRecords: int(total_records),
+			},
 		}
 
 		jsonLogs, err := json.Marshal(response)
