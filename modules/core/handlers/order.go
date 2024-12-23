@@ -257,6 +257,14 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			params.OrderDisplayIdContains = filter_displayId
 		}
 
+		filter_finished := r.URL.Query().Get("filter[is_finished]")
+		if filter_finished != "" {
+			filter_finished_bool, err := strconv.ParseBool(filter_finished)
+			if err == nil {
+				params.FilterIsFinished = filter_finished_bool
+			}
+		}
+
 		filter_isPaid := r.URL.Query().Get("filter[is_paid]")
 		if filter_isPaid != "" {
 			filter_isPaid_bool, err := strconv.ParseBool(filter_isPaid)

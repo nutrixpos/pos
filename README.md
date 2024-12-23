@@ -7,6 +7,10 @@ You need to integrate with a separage GUI service to provide an interface for en
 **OpenAPI 3.x Docs :**
 [`modules/core/specs.api.yaml`](modules/core/specs.api.yaml)
 
+You can use the openapi docs to run [`Swagger`](https://swagger.io/) docs and test the api and you can also use the docs with a mock server like [`Prism`](https://github.com/stoplightio/prism) to develop the frontend without the need of installing nutrix.
+
+
+
 # Getting started
 
 ### Prerequisites

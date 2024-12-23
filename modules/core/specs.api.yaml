@@ -515,6 +515,12 @@ paths:
           description: Filter by is_stashed = false or true
           schema:
             type: boolean
+        - name: filter[is_finished]
+          in: query
+          required: false
+          description: Filter by is_finished = false or true
+          schema:
+            type: boolean
       responses:
         '200':
           description: A JSON array of orders

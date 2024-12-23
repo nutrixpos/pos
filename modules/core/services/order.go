@@ -480,6 +480,8 @@ type GetOrdersParameters struct {
 	FilterIsPaid bool
 	// FilterIsStashed is to filter for orders that are stashed
 	FilterIsStashed bool
+	// FilterFinished is used to filter finished order, use true or false
+	FilterIsFinished bool
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -521,6 +523,14 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 	}
 	if params.FilterIsStashed {
 		filter["state"] = "stashed"
+	}
+
+	if params.FilterIsFinished {
+		filter["state"] = "finished"
+	}
+
+	if !params.FilterIsFinished {
+		filter["state"] = bson.M{"$ne": "finished"}
 	}
 
 	if params.OrderDisplayIdContains != "" {
