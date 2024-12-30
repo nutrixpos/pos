@@ -11,11 +11,17 @@ type OrderSettings struct {
 	Queues []OrderQueueSettings `json:"queues" bson:"queues"`
 }
 
+type LanguageSettings struct {
+	Code     string `json:"code" bson:"code"`
+	Language string `json:"language" bson:"language"`
+}
+
 // Settings represents the configuration settings structure
 type Settings struct {
 	Id        string `bson:"id,omitempty" json:"id"`
 	Inventory struct {
 		DefaultInventoryQuantityWarn float64 `json:"default_inventory_quantity_warn" bson:"default_inventory_quantity_warn"`
 	} `bson:"inventory" json:"inventory"`
-	Orders OrderSettings `bson:"orders" json:"orders"`
+	Orders   OrderSettings    `bson:"orders" json:"orders"`
+	Language LanguageSettings `bson:"language" json:"language"`
 }

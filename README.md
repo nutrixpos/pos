@@ -4,6 +4,8 @@ Nutrix is a point of sale management system RESTful api. It allows you to manage
 
 You need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the [GUI](#gui) section.
 
+> Currently nutrix support only restaurant style cycle, where the order is sent first to the kitchen awaiting to be started then begin processing the inventory.
+
 **OpenAPI 3.x Docs :**
 [`modules/core/specs.api.yaml`](modules/core/specs.api.yaml)
 

@@ -1007,6 +1007,57 @@ paths:
         '204':
           description: Succeffully updated settings
 
+  /languages:
+    get:
+      summary: Retrieve all installed languages
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        language:
+                          type: string
+                        code:
+                          type: string
+  /languages/{code}:
+    get:
+      summary: Get language data
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: object
+
+              examples:
+                en:
+                  value:
+                    data:
+                      api_version: "v2.3.0"
+                      code: "en"
+                      language: "English"
+                      orientation: "ltr"
+                      pack:
+                        "product": "Product | Products"
+                        "order": "Order | Orders"
+                        "order_items": "Order Items"
+
+
+
 
 components:
 
@@ -1424,6 +1475,10 @@ components:
                   next:
                     type: integer
                     format: uint32
+        language:
+          type: object
+          $ref: "#/components/schemas/LanguageSettings"
+
 
     ProductAvailability:
       type: object
@@ -1441,6 +1496,31 @@ components:
           additionalProperties:
             type: number
             format: float
+
+    OrderQueueSettings:
+      type: object
+      properties:
+        prefix:
+          type: string
+        next:
+          type: integer
+          format: uint32
+
+    OrderSettings:
+      type: object
+      properties:
+        queues:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderQueueSettings'
+
+    LanguageSettings:
+      type: object
+      properties:
+        code:
+          type: string
+        language:
+          type: string
 
 security:
   - oidcAuth:
