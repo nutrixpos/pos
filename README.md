@@ -4,7 +4,7 @@ Nutrix is a point of sale management system RESTful api. It allows you to manage
 
 You need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the [GUI](#gui) section.
 
-> Currently nutrix support only restaurant style cycle, where the order is sent first to the kitchen awaiting to be started then begin processing the inventory.
+> Currently nutrix supports only restaurant style cycle, where the order is sent first to the kitchen awaiting to be started then begin processing the inventory.
 
 **OpenAPI 3.x Docs :**
 [`modules/core/specs.api.yaml`](modules/core/specs.api.yaml)
@@ -24,6 +24,8 @@ You can use the openapi docs to run [`Swagger`](https://swagger.io/) docs and te
     - Make sure the domain, port and key path are set properly in **config.yaml**
 
         > **__Note__** that Zitadel needs to be reachable using the same domain from the backend and the frontend, docker produced notable connection issues regarding the hostname, which requires additional settings like adding a reverse proxy to be able to reach it using the same hostname as from the browser.
+- #### google-chrome command (or equivalent on linux)
+    - test by running `google-chrome --version` (tested on linux)
 
 ### Running the web server
 - Run `go run .` in the backend root directory to run the server

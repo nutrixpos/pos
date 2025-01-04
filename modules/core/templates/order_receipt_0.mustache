@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html dir="{{direction}}">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            font-size:1.3rem;
+            font-family: Arial, sans-serif
+        }
+        #main-content {
+            padding:0.5rem;
+        }
+        body {
+            width: 570;
+            margin:0px;
+            padding:0.5rem;
+            min-height:600px;
+        }
+        table, th, td {
+            padding:0.3rem;
+            text-align:center;
+            line-height:1.2rem;
+        }
+
+        table,th {
+            overflow-wrap: break-word;
+        }
+
+        .content-centered {
+            display: flex; 
+            justify-content:center; 
+            align-items:center;
+        }
+    </style>
+</head>
+<body>
+<div id="main-content">
+    <div style="font-size:4rem;font-weight:bold;padding:0px;margin:0px;" class="content-centered">
+        {{ order_id }}
+    </div>
+    <div style="font-size:1.5;margin-top:40px;">
+    {{ t_date }} : {{ date }}
+    </div>
+    <div style="width:100%;overflow:hidden;margin-top:2rem;">
+        ==============================================================================
+    </div>
+    <div style="width:100%;margin-top:1rem;">
+        <table style="width:100%; table-layout: fixed;" dir="{{direction}}">
+            <tr>
+                <th style="width:50%;text-align:start">{{ t_name }}</th>
+                <th style="width:25%">{{ t_quantity }}</th>
+                <th style="width:25%">{{ t_price }}</th>
+            </tr>
+            {{#order_items}}
+                <tr>
+                    <td style="text-align:start;">{{ name }}</td>
+                    <td>{{ quantity }}</td>
+                    <td>{{ price }}</td>
+                </tr>
+            {{/order_items}}
+        </table>
+    </div>
+    <div style="width:100%;overflow:hidden;margin-top:1rem;height:1rem;">
+        -----------------------------------------------------------------------------------
+    </div>
+    <table style="width:100%;">
+        <tr style="border:0px;">
+            <td style="width:50%"></td>
+            <td style="width:25%;">{{t_subtotal}}</td>
+            <td style="width:25%;">{{subtotal}}</td>
+        </tr>
+        <tr style="border:0px;">
+            <td style="width:50%"></td>
+            <td style="width:25%;">{{t_service_cost}}</td>
+            <td style="width:25%;">{{service_cost}}</td>
+        </tr>
+        <tr style="border:0px;">
+            <td style="width:50%"></td>
+            <td style="width:25%;">{{t_discount}}</td>
+            <td style="width:25%;">{{discount}}</td>
+        </tr>
+        <tr style="border:0px;line-height:2rem;">
+            <td style="width:50%"></td>
+            <td style="font-weight:bold;width:25%;font-size:2rem;padding-top:1rem;">{{t_total}}</td>
+            <td style="width:25%;font-size:2rem;padding-top:1rem;">{{total}}</td>
+        </tr>
+    </table>
+    <div class="content-centered" style="font-size:1rem;margin-top:2rem;">
+        powered by nutrix
+    </div>
+</div>
+</body>
+</html>

@@ -552,6 +552,14 @@ paths:
       summary: Create a new order
       security:
         - oidcAuth: []
+      parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Specifies the language of the response. this affects also the lang of the receipt printed
+          schema:
+            type: string
+            example: en
       requestBody:
         required: true
         content:
@@ -646,6 +654,13 @@ paths:
         - oidcAuth: []
       operationId: orderPay
       parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Specifies the language of the response, by the way this affects the lang of the receipt printing
+          schema:
+            type: string
+            example: en
         - name: id
           in: path
           required: true

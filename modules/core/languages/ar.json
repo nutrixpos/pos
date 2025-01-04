@@ -55,6 +55,10 @@
         "profit":"الربح",
         "save":"حفظ",
         "cancel":"الغاء",
-        "sale_price":"سعر البيع"
+        "sale_price":"سعر البيع",
+        "price": "السعر",
+        "service":"الخدمة",
+        "printer":"الطابعة",
+        "host": "المضيف"
       }
 }

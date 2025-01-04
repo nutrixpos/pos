@@ -22,6 +22,9 @@ type Settings struct {
 	Inventory struct {
 		DefaultInventoryQuantityWarn float64 `json:"default_inventory_quantity_warn" bson:"default_inventory_quantity_warn"`
 	} `bson:"inventory" json:"inventory"`
-	Orders   OrderSettings    `bson:"orders" json:"orders"`
-	Language LanguageSettings `bson:"language" json:"language"`
+	Orders         OrderSettings    `bson:"orders" json:"orders"`
+	Language       LanguageSettings `bson:"language" json:"language"`
+	ReceiptPrinter struct {
+		Host string `bson:"host" json:"host"`
+	} `bson:"receipt_printer" json:"receipt_printer"`
 }

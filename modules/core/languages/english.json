@@ -56,6 +56,10 @@
         "profit":"Profit",
         "save":"Save",
         "cancel":"Cancel",
-        "sale_price":"Sale price"
+        "sale_price":"Sale price",
+        "price": "Price",
+        "service":"Service",
+        "printer": "Printer",
+        "host": "Host"
       }
 }

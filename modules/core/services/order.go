@@ -482,6 +482,8 @@ type GetOrdersParameters struct {
 	FilterIsStashed bool
 	// FilterFinished is used to filter finished order, use true or false
 	FilterIsFinished bool
+	// IsPayLater is used to filter for is_pay_later orders
+	IsPayLater bool
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -537,6 +539,18 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		filter["display_id"] = bson.M{
 			"$regex": fmt.Sprintf("(?i).*%s.*", params.OrderDisplayIdContains),
 		}
+	}
+
+	if params.FilterIsStashed {
+		filter["state"] = bson.M{"$eq": "stashed"}
+	} else if !params.FilterIsStashed {
+		filter["state"] = bson.M{"$ne": "stashed"}
+	}
+
+	if params.IsPayLater {
+		filter["is_pay_later"] = bson.M{"$eq": true}
+	} else if !params.IsPayLater {
+		filter["is_pay_later"] = bson.M{"$eq": false}
 	}
 
 	totalRecords, err = client.Database("waha").Collection("orders").CountDocuments(ctx, bson.D{})
