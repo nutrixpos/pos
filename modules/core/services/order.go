@@ -476,14 +476,14 @@ type GetOrdersParameters struct {
 	PageNumber int
 	// Rows is to set the desired row count limit.
 	PageSize int
-	// FilterIsPaid is to filter for orders that are paid
-	FilterIsPaid bool
-	// FilterIsStashed is to filter for orders that are stashed
-	FilterIsStashed bool
-	// FilterFinished is used to filter finished order, use true or false
-	FilterIsFinished bool
-	// IsPayLater is used to filter for is_pay_later orders
-	IsPayLater bool
+	// FilterIsPaid is to filter for orders that are paid 0 (false), 1 (true), -1 (any)
+	FilterIsPaid int8
+	// FilterIsStashed is to filter for orders that are stashed 0 (false), 1 (true), -1 (any)
+	FilterIsStashed int8
+	// FilterFinished is used to filter finished order, use true or false 0 (false), 1 (true), -1 (any)
+	FilterIsFinished int8
+	// IsPayLater is used to filter for is_pay_later orders 0 (unpaid), 1 (paid), -1 (any)
+	IsPayLater int8
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -520,19 +520,33 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 	findOptions.SetLimit(int64(params.PageSize))
 	findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
 
-	if params.FilterIsPaid {
-		filter["is_paid"] = true
-	}
-	if params.FilterIsStashed {
-		filter["state"] = "stashed"
-	}
-
-	if params.FilterIsFinished {
-		filter["state"] = "finished"
+	if params.FilterIsPaid != -1 {
+		if params.FilterIsPaid == 1 {
+			filter["is_paid"] = true
+		}
+		if params.FilterIsPaid == 0 {
+			filter["is_paid"] = false
+		}
 	}
 
-	if !params.FilterIsFinished {
-		filter["state"] = bson.M{"$ne": "finished"}
+	if params.FilterIsStashed != -1 {
+		if params.FilterIsStashed == 1 {
+			filter["state"] = bson.M{"$eq": "stashed"}
+		}
+		if params.FilterIsStashed == 0 {
+			filter["state"] = bson.M{"$ne": "stashed"}
+		}
+	}
+
+	if params.FilterIsFinished != -1 {
+
+		if params.FilterIsFinished == 1 {
+			filter["state"] = "finished"
+		}
+
+		if params.FilterIsFinished == 0 {
+			filter["state"] = bson.M{"$ne": "finished"}
+		}
 	}
 
 	if params.OrderDisplayIdContains != "" {
@@ -541,15 +555,9 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		}
 	}
 
-	if params.FilterIsStashed {
-		filter["state"] = bson.M{"$eq": "stashed"}
-	} else if !params.FilterIsStashed {
-		filter["state"] = bson.M{"$ne": "stashed"}
-	}
-
-	if params.IsPayLater {
+	if params.IsPayLater == 1 {
 		filter["is_pay_later"] = bson.M{"$eq": true}
-	} else if !params.IsPayLater {
+	} else if params.IsPayLater == 0 {
 		filter["is_pay_later"] = bson.M{"$eq": false}
 	}
 

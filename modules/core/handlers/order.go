@@ -369,32 +369,56 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		if filter_finished != "" {
 			filter_finished_bool, err := strconv.ParseBool(filter_finished)
 			if err == nil {
-				params.FilterIsFinished = filter_finished_bool
+				if filter_finished_bool {
+					params.FilterIsFinished = 1
+				} else {
+					params.FilterIsFinished = 0
+				}
 			}
+		} else {
+			params.FilterIsFinished = -1
 		}
 
 		filter_isPaid := r.URL.Query().Get("filter[is_paid]")
 		if filter_isPaid != "" {
 			filter_isPaid_bool, err := strconv.ParseBool(filter_isPaid)
 			if err == nil {
-				params.FilterIsPaid = filter_isPaid_bool
+				if filter_isPaid_bool {
+					params.FilterIsPaid = 1
+				} else {
+					params.FilterIsPaid = 0
+				}
 			}
+		} else {
+			params.FilterIsPaid = -1
 		}
 
 		filter_isStashed := r.URL.Query().Get("filter[is_stashed]")
 		if filter_isStashed != "" {
 			filter_isStashed_bool, err := strconv.ParseBool(filter_isStashed)
 			if err == nil {
-				params.FilterIsStashed = filter_isStashed_bool
+				if filter_isStashed_bool {
+					params.FilterIsStashed = 1
+				} else {
+					params.FilterIsStashed = 0
+				}
 			}
+		} else {
+			params.FilterIsStashed = -1
 		}
 
 		filter_isPaylater := r.URL.Query().Get("filter[is_pay_later]")
 		if filter_isPaylater != "" {
 			filter_isPayLater_bool, err := strconv.ParseBool(filter_isPaylater)
 			if err == nil {
-				params.IsPayLater = filter_isPayLater_bool
+				if filter_isPayLater_bool {
+					params.IsPayLater = 1
+				} else {
+					params.IsPayLater = 0
+				}
 			}
+		} else {
+			params.IsPayLater = -1
 		}
 
 		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
