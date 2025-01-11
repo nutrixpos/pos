@@ -69,18 +69,11 @@ type ComponentConsumeLogs struct {
 	OrderId        string    `json:"order_id" bson:"order_id"`
 }
 
-// CategoryProduct represents the product in a category.
-type CategoryProduct struct {
-	Id       string `json:"id" bson:"id"`
-	Name     string `json:"name" bson:"name"`
-	ImageURL string `json:"image_url" bson:"image_url"`
-}
-
 // Category represents the category of products.
 type Category struct {
-	Id       string            `json:"id" bson:"id"`
-	Name     string            `json:"name"`
-	Products []CategoryProduct `json:"products"` // product ids
+	Id       string    `json:"id" bson:"id"`
+	Name     string    `json:"name"`
+	Products []Product `json:"products"` // product ids
 }
 
 // ItemCost represents the cost of an item, including the recipe cost, sale price, quantity,

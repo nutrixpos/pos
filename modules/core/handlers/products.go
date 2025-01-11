@@ -175,7 +175,22 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 			Config: config,
 		}
 
-		err := recipeService.DeleteProduct(id_param)
+		product, err := recipeService.GetProduct(id_param)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if product.ImageURL != "" {
+			err = os.Remove(filepath.Join(".", "public", product.ImageURL))
+			if err != nil {
+				logger.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		err = recipeService.DeleteProduct(id_param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

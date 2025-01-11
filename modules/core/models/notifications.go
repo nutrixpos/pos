@@ -52,3 +52,8 @@ type WebsocketOrderFinishServerMessage struct {
 	WebsocketTopicServerMessage `json:",inline"`
 	OrderId                     string `json:"order_id"`
 }
+
+type WebsocketOrderSubmitServerMessage struct {
+	WebsocketTopicServerMessage `json:",inline"`
+	Order                       Order `json:"order"`
+}

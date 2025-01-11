@@ -344,6 +344,31 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}()
 		}
 
+		msg := models.WebsocketOrderSubmitServerMessage{
+			Order: order,
+			WebsocketTopicServerMessage: models.WebsocketTopicServerMessage{
+				Type:      "topic_message",
+				TopicName: "order_submitted",
+				Severity:  "info",
+			},
+		}
+
+		msgJson, err := json.Marshal(msg)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		notifications_svc, err := services.SpawnNotificationSingletonSvc("melody", logger, config)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		notifications_svc.SendToTopic("order_submitted", string(msgJson))
+
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResponse)
 	}

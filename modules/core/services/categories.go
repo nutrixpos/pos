@@ -161,7 +161,7 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 			return categories, err
 		}
 
-		products := []models.CategoryProduct{}
+		products := []models.Product{}
 
 		// Fetch the recipes for each category using the Recipe IDs
 		for _, category_product := range category.Products {
@@ -173,10 +173,8 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 				continue
 			}
 
-			products = append(products, models.CategoryProduct{
-				Id:       product.Id,
-				Name:     product.Name,
-				ImageURL: product.ImageURL,
+			products = append(products, models.Product{
+				Id: product.Id,
 			})
 		}
 

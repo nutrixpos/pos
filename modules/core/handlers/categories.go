@@ -145,6 +145,22 @@ func GetCategories(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
+		product_svc := services.RecipeService{
+			Logger: logger,
+			Config: config,
+		}
+
+		for i, category := range categories {
+			for j, product := range category.Products {
+				product, err := product_svc.GetProduct(product.Id)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				categories[i].Products[j] = product
+			}
+		}
+
 		response := JSONApiOkResponse{
 			Data: categories,
 			Meta: JSONAPIMeta{
