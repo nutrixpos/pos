@@ -174,8 +174,9 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 			}
 
 			products = append(products, models.CategoryProduct{
-				Id:   product.Id,
-				Name: product.Name,
+				Id:       product.Id,
+				Name:     product.Name,
+				ImageURL: product.ImageURL,
 			})
 		}
 

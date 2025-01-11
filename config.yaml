@@ -6,6 +6,9 @@ databases:
     database: waha
     username: 
     password: 
+
+uploads_path: "./public"
+  
 zitadel:
   domain: "localhost"
   port: 2020

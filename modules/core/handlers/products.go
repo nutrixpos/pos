@@ -11,16 +11,105 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/elmawardy/nutrix/common/config"
+	"github.com/elmawardy/nutrix/common/helpers"
 	"github.com/elmawardy/nutrix/common/logger"
 	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
 )
+
+func UpdateProductImage(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the multipart form data
+		err := r.ParseMultipartForm(32 << 20) // Max file size: 32MB
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		product_svc := services.RecipeService{
+			Logger: logger,
+			Config: config,
+		}
+
+		product, err := product_svc.GetProduct(id_param)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Get the uploaded file
+		file, fileHeader, err := r.FormFile("image")
+		if err != nil {
+			logger.Error("Error uploading file %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		names := strings.Split(fileHeader.Filename, ".")
+		file_extension := ""
+
+		if len(names) > 0 {
+			file_extension = "." + names[len(names)-1]
+		}
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		newpath := filepath.Join(".", "public")
+		err = os.MkdirAll(newpath, os.ModePerm)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		random_string := helpers.RandStringBytesMaskImprSrc(20)
+
+		// Create a new file on the server
+		dst, err := os.Create(config.UploadsPath + "/" + random_string + file_extension)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+
+		// Copy the uploaded file to the server file
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Delete the old image file from the public directory
+		oldImagePath := config.UploadsPath + "/" + product.ImageURL
+		err = os.Remove(oldImagePath)
+		if err != nil {
+			logger.Error("Error deleting old image file %s", err.Error())
+			// Optionally handle the error, but don't return it to the client
+		}
+
+		product.ImageURL = random_string + file_extension
+
+		product_svc.UpdateProduct(id_param, product)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	}
+}
 
 // UpdateProduct returns a HTTP handler function to update a product in the database.
 func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
@@ -50,7 +139,26 @@ func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent)
+		updated_product, err := recipeService.GetProduct(id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: updated_product,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, "Failed to marshal order settings response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
 	}
 }
 

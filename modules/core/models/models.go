@@ -71,8 +71,9 @@ type ComponentConsumeLogs struct {
 
 // CategoryProduct represents the product in a category.
 type CategoryProduct struct {
-	Id   string `json:"id" bson:"id"`
-	Name string `json:"name" bson:"name"`
+	Id       string `json:"id" bson:"id"`
+	Name     string `json:"name" bson:"name"`
+	ImageURL string `json:"image_url" bson:"image_url"`
 }
 
 // Category represents the category of products.
@@ -182,7 +183,7 @@ type Product struct {
 	SubProducts []Product      `bson:"sub_products" json:"sub_products"`
 	Entries     []ProductEntry `bson:"entries" json:"entries"`
 	Price       float64        `bson:"price" json:"price"`
-	ImageURL    string         `bson:"imageurl" json:"image_url"`
+	ImageURL    string         `bson:"image_url" json:"image_url"`
 	Unit        string         `bson:"unit" json:"unit"`
 	Quantity    float64        `bson:"quantity" json:"quantity"`
 	Ready       float64        `bson:"ready" json:"ready"`

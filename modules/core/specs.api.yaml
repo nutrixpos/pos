@@ -758,7 +758,7 @@ paths:
                 data:
                   $ref: '#/components/schemas/Product'
       responses:
-        '201':
+        '200':
           description: Product created
           content:
             application/json:
@@ -942,6 +942,53 @@ paths:
                           type: string
                         details:
                           type: string
+
+
+        '422':
+          description: Unprocessable Entity - The request was well-formed but was unable to be processed due to semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        status:
+                          type: string
+                        title:
+                          type: string
+                        details:
+                          type: string
+    
+  /products/{id}/image:
+    post:
+      summary: Update a product image
+      security:
+        - oidcAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the product to update
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+      responses:
+        '204':
+          description: Product image update successfully
   
   /salesperday:
     get:

@@ -40,6 +40,7 @@ type Config struct {
 	Env          string        `mapstructure:"env"`
 	JwtSecretKey string        `mapstructure:"jwt_secret_key"`
 	TimeZone     string        `mapstructure:"timezone"`
+	UploadsPath  string        `mapstructure:"uploads_path"`
 }
 
 // Database holds the configuration for database connections

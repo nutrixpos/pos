@@ -3,6 +3,7 @@ node_modules
 /dist
 zitadel-key.json
 .42c
+public
 
 
 # local env files

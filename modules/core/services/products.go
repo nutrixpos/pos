@@ -91,6 +91,7 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 				"ready":        product.Ready,
 				"recipeId":     product.Id,
 				"price":        product.Price,
+				"image_url":    product.ImageURL,
 			},
 		},
 	)
