@@ -569,6 +569,15 @@ paths:
               properties:
                 data:
                   $ref: "#/components/schemas/Order"
+                meta:
+                  type: object
+                  properties:
+                    is_print_client_receipt:
+                      description: used to tell the api whether to print a client receipt with the order
+                      type: boolean
+                    is_print_kitchen_receipt:
+                      description: used to tell the api whether to print a kitchen receipt with the order
+                      type: boolean
       responses:
         '201':
           description: Succeffully created the order

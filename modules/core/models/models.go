@@ -115,6 +115,11 @@ type OrderItem struct {
 	Cost               float64             `json:"cost" bson:"cost"`
 }
 
+type SubmitOrderMeta struct {
+	IsPrintClientReceipt  bool `json:"is_print_client_receipt" bson:"is_print_client_receipt"`
+	IsPrintKitchenReceipt bool `json:"is_print_kitchen_receipt" bson:"is_print_kitchen_receipt"`
+}
+
 // Order represents a customer order, containing order details, items, and financial information.
 type Order struct {
 	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at"`

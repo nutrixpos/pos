@@ -260,7 +260,8 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 		var order models.Order
 
 		request := struct {
-			Data models.Order `json:"data"`
+			Meta models.SubmitOrderMeta `json:"meta"`
+			Data models.Order           `json:"data"`
 		}{}
 
 		err := decoder.Decode(&request)
@@ -302,47 +303,55 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			Settings: settings,
 		}
 
-		if !order.IsPayLater {
-			go func() {
+		go func() {
 
-				lang_svc := services.LanguageService{
-					Config:   config,
-					Logger:   logger,
-					Settings: settings,
-				}
+			lang_svc := services.LanguageService{
+				Config:   config,
+				Logger:   logger,
+				Settings: settings,
+			}
 
-				lang := "en"
-				if acceptLanguage != "" {
-					langs := strings.Split(acceptLanguage, ",")
-					if len(langs) > 0 {
+			lang := "en"
+			if acceptLanguage != "" {
+				langs := strings.Split(acceptLanguage, ",")
+				if len(langs) > 0 {
 
-						for i := range langs {
-							code := strings.TrimSpace(strings.Split(langs[i], ";")[0])
-							if len(strings.Split(code, "-")) > 0 {
-								code = strings.Split(code, "-")[0]
-							}
+					for i := range langs {
+						code := strings.TrimSpace(strings.Split(langs[i], ";")[0])
+						if len(strings.Split(code, "-")) > 0 {
+							code = strings.Split(code, "-")[0]
+						}
 
-							code = strings.ToLower(code)
-							if _, err := lang_svc.GetLanguage(code); err == nil {
-								lang = code
-							}
+						code = strings.ToLower(code)
+						if _, err := lang_svc.GetLanguage(code); err == nil {
+							lang = code
 						}
 					}
 				}
+			}
 
-				pwd, err := os.Getwd()
-				if err != nil {
-					logger.Error(err.Error())
-					return
-				}
+			pwd, err := os.Getwd()
+			if err != nil {
+				logger.Error(err.Error())
+				return
+			}
 
+			if !order.IsPayLater && request.Meta.IsPrintClientReceipt {
 				err = receipt_svc.PrintCheckout(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
 				if err != nil {
 					logger.Error(err.Error())
 					return
 				}
-			}()
-		}
+			}
+
+			if request.Meta.IsPrintKitchenReceipt {
+				err = receipt_svc.PrintCheckout(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/kitchen_receipt_0.mustache")
+				if err != nil {
+					logger.Error(err.Error())
+					return
+				}
+			}
+		}()
 
 		msg := models.WebsocketOrderSubmitServerMessage{
 			Order: order,

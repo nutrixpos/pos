@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html dir="{{direction}}">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            font-size:1.3rem;
+            font-family: Arial, sans-serif
+        }
+        #main-content {
+            padding:0.5rem;
+        }
+        body {
+            width: 570;
+            margin:0px;
+            padding:0.5rem;
+            min-height:600px;
+        }
+        table, th, td {
+            padding:0.3rem;
+            text-align:center;
+            line-height:1.2rem;
+        }
+
+        table,th {
+            overflow-wrap: break-word;
+        }
+
+        .content-centered {
+            display: flex; 
+            justify-content:center; 
+            align-items:center;
+        }
+    </style>
+</head>
+<body>
+<div id="main-content">
+    <div style="font-size:2rem;font-weight:bold;padding:0px;margin:0px;" class="content-centered">
+        {{ order_id }}
+    </div>
+    <div style="font-size:1rem;margin-top:20px;">
+    {{ t_date }} : {{ date }}
+    </div>
+    <div style="width:100%;margin-top:1rem;">
+        <table style="width:100%; table-layout: fixed;" dir="{{direction}}">
+            <tr>
+                <th style="text-align:start">{{ t_name }}</th>
+                <th style="text-align:start">{{ t_quantity }}</th>
+            </tr>
+            {{#order_items}}
+                <tr>
+                    <td style="text-align:start;">{{ name }}</td>
+                    <td style="text-align:start">{{ quantity }}</td>
+                </tr>
+            {{/order_items}}
+        </table>
+    </div>
+</div>
+</body>
+</html>
