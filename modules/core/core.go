@@ -166,6 +166,8 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/orders/{id}/cancel", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CancelOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/finish", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(c.Config, c.Logger), "admin", "chef"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/pay", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.Payorder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/printkitchenreceipt", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintKitchenReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/printclientreceipt", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintClientReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/products/availability", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(c.Config, c.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/products/{id}/recipetree", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/products/{id}/image", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProductImage(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")

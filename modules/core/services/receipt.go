@@ -25,8 +25,8 @@ type ReceiptService struct {
 	Logger   logger.ILogger
 }
 
-// PrintCheckout is used to print a 80mm receipt
-func (rs *ReceiptService) PrintCheckout(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template string) error {
+// Print is used to print a 80mm receipt
+func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template string) error {
 	socket, err := net.Dial("tcp", fmt.Sprintf("%s:9100", rs.Settings.ReceiptPrinter.Host))
 	if err != nil {
 		return err

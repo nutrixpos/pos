@@ -26,6 +26,126 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		orderService := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
+		}
+
+		order, err := orderService.GetOrder(id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		lang_svc := services.LanguageService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		acceptLanguage := r.Header.Get("Accept-Language")
+		lang := "en"
+		if acceptLanguage != "" {
+			langs := strings.Split(acceptLanguage, ",")
+			if len(langs) > 0 {
+
+				for i := range langs {
+					code := strings.TrimSpace(strings.Split(langs[i], ";")[0])
+					if len(strings.Split(code, "-")) > 0 {
+						code = strings.Split(code, "-")[0]
+					}
+
+					code = strings.ToLower(code)
+					if _, err := lang_svc.GetLanguage(code); err == nil {
+						lang = code
+					}
+				}
+			}
+		}
+
+		pwd, err := os.Getwd()
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
+
+		err = orderService.PrintReceipt(order, pwd+"/modules/core/templates/kitchen_receipt_0.mustache", lang)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func PrintClientReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		orderService := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
+		}
+
+		order, err := orderService.GetOrder(id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		lang_svc := services.LanguageService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		acceptLanguage := r.Header.Get("Accept-Language")
+		lang := "en"
+		if acceptLanguage != "" {
+			langs := strings.Split(acceptLanguage, ",")
+			if len(langs) > 0 {
+
+				for i := range langs {
+					code := strings.TrimSpace(strings.Split(langs[i], ";")[0])
+					if len(strings.Split(code, "-")) > 0 {
+						code = strings.Split(code, "-")[0]
+					}
+
+					code = strings.ToLower(code)
+					if _, err := lang_svc.GetLanguage(code); err == nil {
+						lang = code
+					}
+				}
+			}
+		}
+
+		pwd, err := os.Getwd()
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
+
+		err = orderService.PrintReceipt(order, pwd+"/modules/core/templates/order_receipt_0.mustache", lang)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 // DeleteOrder an http handler to delete an order resource
 func DeleteOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
@@ -121,7 +241,7 @@ func Payorder(config config.Config, logger logger.ILogger, settings models.Setti
 				return
 			}
 
-			err = receipt_svc.PrintCheckout(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
+			err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
 			if err != nil {
 				logger.Error(err.Error())
 				return
@@ -283,6 +403,15 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			return
 		}
 
+		if request.Data.IsAutoStart {
+			err = orderService.StartOrder(order.Id, request.Data.Items)
+			if err != nil {
+				logger.Error(err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
 		response := JSONApiOkResponse{
 			Data: order,
 			Meta: JSONAPIMeta{
@@ -337,7 +466,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if !order.IsPayLater && request.Meta.IsPrintClientReceipt {
-				err = receipt_svc.PrintCheckout(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
 				if err != nil {
 					logger.Error(err.Error())
 					return
@@ -345,7 +474,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if request.Meta.IsPrintKitchenReceipt {
-				err = receipt_svc.PrintCheckout(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/kitchen_receipt_0.mustache")
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/kitchen_receipt_0.mustache")
 				if err != nil {
 					logger.Error(err.Error())
 					return

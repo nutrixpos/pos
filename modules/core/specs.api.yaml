@@ -604,7 +604,41 @@ paths:
       responses:
         '201':
           description: Order deleted
+
+  /orders/{id}/printkitchenreceipt:
+    post:
+      summary: Print kitchen receipt
+      security:
+        - oidcAuth: []
+      operationId: orderPrintKitchen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to start
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Print signal sent
   
+  /orders/{id}/printclientreceipt:
+    post:
+      summary: Print kitchen receipt
+      security:
+        - oidcAuth: []
+      operationId: orderPrintKitchen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to start
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Print signal sent
+
   /orders/{id}/start:
     post:
       summary: Start an order
@@ -1453,6 +1487,8 @@ components:
         is_pay_later:
           type: boolean
         is_paid:
+          type: boolean
+        is_auto_start:
           type: boolean
         items:
           type: array

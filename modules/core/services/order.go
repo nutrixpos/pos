@@ -30,6 +30,21 @@ type OrderService struct {
 	Settings models.Settings
 }
 
+func (os *OrderService) PrintReceipt(order models.Order, template string, lang_code string) (err error) {
+	receipt_svc := ReceiptService{
+		Config:   os.Config,
+		Logger:   os.Logger,
+		Settings: os.Settings,
+	}
+
+	err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang_code, template)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (os *OrderService) DeleteOrder(order_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -592,6 +607,66 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 
 }
 
+func (os *OrderService) ConsumeOrderComponents(order models.Order) error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Connected to Mongo
+	materialService := MaterialService{
+		Config:   os.Config,
+		Logger:   os.Logger,
+		Settings: os.Settings,
+	}
+
+	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
+
+	for itemIndex, item := range order.Items {
+		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex)
+		for _, notification := range notifications {
+			if _, ok := refined_notifications[notification.Key]; !ok {
+				refined_notifications[notification.Key] = notification
+			}
+		}
+
+		if len(refined_notifications) > 0 {
+			notificationService, err := SpawnNotificationSingletonSvc("melody", os.Logger, os.Config)
+			if err != nil {
+				return err
+			}
+			for _, notification := range refined_notifications {
+
+				json_notification, err := json.Marshal(notification)
+				if err != nil {
+					return err
+				}
+
+				notificationService.SendToTopic(notification.TopicName, string(json_notification))
+			}
+		}
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
 // StartOrder sets the state of the order with the given order_id to "in_progress",
 // and updates the "started_at" field with the current time.
 // It also consumes the item components from the inventory and sends a notification to the websockets.
@@ -625,43 +700,9 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 	}
 
 	// decrease the ingredient component quantity from the components inventory
-
-	materialService := MaterialService{
-		Config:   os.Config,
-		Logger:   os.Logger,
-		Settings: os.Settings,
-	}
-
-	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
-
-	for itemIndex, item := range order_items {
-		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex)
-		for _, notification := range notifications {
-			if _, ok := refined_notifications[notification.Key]; !ok {
-				refined_notifications[notification.Key] = notification
-			}
-		}
-
-		if len(refined_notifications) > 0 {
-			notificationService, err := SpawnNotificationSingletonSvc("melody", os.Logger, os.Config)
-			if err != nil {
-				return err
-			}
-			for _, notification := range refined_notifications {
-
-				json_notification, err := json.Marshal(notification)
-				if err != nil {
-					return err
-				}
-
-				notificationService.SendToTopic(notification.TopicName, string(json_notification))
-			}
-		}
-
-		if err != nil {
-			return err
-		}
-
+	err = os.ConsumeOrderComponents(order)
+	if err != nil {
+		return err
 	}
 
 	update := bson.M{

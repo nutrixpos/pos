@@ -134,6 +134,8 @@ type Order struct {
 	SalePrice   float64     `json:"sale_price" bson:"sale_price"`
 	IsPayLater  bool        `json:"is_pay_later" bson:"is_pay_later"`
 	IsPaid      bool        `json:"is_paid" bson:"is_paid"`
+	// IsAutoStart determines whether the order is automatically started when it is submitted.
+	IsAutoStart bool `json:"is_auto_start" bson:"is_auto_start"`
 }
 
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.
