@@ -499,6 +499,8 @@ type GetOrdersParameters struct {
 	FilterIsFinished int8
 	// IsPayLater is used to filter for is_pay_later orders 0 (unpaid), 1 (paid), -1 (any)
 	IsPayLater int8
+	// FilterState is used to filter for a specific state in_progress, finished, stashed, pending, cancelled
+	FilterState string
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -568,6 +570,10 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		filter["display_id"] = bson.M{
 			"$regex": fmt.Sprintf("(?i).*%s.*", params.OrderDisplayIdContains),
 		}
+	}
+
+	if params.FilterState != "" {
+		filter["state"] = bson.M{"$eq": params.FilterState}
 	}
 
 	if params.IsPayLater == 1 {

@@ -503,6 +503,13 @@ paths:
           schema:
             type: integer
             default: 10
+        - name: page[state]
+          in: query
+          required: false
+          description: The state of the order, in_progress, finished, cancelled, stashed or pending
+          schema:
+            type: string
+            default: everything
         - name: filter[is_paid]
           in: query
           required: false

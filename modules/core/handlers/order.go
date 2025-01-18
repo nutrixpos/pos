@@ -180,8 +180,6 @@ func Payorder(config config.Config, logger logger.ILogger, settings models.Setti
 		params := mux.Vars(r)
 		id_param := params["id"]
 
-		acceptLanguage := r.Header.Get("Accept-Language")
-
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
@@ -194,64 +192,8 @@ func Payorder(config config.Config, logger logger.ILogger, settings models.Setti
 			return
 		}
 
-		order_svc := services.OrderService{
-			Config:   config,
-			Logger:   logger,
-			Settings: settings,
-		}
-
-		order, err := order_svc.GetOrder(id_param)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		receipt_svc := services.ReceiptService{
-			Config:   config,
-			Logger:   logger,
-			Settings: settings,
-		}
-
-		go func() {
-
-			lang_svc := services.LanguageService{
-				Config:   config,
-				Logger:   logger,
-				Settings: settings,
-			}
-
-			lang := "en"
-			if acceptLanguage != "" {
-				langs := strings.Split(acceptLanguage, ",")
-				if len(langs) > 0 {
-
-					for i := range langs {
-						code := strings.TrimSpace(strings.Split(langs[i], ";")[0])
-						if _, err := lang_svc.GetLanguage(code); err == nil {
-							lang = code
-						}
-					}
-				}
-			}
-
-			pwd, err := os.Getwd()
-			if err != nil {
-				logger.Error(err.Error())
-				return
-			}
-
-			err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
-			if err != nil {
-				logger.Error(err.Error())
-				return
-			}
-		}()
-
 		w.WriteHeader(http.StatusNoContent)
-
 	}
-
 }
 
 // GetUnpaidOrders returns a HTTP handler function to get all unpaid orders.
@@ -522,6 +464,11 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		params := services.GetOrdersParameters{}
+
+		filter_state := r.URL.Query().Get("filter[state]")
+		if filter_state != "" {
+			params.FilterState = filter_state
+		}
 
 		filter_displayId := r.URL.Query().Get("filter[display_id]")
 		if filter_displayId != "" {

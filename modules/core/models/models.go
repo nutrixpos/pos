@@ -136,6 +136,8 @@ type Order struct {
 	IsPaid      bool        `json:"is_paid" bson:"is_paid"`
 	// IsAutoStart determines whether the order is automatically started when it is submitted.
 	IsAutoStart bool `json:"is_auto_start" bson:"is_auto_start"`
+	IsDelivery  bool `json:"is_delivery" bson:"is_delivery"`
+	IsTakeAway  bool `json:"is_take_away" bson:"is_take_away"`
 }
 
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.
