@@ -559,11 +559,18 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		}
 	}
 
+	stateFilters := []bson.M{}
+
 	if len(positiveStateFilters) > 0 {
-		filter["$and"] = []bson.M{
-			{"state": bson.M{"$in": positiveStateFilters}},
-			{"state": bson.M{"$nin": negativeStateFilter}},
-		}
+		stateFilters = append(stateFilters, bson.M{"state": bson.M{"$in": positiveStateFilters}})
+	}
+
+	if len(negativeStateFilter) > 0 {
+		stateFilters = append(stateFilters, bson.M{"state": bson.M{"$nin": negativeStateFilter}})
+	}
+
+	if len(stateFilters) > 0 {
+		filter["$and"] = stateFilters
 	}
 
 	if params.IsPayLater == 1 {
