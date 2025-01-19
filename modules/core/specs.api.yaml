@@ -506,7 +506,7 @@ paths:
         - name: page[state]
           in: query
           required: false
-          description: The state of the order, in_progress, finished, cancelled, stashed or pending
+          description: The state of the order, in_progress, finished, cancelled, stashed or pending, you can use !finished to filter for non finished and so on.
           schema:
             type: string
             default: everything
@@ -514,18 +514,6 @@ paths:
           in: query
           required: false
           description: Filter by is_paid = false or true
-          schema:
-            type: boolean
-        - name: filter[is_stashed]
-          in: query
-          required: false
-          description: Filter by is_stashed = false or true
-          schema:
-            type: boolean
-        - name: filter[is_finished]
-          in: query
-          required: false
-          description: Filter by is_finished = false or true
           schema:
             type: boolean
       responses:

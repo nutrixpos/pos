@@ -465,28 +465,14 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		params := services.GetOrdersParameters{}
 
-		filter_state := r.URL.Query().Get("filter[state]")
-		if filter_state != "" {
-			params.FilterState = filter_state
+		filter_states := r.URL.Query()["filter[state]"]
+		if len(filter_states) > 0 {
+			params.FilterState = filter_states
 		}
 
 		filter_displayId := r.URL.Query().Get("filter[display_id]")
 		if filter_displayId != "" {
 			params.OrderDisplayIdContains = filter_displayId
-		}
-
-		filter_finished := r.URL.Query().Get("filter[is_finished]")
-		if filter_finished != "" {
-			filter_finished_bool, err := strconv.ParseBool(filter_finished)
-			if err == nil {
-				if filter_finished_bool {
-					params.FilterIsFinished = 1
-				} else {
-					params.FilterIsFinished = 0
-				}
-			}
-		} else {
-			params.FilterIsFinished = -1
 		}
 
 		filter_isPaid := r.URL.Query().Get("filter[is_paid]")
@@ -501,20 +487,6 @@ func GetOrders(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			}
 		} else {
 			params.FilterIsPaid = -1
-		}
-
-		filter_isStashed := r.URL.Query().Get("filter[is_stashed]")
-		if filter_isStashed != "" {
-			filter_isStashed_bool, err := strconv.ParseBool(filter_isStashed)
-			if err == nil {
-				if filter_isStashed_bool {
-					params.FilterIsStashed = 1
-				} else {
-					params.FilterIsStashed = 0
-				}
-			}
-		} else {
-			params.FilterIsStashed = -1
 		}
 
 		filter_isPaylater := r.URL.Query().Get("filter[is_pay_later]")

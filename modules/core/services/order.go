@@ -493,14 +493,10 @@ type GetOrdersParameters struct {
 	PageSize int
 	// FilterIsPaid is to filter for orders that are paid 0 (false), 1 (true), -1 (any)
 	FilterIsPaid int8
-	// FilterIsStashed is to filter for orders that are stashed 0 (false), 1 (true), -1 (any)
-	FilterIsStashed int8
-	// FilterFinished is used to filter finished order, use true or false 0 (false), 1 (true), -1 (any)
-	FilterIsFinished int8
 	// IsPayLater is used to filter for is_pay_later orders 0 (unpaid), 1 (paid), -1 (any)
 	IsPayLater int8
-	// FilterState is used to filter for a specific state in_progress, finished, stashed, pending, cancelled
-	FilterState string
+	// FilterState is used to filter for a specific state in_progress, finished, stashed, pending, cancelled, !stashed (! notation can be used to filter for negative values)
+	FilterState []string
 }
 
 // GetOrders retrieves all orders from the database by default,
@@ -546,34 +542,28 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		}
 	}
 
-	if params.FilterIsStashed != -1 {
-		if params.FilterIsStashed == 1 {
-			filter["state"] = bson.M{"$eq": "stashed"}
-		}
-		if params.FilterIsStashed == 0 {
-			filter["state"] = bson.M{"$ne": "stashed"}
-		}
-	}
-
-	if params.FilterIsFinished != -1 {
-
-		if params.FilterIsFinished == 1 {
-			filter["state"] = "finished"
-		}
-
-		if params.FilterIsFinished == 0 {
-			filter["state"] = bson.M{"$ne": "finished"}
-		}
-	}
-
 	if params.OrderDisplayIdContains != "" {
 		filter["display_id"] = bson.M{
 			"$regex": fmt.Sprintf("(?i).*%s.*", params.OrderDisplayIdContains),
 		}
 	}
 
-	if params.FilterState != "" {
-		filter["state"] = bson.M{"$eq": params.FilterState}
+	positiveStateFilters := []string{}
+	negativeStateFilter := []string{}
+
+	for _, state := range params.FilterState {
+		if state[0] == '!' {
+			negativeStateFilter = append(negativeStateFilter, state[1:])
+		} else {
+			positiveStateFilters = append(positiveStateFilters, state)
+		}
+	}
+
+	if len(positiveStateFilters) > 0 {
+		filter["$and"] = []bson.M{
+			{"state": bson.M{"$in": positiveStateFilters}},
+			{"state": bson.M{"$nin": negativeStateFilter}},
+		}
 	}
 
 	if params.IsPayLater == 1 {
