@@ -146,6 +146,11 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 
 	c.Logger.Info("Successfully conntected to Zitadel")
 
+	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteCustomer(c.Config, c.Logger, c.Settings), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomer(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/customers", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomers(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/customers", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/salesperday", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesPerDay(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")

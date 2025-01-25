@@ -1156,6 +1156,124 @@ paths:
                         "order": "Order | Orders"
                         "order_items": "Order Items"
 
+  /customers:
+    get:
+      summary: Retrieve customers
+      parameters:
+        - in: query
+          name: page[number]
+          schema:
+            type: integer
+          description: The page number to retrieve
+          required: false
+        - in: query
+          name: page[size]
+          schema:
+            type: integer
+          description: The number of customers per page
+          required: false
+      security:
+        - oidcAuth: []
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+
+    post:
+      summary: Create a customer
+      security:
+        - oidcAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Customer'
+      responses:
+        '201':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Customer'
+
+  /customers/{id}:
+    get:
+      summary: Get a customer
+      security:
+        - oidcAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The id of the customer
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Customer'
+
+    patch:
+      summary: Update a customer
+      security:
+        - oidcAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The id of the customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/Customer'
+      responses:
+        '204':
+          description: success response
+
+    delete:
+      summary: Delete a customer
+      security:
+        - oidcAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The id of the customer
+      responses:
+        '204':
+          description: success response
+
+
 
 
 
@@ -1489,6 +1607,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderItem'
+        is_delivery:
+          type: boolean
+          description: Is this order for delivery?
+        is_take_away:
+          type: boolean
+          description: Is this order for take away?
+        is_dine_in:
+          type: boolean
+          description: Is this order for dine in?
+        custom_data:
+          type: object
+          additionalProperties:
+            type: string
+        
 
     Category:
       type: object
@@ -1618,6 +1750,19 @@ components:
         code:
           type: string
         language:
+          type: string
+
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        address:
           type: string
 
 security:

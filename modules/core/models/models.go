@@ -132,12 +132,16 @@ type Order struct {
 	Comment     string      `json:"comment" bson:"comment"`
 	Cost        float64     `json:"cost" bson:"cost"`
 	SalePrice   float64     `json:"sale_price" bson:"sale_price"`
+	Customer    Customer    `json:"customer" bson:"customer"`
 	IsPayLater  bool        `json:"is_pay_later" bson:"is_pay_later"`
 	IsPaid      bool        `json:"is_paid" bson:"is_paid"`
 	// IsAutoStart determines whether the order is automatically started when it is submitted.
 	IsAutoStart bool `json:"is_auto_start" bson:"is_auto_start"`
-	IsDelivery  bool `json:"is_delivery" bson:"is_delivery"`
-	IsTakeAway  bool `json:"is_take_away" bson:"is_take_away"`
+	// ServiceStyle  dine_in, takeaway or delivery
+	IsDelivery bool              `json:"is_delivery" bson:"is_delivery"`
+	IsTakeAway bool              `json:"is_take_away" bson:"is_take_away"`
+	IsDineIn   bool              `json:"is_dine_in" bson:"is_dine_in"`
+	CustomData map[string]string `json:"custom_data" bson:"custom_data"`
 }
 
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.
