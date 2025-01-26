@@ -59,6 +59,10 @@
         "price": "السعر",
         "service":"الخدمة",
         "printer":"الطابعة",
-        "host": "المضيف"
+        "host": "المضيف",
+        "delivery_data":"بيانات التوصيل",
+        "delivery_address":"عنوان التوصيل",
+        "customer_phone":"تليفون العميل",
+        "customer_name": "اسم العميل"
       }
 }

@@ -60,6 +60,10 @@
         "price": "Price",
         "service":"Service",
         "printer": "Printer",
-        "host": "Host"
+        "host": "Host",
+        "delivery_data":"Delivery data",
+        "delivery_address":"Delivery address",
+        "customer_phone":"Customer phone",
+        "customer_name": "Customer name"
       }
 }

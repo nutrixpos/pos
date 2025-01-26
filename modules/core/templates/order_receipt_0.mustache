@@ -85,6 +85,26 @@
             <td style="width:25%;font-size:2rem;padding-top:1rem;">{{total}}</td>
         </tr>
     </table>
+    {{#is_delivery}}
+        <div style="width:100%;overflow:hidden;margin-top:1rem;height:1rem;">
+            -----------------------------------------------------------------------------------
+        </div>
+        
+        <table style="width:100%;">
+            <tr style="border:0px;">
+                <td style="width:20%">{{t_delivery_address}}</td>
+                <td style="width:80%;">{{delivery_address}}</td>
+            </tr>
+            <tr style="border:0px;">
+                <td style="width:50%">{{t_customer_name}}</td>
+                <td style="width:50%;">{{customer_name}}</td>
+            </tr>
+            <tr style="border:0px;">
+                <td style="width:50%">{{t_customer_phone}}</td>
+                <td style="width:25%;">{{customer_phone}}</td>
+            </tr>
+        </table>
+    {{/is_delivery}}
     <div class="content-centered" style="font-size:1rem;margin-top:2rem;">
         powered by nutrix
     </div>

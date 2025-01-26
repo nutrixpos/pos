@@ -77,6 +77,19 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		"subtotal":       subtotal,
 	}
 
+	if order.IsDelivery {
+		data["is_delivery"] = true
+		data["t_delivery_address"] = lang.Pack["delivery_address"]
+		data["t_customer_phone"] = lang.Pack["phone"]
+		data["t_customer_name"] = lang.Pack["customer_name"]
+
+		data["delivery_address"] = order.Customer.Address
+		data["customer_name"] = order.Customer.Name
+		data["customer_phone"] = order.Customer.Phone
+	} else {
+		data["is_delivery"] = false
+	}
+
 	output, err := mustache.RenderFile(template, data)
 	if err != nil {
 		return err
