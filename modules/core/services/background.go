@@ -49,7 +49,7 @@ func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_s
 	// Connected successfully
 
 	// Get the "test" collection from the database
-	collection := client.Database("waha").Collection("materials")
+	collection := client.Database(conf.Databases[0].Host).Collection("materials")
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		log.Error(err.Error())

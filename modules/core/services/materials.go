@@ -56,7 +56,7 @@ func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, q
 	cs.Logger.Info("Connected to MongoDB!")
 
 	var material models.Material
-	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -100,7 +100,7 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 	}
 
 	var material models.Material
-	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -183,7 +183,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			},
 		}
 
-		_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), filter, update)
+		_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
 		if err != nil {
 			return notifications, err
 		}
@@ -198,7 +198,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			"recipe_id":        item.Product.Id,
 			"item_order_index": item_order_index,
 		}
-		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
 			return notifications, err
 		}
@@ -268,7 +268,7 @@ func (cs *MaterialService) GetComponentAvailability(componentid string) (amount 
 	cs.Logger.Info("Connected to MongoDB!")
 
 	// Get the "test" collection from the database
-	collection := client.Database("waha").Collection("materials")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 
 	filter := bson.M{"id": componentid}
 	var component models.Material
@@ -321,7 +321,7 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 	findOptions.SetLimit(int64(page_size))
 
 	// Get the "test" collection from the database
-	cur, err := client.Database("waha").Collection("materials").Find(ctx, bson.D{}, findOptions)
+	cur, err := client.Database(cs.Config.Databases[0].Database).Collection("materials").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return materials, err
@@ -376,7 +376,7 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 
 	// Find material in db
 	var existingMaterial models.Material
-	err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": material_id}).Decode(&existingMaterial)
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{"id": material_id}).Decode(&existingMaterial)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
@@ -385,7 +385,7 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 	existingMaterial.Settings.StockAlertTreshold = material_to_edit.Settings.StockAlertTreshold
 
 	// Update the material
-	_, err = client.Database("waha").Collection("materials").UpdateOne(context.Background(), bson.M{"id": material_id}, bson.M{"$set": existingMaterial})
+	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), bson.M{"id": material_id}, bson.M{"$set": existingMaterial})
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
@@ -422,7 +422,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 	fmt.Println("Connected to MongoDB!")
 
 	// Insert the DBComponent struct into the "materials" collection
-	collection := client.Database("waha").Collection("materials")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 	_, err = collection.InsertOne(ctx, material)
 	if err != nil {
 		cs.Logger.Error(err.Error())
@@ -438,7 +438,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 			"quantity": entry.Quantity,
 			"price":    entry.PurchasePrice,
 		}
-		_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
 			cs.Logger.Error(err.Error())
 			return err
@@ -495,7 +495,7 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 		update := bson.M{"$push": bson.M{"entries": entry_data}}
 		opts := options.Update().SetUpsert(false)
 
-		_, err = client.Database("waha").Collection("materials").UpdateOne(ctx, filter, update, opts)
+		_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(ctx, filter, update, opts)
 		if err != nil {
 			return err
 		}
@@ -533,7 +533,7 @@ func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error
 	fmt.Println("Connected to MongoDB!")
 
 	// Connect to the database
-	collection := client.Database("waha").Collection("materials")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 
 	// Find the component document and update the entries array
 	filter := bson.M{"id": componentid}

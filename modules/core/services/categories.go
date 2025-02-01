@@ -49,7 +49,7 @@ func (cs *CategoryService) InsertCategory(category models.Category) (err error) 
 
 	category.Id = primitive.NewObjectID().Hex()
 
-	collection := client.Database("waha").Collection("categories")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("categories")
 	_, err = collection.InsertOne(ctx, category)
 
 	return err
@@ -78,7 +78,7 @@ func (cs *CategoryService) DeleteCategory(category_id string) (err error) {
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("categories")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("categories")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": category_id})
 
 	return err
@@ -107,7 +107,7 @@ func (cs *CategoryService) UpdateCategory(category models.Category) (updatedCate
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("categories")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("categories")
 	_, err = collection.UpdateOne(ctx, bson.M{"id": category.Id}, bson.M{"$set": bson.M{
 		"name":     category.Name,
 		"products": category.Products,
@@ -147,7 +147,7 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 	skip := (page_number - 1) * page_size
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetLimit(int64(page_size))
-	cur, err := client.Database("waha").Collection("categories").Find(ctx, bson.D{}, findOptions)
+	cur, err := client.Database(cs.Config.Databases[0].Database).Collection("categories").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		return categories, err
 	}
@@ -167,7 +167,7 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 		for _, category_product := range category.Products {
 			var product models.Product
 			filter := bson.D{{Key: "id", Value: category_product.Id}}
-			err := client.Database("waha").Collection("recipes").FindOne(ctx, filter).Decode(&product)
+			err := client.Database(cs.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, filter).Decode(&product)
 			if err != nil {
 				cs.Logger.Error(`\nERROR: Recipe doesn't exist id: ${%v}`, category_product)
 				continue

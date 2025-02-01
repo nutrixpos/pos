@@ -61,14 +61,14 @@ func (l *Log) GetComponentLogs(component_id string, page_number, page_size int) 
 
 	findOptions := options.Find().SetSkip(int64(skip)).SetLimit(int64(page_size))
 
-	collection := client.Database("waha").Collection("logs")
+	collection := client.Database(l.Config.Databases[0].Database).Collection("logs")
 	total_records, err = collection.CountDocuments(ctx, filter)
 	if err != nil {
 		l.Logger.Error(err.Error())
 		return logs, 0, err
 	}
 
-	cur, err := client.Database("waha").Collection("logs").Find(ctx, filter, findOptions)
+	cur, err := client.Database(l.Config.Databases[0].Database).Collection("logs").Find(ctx, filter, findOptions)
 	if err != nil {
 		l.Logger.Error(err.Error())
 		return logs, total_records, err
@@ -107,7 +107,7 @@ func (l *Log) GetSalesLogs() []models.SalesLogs {
 	fmt.Println("Connected to MongoDB!")
 
 	// find all documents from db of logs collection filter on type = order_finished
-	collection := client.Database("waha").Collection("logs")
+	collection := client.Database(l.Config.Databases[0].Database).Collection("logs")
 	filter := bson.M{"type": "order_finish"}
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {

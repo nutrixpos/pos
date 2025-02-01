@@ -25,7 +25,7 @@ func (ls *LanguageService) GetLanguage(lang_code string) (foundLanguage models.L
 		return
 	}
 
-	languagesDir := pwd + "/modules/core/languages/"
+	languagesDir := pwd + "/assets/core/languages/"
 	files, err := os.ReadDir(languagesDir)
 	if err != nil {
 		return

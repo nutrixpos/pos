@@ -46,7 +46,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 		return salesPerDay, totalRecords, err
 	}
 
-	collection := client.Database("waha").Collection("sales")
+	collection := client.Database(ss.Config.Databases[0].Database).Collection("sales")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.M{"date": -1})
 
@@ -114,7 +114,7 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 		Costs: items_cost,
 	}
 
-	collection := client.Database("waha").Collection("sales")
+	collection := client.Database(ss.Config.Databases[0].Database).Collection("sales")
 	filter := bson.M{"date": time.Now().Format("2006-01-02")}
 
 	count, err := collection.CountDocuments(ctx, filter)

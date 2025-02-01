@@ -47,7 +47,7 @@ func (rs *RecipeService) GetProduct(product_id string) (product models.Product, 
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("recipes")
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	err = collection.FindOne(ctx, bson.M{"id": product_id}).Decode(&product)
 	if err != nil {
 		return product, err
@@ -78,7 +78,7 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("recipes")
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 
 	_, err = collection.UpdateOne(
 		ctx,
@@ -120,7 +120,7 @@ func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("recipes")
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": product_id})
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (rs *RecipeService) InsertNew(product models.Product) (afterInsert models.P
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("recipes")
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 
 	product.Id = primitive.NewObjectID().Hex()
 
@@ -201,7 +201,7 @@ func (rs *RecipeService) GetProducts(params GetProductsParams) (products []model
 		return products, totalRecords, err
 	}
 
-	collection := client.Database("waha").Collection("recipes")
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.M{"name": 1})
 	findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
@@ -270,7 +270,7 @@ func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) e
 
 	// Connected successfully
 	var product models.Product
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": product_id}).Decode(&product)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": product_id}).Decode(&product)
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) e
 
 	ready -= quantity
 
-	_, err = client.Database("waha").Collection("recipes").UpdateOne(
+	_, err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").UpdateOne(
 		context.Background(),
 		bson.M{"id": product_id},
 		bson.M{
@@ -346,7 +346,7 @@ func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []model
 
 	var recipe models.Product
 
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe}).Decode(&recipe)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe}).Decode(&recipe)
 	if err != nil {
 		return materials, err
 	}
@@ -382,7 +382,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 
 	var recipe models.Product
 
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&recipe)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&recipe)
 	if err != nil {
 		rs.Logger.Error("GetRecipeTree@getting recipe" + err.Error())
 		return tree, err
@@ -391,7 +391,7 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 	for _, material := range recipe.Materials {
 
 		var db_component models.Material
-		err = client.Database("waha").Collection("materials").FindOne(context.Background(), bson.M{"id": material.Id}).Decode(&db_component)
+		err = client.Database(rs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{"id": material.Id}).Decode(&db_component)
 		if err != nil {
 			return tree, err
 		}
@@ -458,7 +458,7 @@ func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err er
 	rs.Logger.Info("Connected to MongoDB!")
 
 	var product models.Product
-	err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&product)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&product)
 	if err != nil {
 		return ready, err
 	}
@@ -493,7 +493,7 @@ func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabi
 	// Connected successfully
 	rs.Logger.Info("Connected to MongoDB!")
 
-	coll := client.Database("waha").Collection("recipes")
+	coll := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 
 	availabilitiesChan := make(chan dto.RecipeAvailability)
 	errorChan := make(chan error)

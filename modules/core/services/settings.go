@@ -44,7 +44,7 @@ func (ss *SettingsService) UpdateSettings(settings models.Settings) (err error) 
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("settings")
+	collection := client.Database(ss.Config.Databases[0].Database).Collection("settings")
 	_, err = collection.UpdateOne(ctx, bson.M{}, bson.M{"$set": settings})
 
 	return
@@ -77,7 +77,7 @@ func (os *SettingsService) GetSettings() (ordersettings models.Settings, err err
 	}
 
 	var settings models.Settings
-	err = client.Database("waha").Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
+	err = client.Database(os.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
 	if err != nil {
 		return
 	}

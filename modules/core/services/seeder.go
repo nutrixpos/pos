@@ -62,7 +62,7 @@ func (s *Seeder) SeedProducts() error {
 
 	// Check if the product with name "ProductSeeded" exists in the db
 	var product models.Product
-	err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": bson.M{"$in": []string{"ProductSeeded 1", "ProductSeeded 2"}}}).Decode(&product)
+	err = client.Database(s.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"name": bson.M{"$in": []string{"ProductSeeded 1", "ProductSeeded 2"}}}).Decode(&product)
 	if err == nil {
 		if s.IsNewOnly {
 			s.Logger.Info("product already exists, skipping seeding")
@@ -82,7 +82,7 @@ func (s *Seeder) SeedProducts() error {
 	// Connected successfully
 	// Get the material with name Motzarilla from the DB
 	var material models.Material
-	err = client.Database("waha").Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
+	err = client.Database(s.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -97,7 +97,7 @@ func (s *Seeder) SeedProducts() error {
 					return err
 				}
 
-				err = client.Database("waha").Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
+				err = client.Database(s.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"name": "MotzarillaSeeded"}).Decode(&material)
 				if err != nil {
 					return err
 				}
@@ -137,7 +137,7 @@ func (s *Seeder) SeedProducts() error {
 		},
 	}
 
-	_, err = client.Database("waha").Collection("recipes").InsertOne(ctx, sub_product)
+	_, err = client.Database(s.Config.Databases[0].Database).Collection("recipes").InsertOne(ctx, sub_product)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (s *Seeder) SeedProducts() error {
 	}
 
 	// Insert the products
-	_, err = client.Database("waha").Collection("recipes").InsertMany(ctx, newValue)
+	_, err = client.Database(s.Config.Databases[0].Database).Collection("recipes").InsertMany(ctx, newValue)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (s *Seeder) SeedCategories() error {
 	}
 
 	// Set the database and collection
-	db := client.Database("waha")
+	db := client.Database(s.Config.Databases[0].Database)
 	collection := db.Collection("categories")
 
 	// Count the number of documents in the categories collection
@@ -213,7 +213,7 @@ func (s *Seeder) SeedCategories() error {
 		}
 
 		var product models.Product
-		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
+		err = client.Database(s.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 
 		if err == mongo.ErrNoDocuments {
 			confirm, err := s.Prompter.Confirmation("seeded products not found, would you like to create one?")
@@ -228,7 +228,7 @@ func (s *Seeder) SeedCategories() error {
 					return err
 				}
 
-				err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
+				err = client.Database(s.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 				if err != nil {
 					return err
 				}
@@ -265,7 +265,7 @@ func (s *Seeder) SeedCategories() error {
 		return nil
 	} else if err == mongo.ErrNoDocuments || err == nil {
 		var product models.Product
-		err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
+		err = client.Database(s.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded 2"}).Decode(&product)
 
 		if err == mongo.ErrNoDocuments {
 			confirm, err := s.Prompter.Confirmation("No seeded products found, would you like to create one?")
@@ -280,7 +280,7 @@ func (s *Seeder) SeedCategories() error {
 					return err
 				}
 
-				err = client.Database("waha").Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
+				err = client.Database(s.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"name": "ProductSeeded"}).Decode(&product)
 				if err != nil {
 					return err
 				}
@@ -416,7 +416,7 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 	}
 
 	// Get the "materials" collection from the database
-	collection := client.Database("waha").Collection("materials")
+	collection := client.Database(s.Config.Databases[0].Database).Collection("materials")
 
 	// Find one document in the collection
 	var component models.Material

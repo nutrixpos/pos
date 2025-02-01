@@ -77,7 +77,7 @@ func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings m
 			return
 		}
 
-		err = orderService.PrintReceipt(order, pwd+"/modules/core/templates/kitchen_receipt_0.mustache", lang)
+		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/kitchen_receipt_0.mustache", lang)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -137,7 +137,7 @@ func PrintClientReceipt(config config.Config, logger logger.ILogger, settings mo
 			return
 		}
 
-		err = orderService.PrintReceipt(order, pwd+"/modules/core/templates/order_receipt_0.mustache", lang)
+		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/order_receipt_0.mustache", lang)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -408,7 +408,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if !order.IsPayLater && request.Meta.IsPrintClientReceipt {
-				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/order_receipt_0.mustache")
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/order_receipt_0.mustache")
 				if err != nil {
 					logger.Error(err.Error())
 					return
@@ -416,7 +416,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if request.Meta.IsPrintKitchenReceipt {
-				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/modules/core/templates/kitchen_receipt_0.mustache")
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/kitchen_receipt_0.mustache")
 				if err != nil {
 					logger.Error(err.Error())
 					return

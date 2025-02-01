@@ -10,10 +10,12 @@ func ConfigFactory(t string, path string, logger logger.ILogger) Config {
 	case "viper":
 		viper_config := NewViperConfig(logger)
 		viper_config.ReadFile(path)
+
 		config, err := viper_config.GetConfig()
 		if err != nil {
 			logger.Error("can't reat config")
 		}
+
 		return config
 	}
 
@@ -23,6 +25,7 @@ func ConfigFactory(t string, path string, logger logger.ILogger) Config {
 // IConfig interface defines methods for config management
 type IConfig interface {
 	ReadFile(path string)
+	BindEnv() error
 	GetConfig() (config Config)
 }
 
@@ -35,12 +38,11 @@ type ZitadelConfig struct {
 
 // Config represents the overall configuration structure
 type Config struct {
-	Databases    []Database
-	Zitadel      ZitadelConfig `mapstructure:"zitadel"`
-	Env          string        `mapstructure:"env"`
-	JwtSecretKey string        `mapstructure:"jwt_secret_key"`
-	TimeZone     string        `mapstructure:"timezone"`
-	UploadsPath  string        `mapstructure:"uploads_path"`
+	Databases   []Database    `mapstructure:"databases"`
+	Zitadel     ZitadelConfig `mapstructure:"zitadel"`
+	Env         string        `mapstructure:"env"`
+	TimeZone    string        `mapstructure:"timezone"`
+	UploadsPath string        `mapstructure:"uploads_path"`
 }
 
 // Database holds the configuration for database connections

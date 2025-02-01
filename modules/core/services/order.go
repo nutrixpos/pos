@@ -66,7 +66,7 @@ func (os *OrderService) DeleteOrder(order_id string) (err error) {
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("orders")
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": order_id})
 
 	return
@@ -94,7 +94,7 @@ func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("orders")
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	filter := bson.M{"id": order_id}
 	update := bson.M{"$set": bson.M{"is_paid": true}}
@@ -131,7 +131,7 @@ func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
 
 	// Connected successfully
 
-	collection := client.Database("waha").Collection("orders")
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	cursor, err := collection.Find(ctx, bson.M{"is_pay_later": true, "is_paid": false, "state": bson.M{"$not": bson.M{"$in": []string{"cancelled"}}}})
 	if err != nil {
@@ -172,7 +172,7 @@ func (os *OrderService) CancelOrder(order_id string) (err error) {
 	}
 
 	// Connected successfully
-	collection := client.Database("waha").Collection("orders")
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	// Define filter and update for setting order state to "cancelled"
 	filter := bson.M{"id": order_id}
@@ -235,7 +235,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 
 			var component_with_specific_entry models.Material
 
-			err = client.Database("waha").Collection("materials").FindOne(
+			err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
 				context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
 
 			if err == nil {
@@ -258,7 +258,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 		}
 
 		var recipe models.Product
-		err = client.Database("waha").Collection("recipes").FindOne(context.Background(), bson.M{"id": items[itemIndex].Product.Id}).Decode(&recipe)
+		err = client.Database(os.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": items[itemIndex].Product.Id}).Decode(&recipe)
 
 		if err != nil {
 			panic(err)
@@ -308,7 +308,7 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 	// Connected successfully
 	os.Logger.Info("Connected to MongoDB!")
 
-	collection := client.Database("waha").Collection("orders")
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	filter := bson.M{"id": order_id}
 	update := bson.M{"$set": bson.M{"state": "finished"}}
@@ -349,7 +349,7 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 		"order_id":      order_id,
 		"time_consumed": time.Since(order.SubmittedAt),
 	}
-	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+	_, err = client.Database(os.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -388,7 +388,7 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 	}
 
 	var settings models.Settings
-	err = client.Database("waha").Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
+	err = client.Database(os.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
 	if err != nil {
 		return order_display_id, err
 	}
@@ -402,7 +402,7 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 
 	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
 
-	_, err = client.Database("waha").Collection("settings").UpdateOne(
+	_, err = client.Database(os.Config.Databases[0].Database).Collection("settings").UpdateOne(
 		ctx,
 		bson.M{"id": settings.Id, "orders.queues.prefix": random_queue.Prefix},
 		bson.M{
@@ -475,7 +475,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 		order.State = "pending"
 	}
 
-	_, err = client.Database("waha").Collection("orders").InsertOne(ctx, order)
+	_, err = client.Database(os.Config.Databases[0].Database).Collection("orders").InsertOne(ctx, order)
 	if err != nil {
 		return order, err
 	}
@@ -579,13 +579,13 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		filter["is_pay_later"] = bson.M{"$eq": false}
 	}
 
-	totalRecords, err = client.Database("waha").Collection("orders").CountDocuments(ctx, bson.D{})
+	totalRecords, err = client.Database(os.Config.Databases[0].Database).Collection("orders").CountDocuments(ctx, bson.D{})
 	if err != nil {
 		os.Logger.Error(err.Error())
 		return
 	}
 
-	cursor, err := client.Database("waha").Collection("orders").Find(context.Background(), filter, findOptions)
+	cursor, err := client.Database(os.Config.Databases[0].Database).Collection("orders").Find(context.Background(), filter, findOptions)
 	if err != nil {
 		return orders, 0, err
 	}
@@ -697,7 +697,7 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 
 	var order models.Order
 
-	err = client.Database("waha").Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
+	err = client.Database(os.Config.Databases[0].Database).Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
 	if err != nil {
 		return err
 	}
@@ -716,7 +716,7 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 		},
 	}
 
-	_, err = client.Database("waha").Collection("orders").UpdateOne(context.Background(), bson.M{"id": order_id}, update)
+	_, err = client.Database(os.Config.Databases[0].Database).Collection("orders").UpdateOne(context.Background(), bson.M{"id": order_id}, update)
 	if err != nil {
 		return err
 	}
@@ -726,7 +726,7 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 		"date":          time.Now(),
 		"order_details": order,
 	}
-	_, err = client.Database("waha").Collection("logs").InsertOne(ctx, logs_data)
+	_, err = client.Database(os.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 	if err != nil {
 		return err
 	}
@@ -757,7 +757,7 @@ func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	coll := client.Database("waha").Collection("orders")
+	coll := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	var order models.Order
 
 	err = coll.FindOne(ctx, bson.M{"id": order_id}).Decode(&order)

@@ -49,7 +49,7 @@ func GetLanguage(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	}
 }
 
-// GetAvailableLanguages reads available language files in the /modules/core/languages folder
+// GetAvailableLanguages reads available language files in the /assets/core/languages folder
 // it reads the language code and name from the file and returns json response of available installed langs
 func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.Han
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		pwd = pwd + "/modules/core/languages"
+		pwd = pwd + "/assets/core/languages"
 		files, err := os.ReadDir(pwd)
 		if err != nil {
 			logger.Error(err.Error())

@@ -47,7 +47,7 @@ func (cs CustomersService) GetCustomers(params GetCustomersParams) (customers []
 
 	customers = make([]models.Customer, 0)
 
-	collection := client.Database("waha").Collection("customers")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
 	findOptions := options.Find()
 	findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
@@ -95,7 +95,7 @@ func (cs CustomersService) GetCustomer(customer_id string) (customer models.Cust
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("customers")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
 	err = collection.FindOne(ctx, bson.M{"id": customer_id}).Decode(&customer)
 	if err != nil {
@@ -123,7 +123,7 @@ func (cs CustomersService) InsertNew(customer models.Customer) (afterInsert mode
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("customers")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
 	customer.Id = primitive.NewObjectID().Hex()
 
@@ -158,7 +158,7 @@ func (cs CustomersService) UpdateCustomer(customer models.Customer, customer_id 
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("customers")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
 	update := bson.M{}
 	if customer.Name != "" {
@@ -204,7 +204,7 @@ func (cs CustomersService) DeleteCustomer(customer_id string) (err error) {
 	}
 	// connected to db
 
-	collection := client.Database("waha").Collection("customers")
+	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
 	_, err = collection.DeleteOne(ctx, bson.M{"id": customer_id})
 	if err != nil {

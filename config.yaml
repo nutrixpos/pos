@@ -4,8 +4,8 @@ databases:
     host: 127.0.0.1
     port: 27017
     database: waha
-    username: 
-    password: 
+    username: ""
+    password: ""
 
 uploads_path: "./public"
   
@@ -15,5 +15,4 @@ zitadel:
   key_path: "zitadel-key.json" # this is the path to your zitadel key related to your root directory of backend
   
 timezone: Africa/Cairo
-jwt_secret_key: "my_secret_key"
 env: dev
