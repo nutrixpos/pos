@@ -155,11 +155,6 @@ type MaterialEntry struct {
 	ExpirationDate   time.Time `json:"expiration_date" bson:"expiration_date"`
 }
 
-// MaterialSettings represents settings associated with a material, such as stock alert threshold.
-type MaterialSettings struct {
-	StockAlertTreshold float64 `json:"stock_alert_treshold" bson:"stock_alert_treshold"`
-}
-
 // Material represents a material with its details, including entries and settings.
 type Material struct {
 	Id       string           `json:"id,omitempty" bson:"id,omitempty"`

@@ -12,7 +12,7 @@ uploads_path: "./public"
 zitadel:
   domain: "localhost"
   port: 2020
-  key_path: "/mnt/zitadel-key.json" # this is the path to your zitadel key related to your root directory of backend
+  key_path: "./mnt/zitadel-key.json" # this is the path to your zitadel key related to your root directory of backend
   
 timezone: Africa/Cairo
 env: dev

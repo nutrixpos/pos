@@ -43,9 +43,20 @@ type Core struct {
 }
 
 // OnStart is called when the core module is started.
-func (c *Core) OnStart() func() {
-	return func() {
+func (c *Core) OnStart() func() error {
+	return func() error {
+		seeder_svc := services.Seeder{
+			Logger:   c.Logger,
+			Config:   c.Config,
+			Prompter: c.Prompter,
+		}
 
+		err := seeder_svc.SeedSettings()
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 

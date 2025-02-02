@@ -1689,7 +1689,7 @@ components:
         inventory:
           type: object
           properties:
-            default_inventory_quantity_warn:
+            stock_alert_treshold:
               type: number
               format: float
         orders:

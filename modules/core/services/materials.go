@@ -208,7 +208,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			return notifications, err
 		}
 
-		if float64(quantity) <= cs.Settings.Inventory.DefaultInventoryQuantityWarn {
+		if float64(quantity) <= cs.Settings.Inventory.StockAlertTreshold {
 			notifications = append(notifications, models.WebsocketTopicServerMessage{
 				TopicName: "inventory_low",
 				Type:      "topic_message",

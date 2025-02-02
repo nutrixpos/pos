@@ -35,6 +35,75 @@ type Seeder struct {
 	IsNewOnly bool
 }
 
+func (s *Seeder) SeedSettings() error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if s.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Check if the settings collection exists
+	db := client.Database(s.Config.Databases[0].Database)
+	collectionNames, err := db.ListCollectionNames(ctx, bson.M{"name": "settings"})
+	if err != nil {
+		return err
+	}
+
+	if len(collectionNames) == 0 {
+		err = db.CreateCollection(ctx, "settings")
+		if err != nil {
+			return err
+		}
+
+		// Insert the settings into the settings collection
+		settingsCollection := db.Collection("settings")
+		settings := models.Settings{
+			Id: primitive.NewObjectID().Hex(),
+			Inventory: models.MaterialSettings{
+				StockAlertTreshold: 1000,
+			},
+			Orders: models.OrderSettings{
+				Queues: []models.OrderQueueSettings{
+					{
+						Prefix: "A",
+						Next:   1,
+					},
+				},
+			},
+			Language: models.LanguageSettings{
+				Code:     "en",
+				Language: "English",
+			},
+			ReceiptPrinter: models.PrinterSettings{
+				Host: "192.168.123.123",
+			},
+		}
+		_, err = settingsCollection.InsertOne(ctx, settings)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SeedProducts seeds products into the database, optionally creating new products if they don't exist.
 func (s *Seeder) SeedProducts() error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))

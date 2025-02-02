@@ -64,6 +64,11 @@ func (manager *AppManager) IgniteModule(name string, logger logger.ILogger, modu
 
 	manager.Modules[name] = module_builder.module
 
+	err := module_builder.module.OnStart()()
+	if err != nil {
+		panic(err)
+	}
+
 	if module_builder.isRegisterHttpHandlers {
 		if m, ok := module_builder.module.(IHttpModule); ok {
 			m.RegisterHttpHandlers(module_builder.httpRouter, "/"+name)

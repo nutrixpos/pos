@@ -17,7 +17,7 @@ var saved_module_builders = make(map[string]*ModuleBuilder)
 // It provides methods for starting and stopping the module.
 type IBaseModule interface {
 	// OnStart is called when the module is started.
-	OnStart() func()
+	OnStart() func() error
 	// OnEnd is called when the module is stopped.
 	OnEnd() func()
 }
