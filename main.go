@@ -25,6 +25,16 @@ func main() {
 	// Create the configuration using the Viper config backend
 	conf := config.ConfigFactory("viper", "config.yaml", &logger)
 
+	seeder_svc := services.Seeder{
+		Config: conf,
+	}
+
+	// make sure that settings bootstrapping data exists, it's idempotent
+	err := seeder_svc.SeedSettings()
+	if err != nil {
+		panic(err)
+	}
+
 	settings_svc := services.SettingsService{
 		Config: conf,
 	}
