@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/elmawardy/nutrix/common/config"
 
@@ -27,7 +28,9 @@ func NewZitadelAuth(conf config.Config) ZitadelAuth {
 		Key:    conf.Zitadel.KeyPath,
 	}
 
-	authZ, err := authorization.New(ctx, zitadel.New(za.Domain, zitadel.WithInsecure("2020")), oauth.DefaultAuthorization(za.Key))
+	portStr := strconv.Itoa(conf.Zitadel.Port)
+
+	authZ, err := authorization.New(ctx, zitadel.New(za.Domain, zitadel.WithInsecure(portStr)), oauth.DefaultAuthorization(za.Key))
 	/******  6999d1a5-4501-4af6-9052-14fbce64d1ab  *******/
 	if err != nil {
 		slog.Error("zitadel sdk could not initialize", "error", err)

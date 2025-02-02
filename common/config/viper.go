@@ -42,34 +42,6 @@ func (vc *ViperConfig) BindAllEnv() (err error) {
 	vc.v.AutomaticEnv()
 	vc.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// if err = vc.v.BindEnv("databases.0.name", "DATABASES_0_NAME"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.type", "DATABASES_0_TYPE"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.host", "DATABASES_0_HOST"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.port", "DATABASES_0_PORT"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.database", "DATABASES_0_DATABASE"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.username", "DATABASES_0_USERNAME"); err != nil {
-	// 	return err
-	// }
-
-	// if err = vc.v.BindEnv("databases.0.password", "DATABASES_0_PASSWORD"); err != nil {
-	// 	return err
-	// }
-
 	return nil
 }
 
@@ -96,6 +68,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		Name:     vc.v.GetString("databases.0.name"),
 	}
 	zitadel_domain := vc.v.GetString("zitadel.domain")
+	zitadel_port := vc.v.GetInt("zitadel.port")
 
 	// Unmarshal the config into the config struct.
 	var config Config
@@ -106,6 +79,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 
 	config.Databases = databases
 	config.Zitadel.Domain = zitadel_domain
+	config.Zitadel.Port = zitadel_port
 
 	return config, nil
 }

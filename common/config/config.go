@@ -32,7 +32,7 @@ type IConfig interface {
 // ZitadelConfig holds the configuration for Zitadel
 type ZitadelConfig struct {
 	Domain  string `mapstructure:"domain"`
-	Port    uint8  `mapstructure:"port"`
+	Port    int    `mapstructure:"port"`
 	KeyPath string `mapstructure:"key_path"`
 }
 
