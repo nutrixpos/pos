@@ -12,6 +12,5 @@ WORKDIR /app
 COPY --from=build /go/src/app/pos .
 COPY --from=build /go/src/app/assets .
 COPY --from=build /go/src/app/config.yaml .
-COPY --from=build /go/src/app/zitadel-key.json .
 EXPOSE 8080
 CMD ["./pos"]
