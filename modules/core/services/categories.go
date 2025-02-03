@@ -141,6 +141,8 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 	// Connected successfully
 	cs.Logger.Info("Connected to MongoDB!")
 
+	categories = make([]models.Category, 0)
+
 	// Fetch categories from the database
 	findOptions := options.Find()
 
