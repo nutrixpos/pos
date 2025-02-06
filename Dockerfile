@@ -10,7 +10,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o ./pos
 FROM alpine
 WORKDIR /app
 COPY --from=build /go/src/app/pos .
-COPY --from=build /go/src/app/assets .
+COPY --from=build /go/src/app/assets ./assets/
 COPY --from=build /go/src/app/config.yaml .
 EXPOSE 8000
 CMD ["./pos"]
