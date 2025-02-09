@@ -9,16 +9,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/common/userio"
-	"github.com/elmawardy/nutrix/modules"
-	auth_mw "github.com/elmawardy/nutrix/modules/auth/middlewares"
-	"github.com/elmawardy/nutrix/modules/core/handlers"
-	"github.com/elmawardy/nutrix/modules/core/middlewares"
-	"github.com/elmawardy/nutrix/modules/core/models"
-	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/common/userio"
+	"github.com/nutrixpos/pos/modules"
+	auth_mw "github.com/nutrixpos/pos/modules/auth/middlewares"
+	"github.com/nutrixpos/pos/modules/core/handlers"
+	"github.com/nutrixpos/pos/modules/core/middlewares"
+	"github.com/nutrixpos/pos/modules/core/models"
+	"github.com/nutrixpos/pos/modules/core/services"
 )
 
 // Core is the main struct for the core module.
@@ -155,6 +155,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteMaterial(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{id}/logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{id}/entries", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")

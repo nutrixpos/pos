@@ -5,9 +5,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
 )
 
 type LanguageService struct {

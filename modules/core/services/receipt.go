@@ -14,9 +14,9 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/elmawardy/escpos"
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
 )
 
 type ReceiptService struct {

@@ -4,7 +4,9 @@ node_modules
 zitadel-key.json
 .42c
 public
-
+.devcontainer/data
+.devcontainer/.env
+mnt
 
 # local env files
 .env.local

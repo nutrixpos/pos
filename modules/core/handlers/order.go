@@ -19,11 +19,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
-	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
+	"github.com/nutrixpos/pos/modules/core/services"
 )
 
 func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {

@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/elmawardy/nutrix/common/config"
+	"github.com/nutrixpos/pos/common/config"
 
 	"github.com/zitadel/zitadel-go/v3/pkg/authorization"
 	"github.com/zitadel/zitadel-go/v3/pkg/authorization/oauth"

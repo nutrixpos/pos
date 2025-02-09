@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
 	"github.com/google/uuid"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/olahol/melody"
 )
 

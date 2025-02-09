@@ -1,4 +1,4 @@
-module github.com/elmawardy/nutrix
+module github.com/nutrixpos/pos
 
 go 1.23
 

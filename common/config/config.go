@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/nutrixpos/pos/common/logger"
 )
 
 // ConfigFactory creates a Config object based on the provided type and path

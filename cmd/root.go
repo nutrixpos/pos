@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/modules/core/models"
 
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/common/userio"
-	"github.com/elmawardy/nutrix/modules"
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/common/userio"
+	"github.com/nutrixpos/pos/modules"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ func (root *RootProcess) Execute() error {
 		Use:   "nutrix",
 		Short: "The next level restaurant management system",
 		Long: `Nutrix is an open source project aiming to make restaurant management a seamless and efficient experience.
-		Free forever and distributed under the MIT license. https://github.com/elmawardy/nutrix`,
+		Free forever and distributed under the GPT-2 license. https://github.com/nutrixpos/pos`,
 
 		Run: func(cmd *cobra.Command, args []string) {
 			srv := &http.Server{

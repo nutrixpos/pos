@@ -14,9 +14,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/services"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/services"
 )
 
 // GetSalesPerDay returns a HTTP handler function to retrieve sales data per day.

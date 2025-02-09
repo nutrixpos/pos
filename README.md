@@ -1,4 +1,4 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/elmawardy/nutrix.svg)](https://pkg.go.dev/github.com/elmawardy/nutrix)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nutrixpos/pos.svg)](https://pkg.go.dev/github.com/nutrixpos/pos)
 
 Nutrix is a point of sale management system RESTful api. It allows you to manage inventory, sales and products for your restaurant or shop.
 
@@ -41,6 +41,6 @@ Since nutrix is an api based project, you will need a GUI to let end users inter
 
 Following are suggested GUI(s) :
 
-- [https://github.com/elmawardy/nutrix-frontend](https://github.com/elmawardy/nutrix-frontend)
+- [https://github.com/nutrixpos/pos-frontend](https://github.com/nutrixpos/pos-frontend)
 
 

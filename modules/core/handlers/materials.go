@@ -15,11 +15,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
-	"github.com/elmawardy/nutrix/modules/core/services"
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
+	"github.com/nutrixpos/pos/modules/core/services"
 )
 
 // CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
@@ -177,6 +177,26 @@ func DeleteEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error(err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func DeleteMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		materialService := services.MaterialService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err := materialService.DeleteMaterial(id_param)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

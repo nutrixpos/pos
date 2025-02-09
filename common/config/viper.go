@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/nutrixpos/pos/common/logger"
 	"github.com/spf13/viper"
 )
 

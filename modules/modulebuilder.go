@@ -8,9 +8,9 @@
 package modules
 
 import (
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/common/userio"
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/common/userio"
 )
 
 // ModuleBuilder is a builder for initializing and running modules.

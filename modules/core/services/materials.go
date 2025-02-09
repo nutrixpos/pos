@@ -11,9 +11,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/elmawardy/nutrix/common/config"
-	"github.com/elmawardy/nutrix/common/logger"
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -314,6 +314,8 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
+	materials = make([]models.Material, 0)
+
 	findOptions := options.Find()
 
 	skip := (page_number - 1) * page_size
@@ -331,17 +333,52 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 
 	// Iterate over the documents and print them as JSON
 	for cur.Next(ctx) {
-		var component models.Material
-		err := cur.Decode(&component)
+		var material models.Material
+		err := cur.Decode(&material)
 		if err != nil {
 			cs.Logger.Error(err.Error())
 			return materials, err
 		}
-		materials = append(materials, component)
+		materials = append(materials, material)
 	}
 
 	return materials, nil
 
+}
+
+func (cs *MaterialService) DeleteMaterial(material_id string) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	// Connected successfully
+
+	// Delete the material with the given ID
+	filter := bson.M{"id": material_id}
+	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").DeleteOne(ctx, filter)
+	if err != nil {
+		cs.Logger.Error(err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // EditMaterial updates a material in the database.
@@ -383,6 +420,8 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 	}
 
 	existingMaterial.Settings.StockAlertTreshold = material_to_edit.Settings.StockAlertTreshold
+	existingMaterial.Name = material_to_edit.Name
+	existingMaterial.Unit = material_to_edit.Unit
 
 	// Update the material
 	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), bson.M{"id": material_id}, bson.M{"$set": existingMaterial})
@@ -420,6 +459,8 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
+
+	material.Id = primitive.NewObjectID().Hex()
 
 	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")

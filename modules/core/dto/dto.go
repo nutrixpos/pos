@@ -3,7 +3,7 @@
 package dto
 
 import (
-	"github.com/elmawardy/nutrix/modules/core/models"
+	"github.com/nutrixpos/pos/modules/core/models"
 )
 
 // HttpComponent is a DTO containing the most important information about Material.

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/elmawardy/nutrix/common/logger"
+	"github.com/nutrixpos/pos/common/logger"
 )
 
 // Prompter defines an interface for user interaction prompts.
