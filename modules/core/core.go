@@ -7,6 +7,7 @@ package core
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -196,8 +197,18 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 		c.NotificationSvc = notification_service
 	}
 
+	// create public folder if doesn't exist in the uploads dir directory
+	publicPath := c.Config.UploadsPath
+	if _, err := os.Stat(publicPath); os.IsNotExist(err) {
+		err = os.Mkdir(publicPath, 0755)
+		if err != nil {
+			c.Logger.Error(err.Error())
+			panic(err)
+		}
+	}
+
 	// Serve static files from the "static" directory
-	router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", http.FileServer(http.Dir("./public"))))
+	router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", http.FileServer(http.Dir(c.Config.UploadsPath))))
 
 	router.Handle(prefix+"/ws", handlers.HandleNotificationsWsRequest(c.Config, c.Logger, c.NotificationSvc))
 }
