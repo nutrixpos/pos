@@ -7,7 +7,7 @@ databases:
     username: ""
     password: ""
 
-uploads_path: "/mnt/public"
+uploads_path: "/app/mnt/public"
   
 zitadel:
   domain: "zitadel"
