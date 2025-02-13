@@ -462,6 +462,10 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 
 	material.Id = primitive.NewObjectID().Hex()
 
+	for index, _ := range material.Entries {
+		material.Entries[index].Id = primitive.NewObjectID().Hex()
+	}
+
 	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 	_, err = collection.InsertOne(ctx, material)
