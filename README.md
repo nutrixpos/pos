@@ -15,7 +15,10 @@ You can use the openapi docs to run [`Swagger`](https://swagger.io/) docs and te
 
 # Getting started
 
-### Prerequisites
+### docker-compose
+You can use the [DevOps](https://github.com/nutrixpos/devops) repo to install the entire application with docker-compose including the ui and databases.
+
+### Dependencies
 - #### Mongo
     - Before running the web server or seeding, make sure to set the [MongoDB](https://www.mongodb.com/) credentials properly in **config.yaml**
 - #### Zitadel
