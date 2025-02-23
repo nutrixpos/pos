@@ -69,14 +69,6 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		}
 		defer file.Close()
 
-		newpath := filepath.Join(".", "public")
-		err = os.MkdirAll(newpath, os.ModePerm)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		random_string := helpers.RandStringBytesMaskImprSrc(20)
 
 		// Create a new file on the server
@@ -182,7 +174,7 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 		}
 
 		if product.ImageURL != "" {
-			err = os.Remove(filepath.Join(".", "public", product.ImageURL))
+			err = os.Remove(filepath.Join(config.UploadsPath, product.ImageURL))
 			if err != nil {
 				logger.Error(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
