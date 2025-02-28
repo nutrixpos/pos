@@ -52,6 +52,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 
 	skip := (page_number - 1) * page_size
 	findOptions.SetSkip(int64(skip))
+	findOptions.SetSort(bson.M{"date": 1})
 	findOptions.SetLimit(int64(page_size))
 	count, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
