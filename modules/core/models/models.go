@@ -67,6 +67,7 @@ type ComponentConsumeLogs struct {
 	ItemName       string    `json:"item_name" bson:"item_name"`
 	OrderItemIndex uint      `json:"order_item_index" bson:"order_item_index"`
 	OrderId        string    `json:"order_id" bson:"order_id"`
+	Type           string    `json:"type" bson:"type"`
 }
 
 // Category represents the category of products.
