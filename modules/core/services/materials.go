@@ -121,7 +121,7 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 
 // ConsumeItemComponentsForOrder consumes components for an order item, and returns the notifications to be sent via websocket.
 // It returns an error if something goes wrong.
-func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, item_order_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -196,7 +196,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			"entry_id":         component.Entry.Id,
 			"order_id":         order.Id,
 			"recipe_id":        item.Product.Id,
-			"item_order_index": item_order_index,
+			"order_item_index": order_item_index,
 		}
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
@@ -222,7 +222,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 	for _, subrecipe := range item.SubItems {
 
-		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, item_order_index)
+		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, order_item_index)
 		if err != nil {
 			return notifications, err
 		}

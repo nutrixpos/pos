@@ -59,7 +59,7 @@ func (l *Log) GetComponentLogs(component_id string, page_number, page_size int) 
 		skip = 0
 	}
 
-	findOptions := options.Find().SetSkip(int64(skip)).SetLimit(int64(page_size))
+	findOptions := options.Find().SetSkip(int64(skip)).SetLimit(int64(page_size)).SetSort(bson.M{"date": -1})
 
 	collection := client.Database(l.Config.Databases[0].Database).Collection("logs")
 	total_records, err = collection.CountDocuments(ctx, filter)
