@@ -200,7 +200,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	// create public folder if doesn't exist in the uploads dir directory
 	publicPath := c.Config.UploadsPath
 	if _, err := os.Stat(publicPath); os.IsNotExist(err) {
-		err = os.Mkdir(publicPath, 0755)
+		err = os.MkdirAll(publicPath, 0755)
 		if err != nil {
 			c.Logger.Error(err.Error())
 			panic(err)

@@ -21,6 +21,10 @@ import (
 // It sets up the Zitadel SDK with the given domain and key path.
 func NewZitadelAuth(conf config.Config) ZitadelAuth {
 
+	if !conf.Zitadel.Enabled {
+		return ZitadelAuth{}
+	}
+
 	ctx := context.Background()
 
 	za := ZitadelAuth{
@@ -47,10 +51,15 @@ type ZitadelAuth struct {
 	Domain string // Zitadel instance domain
 	Key    string // path to key.json
 	AuthZ  *authorization.Authorizer[*oauth.IntrospectionContext]
+	Config config.Config
 }
 
 // AllowAuthenticated middleware checks if the given request has a valid acess token.
 func (za *ZitadelAuth) AllowAuthenticated(next http.Handler) http.Handler {
+
+	if !za.Config.Zitadel.Enabled {
+		return next
+	}
 
 	mw := middleware.New(za.AuthZ)
 
@@ -67,6 +76,11 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 	// mw := middleware.New(za.AuthZ)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if !za.Config.Zitadel.Enabled {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		authorized := false
 

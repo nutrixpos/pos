@@ -13,7 +13,7 @@ func ConfigFactory(t string, path string, logger logger.ILogger) Config {
 
 		config, err := viper_config.GetConfig()
 		if err != nil {
-			logger.Error("can't reat config")
+			logger.Error("can't read config")
 		}
 
 		return config
@@ -34,6 +34,7 @@ type ZitadelConfig struct {
 	Domain  string `mapstructure:"domain"`
 	Port    int    `mapstructure:"port"`
 	KeyPath string `mapstructure:"key_path"`
+	Enabled bool   `mapstructure:"enabled"`
 }
 
 // Config represents the overall configuration structure

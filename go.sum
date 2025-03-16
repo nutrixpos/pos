@@ -26,6 +26,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/elmawardy/escpos v0.0.3 h1:9Q2YXjFkp3a64qQs/14VTyu4YHkYASZw21EmqsFJnXA=
 github.com/elmawardy/escpos v0.0.3/go.mod h1:fYCh4UOQgL+RfeOK/00YsiGN7b7iLyZVPuydcO3gbh4=
+github.com/elmawardy/escpos v0.0.4 h1:ufVYKWM/5NrJ6OB8OCxoXerfRDPmyIDfxJ8qwsQKsTQ=
+github.com/elmawardy/escpos v0.0.4/go.mod h1:fYCh4UOQgL+RfeOK/00YsiGN7b7iLyZVPuydcO3gbh4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
