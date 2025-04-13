@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	DisposalAdd = "disposal_add"
+	DisposalAdd             = "disposal_add"
+	MaterialInventoryReturn = "material_inventory_return"
 )
 
 type Log struct {
@@ -16,27 +17,27 @@ type Log struct {
 }
 
 type RefundOrderLog struct {
-	Log     `json:",inline"`
+	Log     `json:",inline" bson:",inline"`
 	Reason  string `json:"reason" bson:"reason"`
 	OrderId string `json:"order_id" bson:"order_id"`
 }
 
 type OrderItemRefundLog struct {
-	Log     `json:",inline"`
+	Log     `json:",inline" bson:",inline"`
 	OrderId string `json:"order_id" bson:"order_id"`
 	ItemId  string `json:"item_id" bson:"item_id"`
 	Reason  string `json:"reason" bson:"reason"`
 }
 
 type MaterialInventoryReturnLog struct {
-	Log      `json:",inline"`
+	Log      `json:",inline" bson:",inline"`
 	OrderId  string  `json:"order_id" bson:"order_id"`
 	Quantity float64 `json:"quantity" bson:"quantity"`
 	Reason   string  `json:"reason" bson:"reason"`
 }
 
 type ProductIncreaseLog struct {
-	Log       `json:",inline"`
+	Log       `json:",inline" bson:",inline"`
 	ProductId string                 `json:"product_id" bson:"product_id"`
 	Quantity  float64                `json:"quantity" bson:"quantity"`
 	Source    string                 `json:"source" bson:"source"`
@@ -44,7 +45,7 @@ type ProductIncreaseLog struct {
 }
 
 type WasteOrderItemLog struct {
-	Log      `json:",inline"`
+	Log      `json:",inline" bson:",inline"`
 	Item     OrderItem              `json:"item" bson:"item"`
 	OrderId  string                 `json:"order_id" bson:"order_id"`
 	Quantity float64                `json:"quantity" bson:"quantity"`
@@ -53,12 +54,12 @@ type WasteOrderItemLog struct {
 }
 
 type DisposalAddLog struct {
-	Log      `json:",inline"`
+	Log      `json:",inline" bson:",inline"`
 	Disposal Disposal `json:"disposal"`
 }
 
 type WasteMaterialLog struct {
-	Log        `json:",inline"`
+	Log        `json:",inline" bson:",inline"`
 	MaterialId string  `json:"material_id" bson:"material_id"`
 	EntryId    string  `json:"entry_id" bson:"entry_id"`
 	OrderId    string  `json:"order_id" bson:"order_id"`
@@ -68,7 +69,7 @@ type WasteMaterialLog struct {
 }
 
 type MaterialConsumeLog struct {
-	Log            `json:",inline"`
+	Log            `json:",inline" bson:",inline"`
 	MaterialId     string  `json:"material_id" bson:"material_id"`
 	EntryId        string  `json:"entry_id" bson:"entry_id"`
 	OrderId        string  `json:"order_id" bson:"order_id"`
@@ -79,7 +80,7 @@ type MaterialConsumeLog struct {
 }
 
 type ProductWasteLog struct {
-	Log            `json:",inline"`
+	Log            `json:",inline" bson:",inline"`
 	ProductId      string    `json:"product_id" bson:"product_id"`
 	OrderId        string    `json:"order_id" bson:"order_id"`
 	OrderItemIndex int       `json:"order_item_index" bson:"order_item_index"`

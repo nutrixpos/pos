@@ -114,12 +114,23 @@ func MaterialInventoryReturn(config config.Config, logger logger.ILogger) http.H
 			return
 		}
 
+		is_refundedStr := r.URL.Query().Get("is_refunded")
+		if reasonStr == "" {
+			http.Error(w, "is_refunded query string is required", http.StatusBadRequest)
+			return
+		}
+		is_refunded, err := strconv.ParseBool(is_refundedStr)
+		if err != nil {
+			http.Error(w, "Invalid is_refunded, must be boolean", http.StatusBadRequest)
+			return
+		}
+
 		material_svc := services.MaterialService{
 			Config: config,
 			Logger: logger,
 		}
 
-		err = material_svc.InventoryReturn(entry_id_param, material_id_param, quantity, order_idStr, reasonStr)
+		err = material_svc.InventoryReturn(entry_id_param, material_id_param, quantity, order_idStr, reasonStr, is_refunded)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -116,9 +116,11 @@ type ItemCost struct {
 
 // OrderItemMaterial represents the material, entry, and quantity associated with an order item.
 type OrderItemMaterial struct {
-	Material Material      `json:"material"`
-	Entry    MaterialEntry `json:"entry"`
-	Quantity float64       `json:"quantity" bson:"quantity"`
+	Material     Material      `json:"material"`
+	Entry        MaterialEntry `json:"entry"`
+	Quantity     float64       `json:"quantity" bson:"quantity"`
+	IsRefunded   bool          `json:"is_refunded" bson:"is_refunded"`
+	RefundReason string        `json:"refund_reason" bson:"refund_reason"`
 }
 
 // OrderItem represents an item in an order, including product details, materials, and pricing.

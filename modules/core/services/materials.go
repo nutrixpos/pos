@@ -104,7 +104,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 	return nil
 }
 
-func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string) (err error) {
+func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string, is_refunded bool) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
 
@@ -145,9 +145,46 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 		return err
 	}
 
+	if is_refunded {
+
+		filter = bson.M{"id": order_id, "items.materials": bson.M{
+			"$elemMatch": bson.M{
+				"material.id": material_id,
+				"entry.id":    entry_id,
+			},
+		}}
+
+		update = bson.M{
+			"$set": bson.M{
+				"items.$[item].materials.$[material].entry.is_refunded":   true,
+				"items.$[item].materials.$[material].entry.refund_reason": reason,
+			},
+		}
+
+		arrayFilters := options.ArrayFilters{
+			Filters: []interface{}{
+				bson.M{
+					"item.materials.material.id": material_id,
+					"item.materials.entry.id":    entry_id,
+				},
+				bson.M{
+					"material.material.id": material_id,
+					"material.entry.id":    entry_id,
+				},
+			},
+		}
+
+		opts := options.Update().SetArrayFilters(arrayFilters)
+
+		_, err = client.Database(ms.Config.Databases[0].Database).Collection("orders").UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			return err
+		}
+	}
+
 	log_material_return := models.MaterialInventoryReturnLog{
 		Log: models.Log{
-			Type: "material_inventory_return",
+			Type: models.MaterialInventoryReturn,
 			Date: time.Now(),
 			Id:   primitive.NewObjectID().Hex(),
 		},
