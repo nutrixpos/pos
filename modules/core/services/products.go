@@ -30,6 +30,114 @@ type RecipeService struct {
 	Config config.Config
 }
 
+func (rs *RecipeService) Waste(product_id string, quantity float64, order_id string, reason string, is_consume bool, order_item_index int, orderItem models.OrderItem) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	if is_consume {
+		filter := bson.M{"id": product_id}
+		// Define the update operation
+		update := bson.M{
+			"$dec": bson.M{
+				"ready": quantity,
+			},
+		}
+
+		_, err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").UpdateOne(context.Background(), filter, update)
+		if err != nil {
+			return err
+		}
+	}
+
+	log_product_increase := models.ProductWasteLog{
+		Log: models.Log{
+			Type: "product_waste",
+			Date: time.Now(),
+			Id:   primitive.NewObjectID().Hex(),
+		},
+		Quantity:       quantity,
+		Reason:         reason,
+		ProductId:      product_id,
+		OrderId:        order_id,
+		OrderItemIndex: order_item_index,
+		Item:           orderItem,
+	}
+
+	logs_collection := client.Database(rs.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log_product_increase)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *RecipeService) Increase(product_id string, quantity float64, source string, other map[string]interface{}) (err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	filter := bson.M{"id": product_id}
+	// Define the update operation
+	update := bson.M{
+		"$inc": bson.M{
+			"ready": quantity,
+		},
+	}
+
+	_, err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	log_product_increase := models.ProductIncreaseLog{
+		Log: models.Log{
+			Type: "product_increase",
+			Date: time.Now(),
+			Id:   primitive.NewObjectID().Hex(),
+		},
+		Quantity: quantity,
+		Source:   source,
+		Other:    other,
+	}
+
+	logs_collection := client.Database(rs.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log_product_increase)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (rs *RecipeService) GetProduct(product_id string) (product models.Product, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 

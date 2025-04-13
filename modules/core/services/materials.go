@@ -30,6 +30,229 @@ type MaterialService struct {
 	Settings models.Settings
 }
 
+func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64, order_id string, reason string, is_consume bool) (err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if ms.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	if is_consume {
+		var material models.Material
+		err = client.Database(ms.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
+			"id":         material_id,
+			"entries.id": entry_id,
+		},
+			options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+		if err != nil {
+			return err
+		}
+		ms.ConsumeFromInventory(material, material.Entries[0].Id, quantity, reason, order_id)
+	}
+
+	filter := bson.M{"id": material_id, "entries.id": entry_id}
+	// Define the update operation
+	update := bson.M{
+		"$inc": bson.M{
+			"entries.$.quantity": quantity,
+		},
+	}
+
+	_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	log_material_return := models.MaterialInventoryReturnLog{
+		Log: models.Log{
+			Type: "material_waste",
+			Date: time.Now(),
+			Id:   primitive.NewObjectID().Hex(),
+		},
+		OrderId:  order_id,
+		Quantity: quantity,
+		Reason:   reason,
+	}
+
+	logs_collection := client.Database(ms.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log_material_return)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if ms.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	filter := bson.M{"id": material_id, "entries.id": entry_id}
+	// Define the update operation
+	update := bson.M{
+		"$inc": bson.M{
+			"entries.$.quantity": quantity,
+		},
+	}
+
+	_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	log_material_return := models.MaterialInventoryReturnLog{
+		Log: models.Log{
+			Type: "material_inventory_return",
+			Date: time.Now(),
+			Id:   primitive.NewObjectID().Hex(),
+		},
+		OrderId:  order_id,
+		Quantity: quantity,
+		Reason:   reason,
+	}
+
+	logs_collection := client.Database(ms.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log_material_return)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_id string, quantity float64, reason string, order_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return notifications, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return notifications, err
+	}
+
+	// Connected successfully
+
+	if err != nil {
+		return notifications, err
+	}
+
+	material_available_amount, err := cs.GetMaterialEntryAvailability(material.Id, entry_id)
+	if err != nil {
+		return notifications, err
+	}
+
+	if float64(material_available_amount) < quantity || material_available_amount < 0 {
+		notifications = append(notifications, models.WebsocketTopicServerMessage{
+			TopicName: "inventory_insufficient",
+			Type:      "topic_message",
+			Severity:  "error",
+			Message:   fmt.Sprintf("Inventory for %s is insufficient, quantity requested by order_id: %s is %f, but entry %s only has %f", material.Name, order_id, quantity, entry_id, float64(material_available_amount)),
+			Key:       fmt.Sprintf("inventory_insufficient@%s", material.Id),
+		})
+		return notifications, fmt.Errorf("entry %s is insufficient", material.Id)
+	}
+
+	filter := bson.M{"id": material.Id, "entries.id": entry_id}
+	// Define the update operation
+	update := bson.M{
+		"$inc": bson.M{
+			"entries.$.quantity": -quantity,
+		},
+	}
+
+	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return notifications, err
+	}
+
+	logs_data := models.MaterialConsumeLog{
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: "component_consume",
+			Date: time.Now(),
+		},
+		MaterialId: material.Id,
+		EntryId:    entry_id,
+	}
+	_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
+	if err != nil {
+		return notifications, err
+	}
+
+	available_quantity, err := cs.GetComponentAvailability(material.Id)
+	if err != nil {
+		return notifications, err
+	}
+
+	if float64(available_quantity) <= cs.Settings.Inventory.StockAlertTreshold {
+		notifications = append(notifications, models.WebsocketTopicServerMessage{
+			TopicName: "inventory_low",
+			Type:      "topic_message",
+			Severity:  "warn",
+			Message:   fmt.Sprintf("Inventory for %s is low: %f", material.Name, float64(available_quantity)),
+			Key:       fmt.Sprintf("low_inventiry@%s", material.Id),
+		})
+	}
+
+	return notifications, err
+}
+
 // CalculateMaterialCost calculates the cost of a material entry based on its ID, material ID, and quantity.
 // It connects to the MongoDB database, retrieves the specific material entry, and calculates the cost
 // using the purchase price and purchase quantity.

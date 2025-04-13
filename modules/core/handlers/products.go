@@ -26,6 +26,35 @@ import (
 	"github.com/nutrixpos/pos/modules/core/services"
 )
 
+func IncreaseProduct(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+
+		id_param := params["id"]
+
+		request := struct {
+			Data struct {
+				Quantity float64                `json:"quantity"`
+				Source   string                 `json:"source"`
+				Other    map[string]interface{} `json:"other"`
+			} `json:"data"`
+		}{}
+
+		product_svc := services.RecipeService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err := product_svc.Increase(id_param, request.Data.Quantity, request.Data.Source, request.Data.Other)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func UpdateProductImage(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse the multipart form data

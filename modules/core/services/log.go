@@ -18,9 +18,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Log represents the logging service in the core module.
+// LogService represents the logging service in the core module.
 // It holds the logger and configuration required for logging operations.
-type Log struct {
+type LogService struct {
 	// Logger is used to log messages with different levels of severity.
 	Logger logger.ILogger
 	// Config holds the configuration settings for the logging service.
@@ -28,7 +28,7 @@ type Log struct {
 }
 
 // GetComponentLogs gets all logs for a given component_id.
-func (l *Log) GetComponentLogs(component_id string, page_number, page_size int) (logs []models.ComponentConsumeLogs, total_records int64, err error) {
+func (l *LogService) GetComponentLogs(component_id string, page_number, page_size int) (logs []models.ComponentConsumeLogs, total_records int64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -84,7 +84,7 @@ func (l *Log) GetComponentLogs(component_id string, page_number, page_size int) 
 }
 
 // GetSalesLogs gets all logs for a given component_id.
-func (l *Log) GetSalesLogs() []models.SalesLogs {
+func (l *LogService) GetSalesLogs() []models.SalesLogs {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)

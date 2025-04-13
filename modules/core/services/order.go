@@ -30,6 +30,165 @@ type OrderService struct {
 	Settings models.Settings
 }
 
+func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id string, quantity float64, reason string, other map[string]interface{}) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if os.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	log_waste_order_item := models.WasteOrderItemLog{
+		Log: models.Log{
+			Type: "waste_orderitem",
+			Date: time.Now(),
+			Id:   primitive.NewObjectID().Hex(),
+		},
+		Quantity: quantity,
+		Reason:   reason,
+		Other:    other,
+		OrderId:  order_id,
+	}
+
+	logs_collection := client.Database(os.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log_waste_order_item)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (os *OrderService) RefundOrder(order_id string, reason string) (err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if os.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	var order models.Order
+	err = client.Database(os.Config.Databases[0].Database).Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
+
+	for _, item := range order.Items {
+		os.RefundItem(order_id, item.Id, reason)
+	}
+
+	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
+
+	filter := bson.M{"id": order_id}
+	update := bson.M{"$set": bson.M{"status": "refunded"}}
+
+	_, err = order_collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	refund_log := models.RefundOrderLog{
+		OrderId: order_id,
+		Reason:  reason,
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: "order_refunded",
+			Date: time.Now(),
+		},
+	}
+
+	logs_collection := client.Database(os.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, refund_log)
+
+	return nil
+}
+
+// RefundItem is a function that is responsible for handling an order refund process
+// it receives order_id and material_returns that will go back to the inventory
+// and the return_to_products which can be used to return parts of the order to specific products (like pizza slice from pizza)
+// disposals are used to return the specified products or materials which can not be added to a normal product, to be uniquely processed later on.
+func (os *OrderService) RefundItem(order_id string, item_id string, reason string) (err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if os.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
+
+	filter := bson.M{"id": order_id, "items.id": item_id}
+	update := bson.M{"$set": bson.M{"items.$.status": "refunded"}}
+
+	_, err = order_collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	refund_log := models.OrderItemRefundLog{
+		OrderId: order_id,
+		ItemId:  item_id,
+		Reason:  reason,
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: "item_refund",
+			Date: time.Now(),
+		},
+	}
+
+	logs_collection := client.Database(os.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, refund_log)
+
+	return nil
+}
+
 func (os *OrderService) PrintReceipt(order models.Order, template string, lang_code string) (err error) {
 	receipt_svc := ReceiptService{
 		Config:   os.Config,
@@ -497,6 +656,19 @@ type GetOrdersParameters struct {
 	IsPayLater int8
 	// FilterState is used to filter for a specific state in_progress, finished, stashed, pending, cancelled, !stashed (! notation can be used to filter for negative values)
 	FilterState []string
+}
+
+// GetOrdersParameters is the struct to hold the parameters for the GetOrders method.
+type GetDisposalsParameters struct {
+	// OrderDisplayIdContains is the string to search for in the display_id field.
+	DisposalIdContains string
+	// page_number is used in pagination to set the index of the first record to be returned.
+	PageNumber int
+	// Rows is to set the desired row count limit.
+	PageSize int
+	// FilterState is used to filter for a specific state in_progress, finished, stashed, pending, cancelled, !stashed (! notation can be used to filter for negative values)
+	FilterState []string
+	Search      string
 }
 
 // GetOrders retrieves all orders from the database by default,

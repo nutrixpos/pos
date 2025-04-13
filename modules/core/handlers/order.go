@@ -26,6 +26,122 @@ import (
 	"github.com/nutrixpos/pos/modules/core/services"
 )
 
+func WasteOrderItem(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		decoder := json.NewDecoder(r.Body)
+
+		reason := r.URL.Query().Get("reason")
+		if reason == "" {
+			http.Error(w, "reason query string is required", http.StatusBadRequest)
+			return
+		}
+
+		quantityStr := r.URL.Query().Get("quantity")
+		if reason == "" {
+			http.Error(w, "quantity query string is required", http.StatusBadRequest)
+			return
+		}
+
+		quantity, err := strconv.ParseFloat(quantityStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid quantity", http.StatusBadRequest)
+			return
+		}
+
+		request := struct {
+			Data struct {
+				models.OrderItem `json:"order_item"`
+				Other            map[string]interface{}
+			} `json:"data"`
+		}{}
+
+		err = decoder.Decode(&request)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		order_svc := services.OrderService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		err = order_svc.WasteOrderItem(request.Data.OrderItem, order_id_param, quantity, reason, request.Data.Other)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func RefundOrderItem(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+		item_id_param := params["item_id"]
+
+		reason := r.URL.Query().Get("reason")
+		if reason == "" {
+			http.Error(w, "reason query string is required", http.StatusBadRequest)
+			return
+		}
+
+		order_svc := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
+		}
+
+		err := order_svc.RefundItem(order_id_param, item_id_param, reason)
+
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func RefundOrder(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		reason := r.URL.Query().Get("reason")
+		if reason == "" {
+			http.Error(w, "reason query string is required", http.StatusBadRequest)
+			return
+		}
+
+		order_svc := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
+		}
+
+		err := order_svc.RefundOrder(order_id_param, reason)
+
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
