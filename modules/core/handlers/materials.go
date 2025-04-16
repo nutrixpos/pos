@@ -44,7 +44,7 @@ func MaterialWaste(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 		isConsumeStr := r.URL.Query().Get("is_consume")
 		if isConsumeStr == "" {
-			http.Error(w, "quantity query string is required", http.StatusBadRequest)
+			http.Error(w, "is_consume query string (bool) is required", http.StatusBadRequest)
 			return
 		}
 
@@ -409,7 +409,7 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 			Config: config,
 		}
 
-		logs, total_records, err := logService.GetComponentLogs(material_id, page_number, page_size)
+		logs, total_records, err := logService.GetMaterialLogs(material_id, page_number, page_size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

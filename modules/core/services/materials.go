@@ -74,7 +74,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 	// Define the update operation
 	update := bson.M{
 		"$inc": bson.M{
-			"entries.$.quantity": quantity,
+			"entries.$.quantity": -quantity,
 		},
 	}
 
@@ -83,15 +83,18 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 		return err
 	}
 
-	log_material_return := models.MaterialInventoryReturnLog{
+	log_material_return := models.WasteMaterialLog{
 		Log: models.Log{
-			Type: "material_waste",
+			Type: models.LogType_MaterialWaste,
 			Date: time.Now(),
 			Id:   primitive.NewObjectID().Hex(),
 		},
-		OrderId:  order_id,
-		Quantity: quantity,
-		Reason:   reason,
+		MaterialId: material_id,
+		EntryId:    entry_id,
+		IsConsume:  is_consume,
+		OrderId:    order_id,
+		Quantity:   quantity,
+		Reason:     reason,
 	}
 
 	logs_collection := client.Database(ms.Config.Databases[0].Database).Collection("logs")
@@ -184,7 +187,7 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 
 	log_material_return := models.MaterialInventoryReturnLog{
 		Log: models.Log{
-			Type: models.MaterialInventoryReturn,
+			Type: models.LogType_MaterialInventoryReturn,
 			Date: time.Now(),
 			Id:   primitive.NewObjectID().Hex(),
 		},

@@ -5,8 +5,11 @@ import (
 )
 
 const (
-	DisposalAdd             = "disposal_add"
-	MaterialInventoryReturn = "material_inventory_return"
+	LogType_DisposalAdd             = "disposal_add"
+	LogType_MaterialInventoryReturn = "material_inventory_return"
+	LogType_MaterialWaste           = "material_waste"
+	LogType_MaterialConsume         = "component_consume"
+	LogType_MaterialAdd             = "material_add"
 )
 
 type Log struct {
@@ -77,6 +80,13 @@ type MaterialConsumeLog struct {
 	OrderItemIndex int     `json:"order_item_index" bson:"order_item_index"`
 	Reason         string  `json:"reason" bson:"reason"`
 	Quantity       float64 `json:"quantity" bson:"quantity"`
+}
+
+type MaterialAddLog struct {
+	Log        `json:",inline" bson:",inline"`
+	MaterialId string  `json:"material_id" bson:"material_id"`
+	EntryId    string  `json:"entry_id" bson:"entry_id"`
+	Quantity   float64 `json:"quantity" bson:"quantity"`
 }
 
 type ProductWasteLog struct {

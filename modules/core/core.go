@@ -160,7 +160,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/materials/{id}/logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/inventoryreturn", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.MaterialInventoryReturn(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/waste", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.MaterialWaste(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/waste", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.MaterialWaste(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/cost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialCost(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/materials/{id}/entries", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/categories", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCategories(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")

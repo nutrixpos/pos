@@ -27,8 +27,8 @@ type LogService struct {
 	Config config.Config
 }
 
-// GetComponentLogs gets all logs for a given component_id.
-func (l *LogService) GetComponentLogs(component_id string, page_number, page_size int) (logs []models.ComponentConsumeLogs, total_records int64, err error) {
+// GetMaterialLogs gets all logs for a given component_id.
+func (l *LogService) GetMaterialLogs(component_id string, page_number, page_size int) (logs []models.ComponentConsumeLogs, total_records int64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -52,7 +52,9 @@ func (l *LogService) GetComponentLogs(component_id string, page_number, page_siz
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	filter := bson.M{"type": "component_consume", "component_id": component_id}
+	filter := bson.M{"type": bson.M{
+		"$in": []string{models.LogType_MaterialConsume, models.LogType_MaterialWaste, models.LogType_MaterialInventoryReturn, models.LogType_MaterialAdd},
+	}, "component_id": component_id}
 
 	skip := (page_number - 1) * page_size
 	if page_number == 1 {

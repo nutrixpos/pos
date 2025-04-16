@@ -272,7 +272,7 @@ func (ds *DisposalService) Add(disposal models.Disposal) (err error) {
 	disposal_add_log := models.DisposalAddLog{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
-			Type: models.DisposalAdd,
+			Type: models.LogType_DisposalAdd,
 			Date: time.Now(),
 		},
 		Disposal: disposal,
