@@ -20,7 +20,7 @@ type DisposalService struct {
 	Settings models.Settings
 }
 
-func (rs *DisposalService) GetDisposal(disposal_id string) (disposal models.Disposal, err error) {
+func (rs *DisposalService) GetDisposal(disposal_id string) (disposal interface{}, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -138,7 +138,7 @@ func (ds *DisposalService) GetDisposals(params GetDisposalsParameters) (disposal
 }
 
 // UpdateDisposal updates a disposal in the database.
-func (cs *DisposalService) UpdateDisposal(id string, disposal models.Disposal) (updatedDisposal interface{}, err error) {
+func (cs *DisposalService) UpdateDisposal(id string, disposal interface{}) (updatedDisposal interface{}, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -160,22 +160,21 @@ func (cs *DisposalService) UpdateDisposal(id string, disposal models.Disposal) (
 
 	// Connected successfully
 
-	data := bson.M{
-		"type":     disposal.Type,
-		"order_id": disposal.OrderId,
-	}
+	data := bson.M{}
 
 	var idisposal interface{}
 	idisposal = disposal
 
-	if material_disposal, ok := idisposal.(models.MaterialDisposal); ok {
+	if material_disposal, ok := idisposal.(models.MaterialDisposal); ok && material_disposal.Type == models.TypeDisposalMaterial {
 
 		data["entry_id"] = material_disposal.EntryId
 		data["material_id"] = material_disposal.MaterialId
 		data["quantity"] = material_disposal.Quantity
+		data["type"] = material_disposal.Type
+		data["order_id"] = material_disposal.OrderId
 
 		collection := client.Database(cs.Config.Databases[0].Database).Collection("disposals")
-		_, err = collection.UpdateOne(ctx, bson.M{"id": disposal.Id}, bson.M{"$set": data})
+		_, err = collection.UpdateOne(ctx, bson.M{"id": material_disposal.Id}, bson.M{"$set": data})
 
 		var db_material_disposal models.MaterialDisposal
 		err = client.Database(cs.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&db_material_disposal)
@@ -184,15 +183,17 @@ func (cs *DisposalService) UpdateDisposal(id string, disposal models.Disposal) (
 		}
 	}
 
-	if order_item_disposal, ok := idisposal.(models.OrderItemDisposal); ok {
+	if product_disposal, ok := idisposal.(models.ProductDisposal); ok && product_disposal.Type == models.TypeDisposalProduct {
 
-		data["item"] = order_item_disposal.Item
-		data["quantity"] = order_item_disposal.Quantity
+		data["item"] = product_disposal.Item
+		data["quantity"] = product_disposal.Quantity
+		data["type"] = product_disposal.Type
+		data["order_id"] = product_disposal.OrderId
 
 		collection := client.Database(cs.Config.Databases[0].Database).Collection("disposals")
 		_, err = collection.UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": data})
 
-		var db_orderitem_disposal models.OrderItemDisposal
+		var db_orderitem_disposal models.ProductDisposal
 		err = client.Database(cs.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&db_orderitem_disposal)
 		if err != nil {
 			return db_orderitem_disposal, err
@@ -231,8 +232,7 @@ func (cs *DisposalService) DeleteDisposal(disposal_id string) (err error) {
 	return err
 }
 
-func (ds *DisposalService) Add(disposal models.Disposal) (err error) {
-
+func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
 
 	timeout := 1000 * time.Second
@@ -269,7 +269,62 @@ func (ds *DisposalService) Add(disposal models.Disposal) (err error) {
 		return err
 	}
 
-	disposal_add_log := models.DisposalAddLog{
+	disposal_add_log := models.DisposalMaterialAddLog{
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: models.DisposalAdd,
+			Date: time.Now(),
+		},
+		Disposal: disposal,
+	}
+
+	_, err = client.Database(ds.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, disposal_add_log)
+	if err != nil {
+		ds.Logger.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal) (err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if ds.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	disposal.Id = primitive.NewObjectID().Hex()
+
+	// Insert the DBComponent struct into the "materials" collection
+	collection := client.Database(ds.Config.Databases[0].Database).Collection("disposals")
+	_, err = collection.InsertOne(ctx, disposal)
+	if err != nil {
+		ds.Logger.Error(err.Error())
+		return err
+	}
+
+	disposal_add_log := models.DisposalProductAddLog{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: models.DisposalAdd,

@@ -7,6 +7,7 @@ import (
 const (
 	DisposalAdd             = "disposal_add"
 	MaterialInventoryReturn = "material_inventory_return"
+	OrderItemRefunded       = "order_item_refunded"
 )
 
 type Log struct {
@@ -53,9 +54,14 @@ type WasteOrderItemLog struct {
 	Other    map[string]interface{} `json:"other" bson:"other"`
 }
 
-type DisposalAddLog struct {
+type DisposalMaterialAddLog struct {
 	Log      `json:",inline" bson:",inline"`
-	Disposal Disposal `json:"disposal"`
+	Disposal MaterialDisposal `json:"disposal"`
+}
+
+type DisposalProductAddLog struct {
+	Log      `json:",inline" bson:",inline"`
+	Disposal ProductDisposal `json:"disposal"`
 }
 
 type WasteMaterialLog struct {

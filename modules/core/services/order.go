@@ -16,6 +16,7 @@ import (
 
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -70,71 +71,11 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 	return nil
 }
 
-func (os *OrderService) RefundOrder(order_id string, reason string) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	timeout := 1000 * time.Second
-
-	if os.Config.Env == "dev" {
-		timeout = 5 * time.Minute
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
-
-	var order models.Order
-	err = client.Database(os.Config.Databases[0].Database).Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
-
-	for _, item := range order.Items {
-		os.RefundItem(order_id, item.Id, reason)
-	}
-
-	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
-
-	filter := bson.M{"id": order_id}
-	update := bson.M{"$set": bson.M{"status": "refunded"}}
-
-	_, err = order_collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	refund_log := models.RefundOrderLog{
-		OrderId: order_id,
-		Reason:  reason,
-		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: "order_refunded",
-			Date: time.Now(),
-		},
-	}
-
-	logs_collection := client.Database(os.Config.Databases[0].Database).Collection("logs")
-	_, err = logs_collection.InsertOne(ctx, refund_log)
-
-	return nil
-}
-
 // RefundItem is a function that is responsible for handling an order refund process
 // it receives order_id and material_returns that will go back to the inventory
 // and the return_to_products which can be used to return parts of the order to specific products (like pizza slice from pizza)
 // disposals are used to return the specified products or materials which can not be added to a normal product, to be uniquely processed later on.
-func (os *OrderService) RefundItem(order_id string, item_id string, reason string) (err error) {
+func (os *OrderService) RefundItem(order_id string, item_id string, reason string, request dto.OrderItemRefundRequest) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -162,10 +103,112 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 
 	// Connected successfully
 
+	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
+		for _, material_refund := range request.MaterialRerunds {
+			material_svc := MaterialService{
+				Config:   os.Config,
+				Logger:   os.Logger,
+				Settings: os.Settings,
+			}
+
+			if material_refund.InventoryReturnQty > 0 {
+				err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, order_id, reason, true)
+				if err != nil {
+					return err
+				}
+			}
+
+			if material_refund.DisposeQty > 0 {
+				disposal_svc := DisposalService{
+					Logger:   os.Logger,
+					Config:   os.Config,
+					Settings: os.Settings,
+				}
+
+				disposal_svc.AddMaterialDisposal(models.MaterialDisposal{
+					Disposal: models.Disposal{
+						Id:       primitive.NilObjectID.Hex(),
+						OrderId:  order_id,
+						Type:     models.TypeDisposalMaterial,
+						Quantity: material_refund.DisposeQty,
+						Comment:  material_refund.Comment,
+					},
+					MaterialId: material_refund.MaterialId,
+					EntryId:    material_refund.EntryId,
+				})
+			}
+
+			if material_refund.WasteQty > 0 {
+				err = material_svc.Waste(material_refund.EntryId, material_refund.MaterialId, material_refund.WasteQty, order_id, reason, false)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		for _, product_inc := range request.ProductAdd {
+			product_svc := RecipeService{
+				Logger: os.Logger,
+				Config: os.Config,
+			}
+
+			err = product_svc.Increase(product_inc.ProductId, product_inc.Quantity, "order_item_refund", map[string]interface{}{"order_id": order_id})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	order, err := os.GetOrder(order_id)
+	if err != nil {
+		return err
+	}
+	var orderItem models.OrderItem
+
+	for _, item := range order.Items {
+		if item.Id == item_id {
+			orderItem = item
+		}
+	}
+
+	if request.Destination == dto.DTOOrderItemRefundDestination_Inventory {
+
+		product_svc := RecipeService{
+			Logger: os.Logger,
+			Config: os.Config,
+		}
+
+		err = product_svc.Increase(request.ProductId, orderItem.Quantity, "order_item_refund", map[string]interface{}{"order_id": order_id})
+		if err != nil {
+			return err
+		}
+	}
+
+	if request.Destination == dto.DTOOrderItemRefundDestination_Disposals {
+		disposal_svc := DisposalService{
+			Logger:   os.Logger,
+			Config:   os.Config,
+			Settings: os.Settings,
+		}
+
+		disposal_svc.AddProductDisposal(models.ProductDisposal{
+			Disposal: models.Disposal{
+				Id:       primitive.NilObjectID.Hex(),
+				OrderId:  order_id,
+				Type:     models.TypeDisposalProduct,
+				Quantity: orderItem.Quantity,
+				Comment:  reason,
+			},
+			Item: orderItem,
+		})
+	}
+
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	filter := bson.M{"id": order_id, "items.id": item_id}
-	update := bson.M{"$set": bson.M{"items.$.status": "refunded"}}
+	update := bson.M{"$set": bson.M{"items.$.status": "refunded", "items.$.refund_value": request.RefundValue, "items.$.refund_reason": reason}}
 
 	_, err = order_collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -178,7 +221,7 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 		Reason:  reason,
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
-			Type: "item_refund",
+			Type: models.OrderItemRefunded,
 			Date: time.Now(),
 		},
 	}
