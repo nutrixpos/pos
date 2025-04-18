@@ -27,6 +27,36 @@ import (
 	"github.com/nutrixpos/pos/modules/core/services"
 )
 
+func GetOrderLogs(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		order_svc := services.OrderService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		logs, err := order_svc.GetLogs(order_id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: logs,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 func WasteOrderItem(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

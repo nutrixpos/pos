@@ -116,6 +116,7 @@ type OrderItem struct {
 	Comment            string              `json:"comment" bson:"comment"`
 	SalePrice          float64             `json:"sale_price" bson:"sale_price"`
 	Cost               float64             `json:"cost" bson:"cost"`
+	Status             string              `json:"status" bson:"status"`
 }
 
 type SubmitOrderMeta struct {

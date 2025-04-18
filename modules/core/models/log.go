@@ -5,9 +5,13 @@ import (
 )
 
 const (
-	DisposalAdd             = "disposal_add"
-	MaterialInventoryReturn = "material_inventory_return"
-	OrderItemRefunded       = "order_item_refunded"
+	LogTypeDisposalAdd             = "disposal_add"
+	LogTypeMaterialInventoryReturn = "material_inventory_return"
+	LogTypeOrderItemRefunded       = "order_item_refunded"
+	LogTypeOrderStart              = "order_Start"
+	LogTypeOrderFinish             = "order_finish"
+	LogTypeMaterialConsume         = "component_consume"
+	LogTypeProductIncrease         = "product_increase"
 )
 
 type Log struct {
@@ -39,19 +43,18 @@ type MaterialInventoryReturnLog struct {
 
 type ProductIncreaseLog struct {
 	Log       `json:",inline" bson:",inline"`
-	ProductId string                 `json:"product_id" bson:"product_id"`
-	Quantity  float64                `json:"quantity" bson:"quantity"`
-	Source    string                 `json:"source" bson:"source"`
-	Other     map[string]interface{} `json:"other" bson:"other"`
+	ProductId string  `json:"product_id" bson:"product_id"`
+	Quantity  float64 `json:"quantity" bson:"quantity"`
+	Source    string  `json:"source" bson:"source"`
+	OrderId   string  `json:"order_id" bson:"order_id"`
 }
 
 type WasteOrderItemLog struct {
 	Log      `json:",inline" bson:",inline"`
-	Item     OrderItem              `json:"item" bson:"item"`
-	OrderId  string                 `json:"order_id" bson:"order_id"`
-	Quantity float64                `json:"quantity" bson:"quantity"`
-	Reason   string                 `json:"reason" bson:"reason"`
-	Other    map[string]interface{} `json:"other" bson:"other"`
+	Item     OrderItem `json:"item" bson:"item"`
+	OrderId  string    `json:"order_id" bson:"order_id"`
+	Quantity float64   `json:"quantity" bson:"quantity"`
+	Reason   string    `json:"reason" bson:"reason"`
 }
 
 type DisposalMaterialAddLog struct {
@@ -86,11 +89,11 @@ type MaterialConsumeLog struct {
 }
 
 type ProductWasteLog struct {
-	Log            `json:",inline" bson:",inline"`
-	ProductId      string    `json:"product_id" bson:"product_id"`
-	OrderId        string    `json:"order_id" bson:"order_id"`
-	OrderItemIndex int       `json:"order_item_index" bson:"order_item_index"`
-	Reason         string    `json:"reason" bson:"reason"`
-	Quantity       float64   `json:"quantity" bson:"quantity"`
-	Item           OrderItem `json:"item" bson:"item"`
+	Log         `json:",inline" bson:",inline"`
+	ProductId   string    `json:"product_id" bson:"product_id"`
+	OrderId     string    `json:"order_id" bson:"order_id"`
+	OrderItemId string    `json:"order_item_id" bson:"order_item_id"`
+	Reason      string    `json:"reason" bson:"reason"`
+	Quantity    float64   `json:"quantity" bson:"quantity"`
+	Item        OrderItem `json:"item" bson:"item"`
 }

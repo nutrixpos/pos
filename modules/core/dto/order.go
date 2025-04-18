@@ -20,8 +20,8 @@ type OrderItemRefundMaterialDTO struct {
 	MaterialId         string  `json:"material_id"`
 	EntryId            string  `json:"entry_id"`
 	InventoryReturnQty float64 `json:"inventory_return_qty"`
-	DisposeQty         float64 `json:"dispose_return_qty"`
-	WasteQty           float64 `json:"waste_return_qty"`
+	DisposeQty         float64 `json:"dispose_qty"`
+	WasteQty           float64 `json:"waste_qty"`
 	Comment            string  `json:"comment" bson:"comment"`
 }
 

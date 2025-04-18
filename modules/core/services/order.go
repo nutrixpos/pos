@@ -31,6 +31,44 @@ type OrderService struct {
 	Settings models.Settings
 }
 
+func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if os.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return logs, err
+	}
+	// connected to db
+
+	filter := bson.M{
+		"order_id": order_id,
+	}
+
+	findOptions := options.Find()
+
+	cursor, err := client.Database(os.Config.Databases[0].Database).Collection("logs").Find(context.Background(), filter, findOptions)
+	if err != nil {
+		return logs, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	if err = cursor.All(ctx, &logs); err != nil {
+		return logs, err
+	}
+
+	return logs, err
+}
+
 func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id string, quantity float64, reason string, other map[string]interface{}) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
@@ -57,7 +95,6 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 		},
 		Quantity: quantity,
 		Reason:   reason,
-		Other:    other,
 		OrderId:  order_id,
 	}
 
@@ -152,7 +189,7 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 				Config: os.Config,
 			}
 
-			err = product_svc.Increase(product_inc.ProductId, product_inc.Quantity, "order_item_refund", map[string]interface{}{"order_id": order_id})
+			err = product_svc.Increase(product_inc.ProductId, product_inc.Quantity, "order_item_refund", order_id)
 			if err != nil {
 				return err
 			}
@@ -180,7 +217,7 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 			Config: os.Config,
 		}
 
-		err = product_svc.Increase(request.ProductId, orderItem.Quantity, "order_item_refund", map[string]interface{}{"order_id": order_id})
+		err = product_svc.Increase(request.ProductId, orderItem.Quantity, "order_item_refund", order_id)
 		if err != nil {
 			return err
 		}
@@ -205,6 +242,15 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 		})
 	}
 
+	if request.Destination == dto.DTOOrderItemRefundDestination_Waste {
+		product_svc := RecipeService{
+			Logger: os.Logger,
+			Config: os.Config,
+		}
+
+		product_svc.Waste(request.ProductId, orderItem.Quantity, order_id, reason, false, orderItem)
+	}
+
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	filter := bson.M{"id": order_id, "items.id": item_id}
@@ -221,7 +267,7 @@ func (os *OrderService) RefundItem(order_id string, item_id string, reason strin
 		Reason:  reason,
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
-			Type: models.OrderItemRefunded,
+			Type: models.LogTypeOrderItemRefunded,
 			Date: time.Now(),
 		},
 	}

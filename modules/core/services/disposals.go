@@ -272,7 +272,7 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal)
 	disposal_add_log := models.DisposalMaterialAddLog{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
-			Type: models.DisposalAdd,
+			Type: models.LogTypeDisposalAdd,
 			Date: time.Now(),
 		},
 		Disposal: disposal,
@@ -327,7 +327,7 @@ func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal) (
 	disposal_add_log := models.DisposalProductAddLog{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
-			Type: models.DisposalAdd,
+			Type: models.LogTypeDisposalAdd,
 			Date: time.Now(),
 		},
 		Disposal: disposal,

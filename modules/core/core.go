@@ -170,6 +170,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/orders/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("DELETE", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/start", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.StartOrder(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrderLogs(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/cancel", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CancelOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/finish", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(c.Config, c.Logger), "admin", "chef"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{id}/pay", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.Payorder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
