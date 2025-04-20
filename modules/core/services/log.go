@@ -106,9 +106,9 @@ func (l *LogService) GetSalesLogs() []models.SalesLogs {
 	// Connected successfully
 	fmt.Println("Connected to MongoDB!")
 
-	// find all documents from db of logs collection filter on type = order_finished
+	// find all documents from db of logs collection filter on type = order_finish
 	collection := client.Database(l.Config.Databases[0].Database).Collection("logs")
-	filter := bson.M{"type": "order_finish"}
+	filter := bson.M{"type": models.LogTypeOrderFinish}
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		l.Logger.Error(err.Error())
@@ -121,4 +121,43 @@ func (l *LogService) GetSalesLogs() []models.SalesLogs {
 	}
 
 	return sales_logs
+}
+
+func (l *LogService) GetOrderItemsRefundLogs(order_items_ids [][]string) (logs []models.OrderItemRefundLog, err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		l.Logger.Error(err.Error())
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		l.Logger.Error(err.Error())
+	}
+
+	// Connected successfully
+	fmt.Println("Connected to MongoDB!")
+
+	// find all documents from db of logs collection filter on type = order_finish
+	collection := client.Database(l.Config.Databases[0].Database).Collection("logs")
+	filter := bson.M{"type": models.LogTypeOrderItemRefunded}
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		l.Logger.Error(err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	refund_logs := []models.OrderItemRefundLog{}
+	if err = cursor.All(ctx, &refund_logs); err != nil {
+		l.Logger.Error(err.Error())
+	}
+
+	return logs, err
 }

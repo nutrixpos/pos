@@ -11,6 +11,7 @@ import (
 
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -80,6 +81,61 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 	return salesPerDay, totalRecords, nil
 }
 
+func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefundRequest) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if ss.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+
+	sales_refund := models.SalesPerDayRefund{
+		OrderId: refund_request.OrderId,
+		ItemId:  refund_request.ItemId,
+		Reason:  refund_request.Reason,
+	}
+
+	collection := client.Database(ss.Config.Databases[0].Database).Collection("sales")
+	filter := bson.M{"date": time.Now().Format("2006-01-02")}
+
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []models.SalesPerDayRefund{sales_refund},"orders":[]})
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = collection.UpdateOne(ctx, filter, bson.M{"$push": bson.M{"refunds": sales_refund}}, options.Update().SetUpsert(true))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // AddOrderToSalesDay adds an order to the "sales" collection in the database.
 // It takes two parameters, order and items_cost, which are the order and its associated item costs.
 // It returns an error if the query fails.
@@ -123,7 +179,7 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 		return err
 	}
 	if count == 0 {
-		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "orders": []models.SalesPerDayOrder{sales_order}, "costs": sales_order.Order.Cost, "total_sales": sales_order.Order.SalePrice})
+		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds":[]bson.M{}, "orders": []models.SalesPerDayOrder{sales_order}, "costs": sales_order.Order.Cost, "total_sales": sales_order.Order.SalePrice})
 		if err != nil {
 			return err
 		}
