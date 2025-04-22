@@ -43,21 +43,6 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v) // marshal result as standard float64
 }
 
-// SalesPerDayOrder represents an order and its associated costs for a specific day.
-type SalesPerDayOrder struct {
-	Order Order      `json:"order" bson:"order,inline"`
-	Costs []ItemCost `json:"costs" bson:"costs"`
-}
-
-// SalesPerDay aggregates sales data for a specific day, including total costs and sales.
-type SalesPerDay struct {
-	Id         string             `json:"id" bson:"id,omitempty"`
-	Date       string             `json:"date" bson:"date"`
-	Orders     []SalesPerDayOrder `json:"orders" bson:"orders"`
-	Costs      float64            `json:"costs" bson:"costs"`
-	TotalSales float64            `json:"total_sales" bson:"total_sales"`
-}
-
 type ComponentConsumeLogs struct {
 	Id             string    `json:"id,omitempty" bson:"id,omitempty"`
 	Date           time.Time `json:"date" bson:"date"`
@@ -80,7 +65,7 @@ type Category struct {
 // ItemCost represents the cost of an item, including the recipe cost, sale price, quantity,
 // and the costs of the components.
 type ItemCost struct {
-	RecipeId   string
+	ProductId  string
 	ItemName   string
 	Cost       float64
 	SalePrice  float64

@@ -132,6 +132,10 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 			Data dto.OrderItemRefundRequest `json:"data"`
 		}{}
 
+		request.Data.ItemId = item_id_param
+		request.Data.OrderId = order_id_param
+		request.Data.Reason = reason
+
 		err := decoder.Decode(&request)
 		if err != nil {
 			logger.Error(err.Error())
@@ -145,7 +149,7 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 			Settings: settings,
 		}
 
-		err = order_svc.RefundItem(order_id_param, item_id_param, reason, request.Data)
+		err = order_svc.RefundItem(request.Data)
 
 		if err != nil {
 			logger.Error(err.Error())
