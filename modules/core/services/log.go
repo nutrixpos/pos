@@ -53,7 +53,7 @@ func (l *LogService) GetMaterialLogs(component_id string, page_number, page_size
 	fmt.Println("Connected to MongoDB!")
 
 	filter := bson.M{"type": bson.M{
-		"$in": []string{models.LogType_MaterialConsume, models.LogType_MaterialWaste, models.LogType_MaterialInventoryReturn, models.LogType_MaterialAdd},
+		"$in": []string{models.LogTypeMaterialConsume, models.LogTypeMaterialInventoryReturn},
 	}, "component_id": component_id}
 
 	skip := (page_number - 1) * page_size

@@ -20,7 +20,7 @@ func UpdateDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 		id_param := params["id"]
 
 		request := struct {
-			Data models.Disposal `json:"data"`
+			Data interface{} `json:"data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&request)
@@ -108,12 +108,12 @@ func DeleteDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 	}
 }
 
-// InesrtNewDisposal returns a HTTP handler function to insert a new disposal in the database.
-func InesrtNewDisposal(config config.Config, logger logger.ILogger) http.HandlerFunc {
+// InsertDisposal returns a HTTP handler function to insert a new disposal in the database.
+func InsertDisposal(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		request := struct {
-			Data models.Disposal `json:"data"`
+			Data interface{} `json:"data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&request)
@@ -122,18 +122,39 @@ func InesrtNewDisposal(config config.Config, logger logger.ILogger) http.Handler
 			return
 		}
 
-		recipeService := services.DisposalService{
-			Logger: logger,
-			Config: config,
-		}
+		if material_disposal, ok := request.Data.(models.MaterialDisposal); ok {
+			recipeService := services.DisposalService{
+				Logger: logger,
+				Config: config,
+			}
 
-		err = recipeService.Add(request.Data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			err = recipeService.AddMaterialDisposal(material_disposal)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusCreated)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		if product_disposal, ok := request.Data.(models.ProductDisposal); ok {
+			recipeService := services.DisposalService{
+				Logger: logger,
+				Config: config,
+			}
+
+			err = recipeService.AddProductDisposal(product_disposal)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 

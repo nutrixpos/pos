@@ -85,7 +85,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 
 	log_material_return := models.WasteMaterialLog{
 		Log: models.Log{
-			Type: models.LogType_MaterialWaste,
+			Type: models.LogTypeMaterialWaste,
 			Date: time.Now(),
 			Id:   primitive.NewObjectID().Hex(),
 		},
@@ -187,7 +187,7 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 
 	log_material_return := models.MaterialInventoryReturnLog{
 		Log: models.Log{
-			Type: models.LogType_MaterialInventoryReturn,
+			Type: models.LogTypeMaterialInventoryReturn,
 			Date: time.Now(),
 			Id:   primitive.NewObjectID().Hex(),
 		},

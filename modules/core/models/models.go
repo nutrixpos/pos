@@ -43,25 +43,6 @@ func (j JSONFloat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v) // marshal result as standard float64
 }
 
-// Disposal used to store a returned order item or material which is too unique and modified to return to normal inventory state
-type Disposal struct {
-	Id       string  `json:"id" bson:"id"`
-	OrderId  string  `json:"order_id" bson:"order_id"`
-	Type     string  `json:"type" bson:"type"` // material or order_item
-	Quantity float64 `json:"quantity" bson:"quantity"`
-}
-
-type MaterialDisposal struct {
-	Disposal   `json:",inline"`
-	MaterialId string `json:"material_id" bson:"material_id"`
-	EntryId    string `json:"entry_id" bson:"entry_id"`
-}
-
-type OrderItemDisposal struct {
-	Disposal `json:",inline"`
-	Item     OrderItem `json:"item" bson:"item"`
-}
-
 // SalesPerDayOrder represents an order and its associated costs for a specific day.
 type SalesPerDayOrder struct {
 	Order Order      `json:"order" bson:"order,inline"`
@@ -135,6 +116,7 @@ type OrderItem struct {
 	Comment            string              `json:"comment" bson:"comment"`
 	SalePrice          float64             `json:"sale_price" bson:"sale_price"`
 	Cost               float64             `json:"cost" bson:"cost"`
+	Status             string              `json:"status" bson:"status"`
 }
 
 type SubmitOrderMeta struct {

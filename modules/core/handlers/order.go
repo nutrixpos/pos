@@ -22,9 +22,40 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 )
+
+func GetOrderLogs(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		order_svc := services.OrderService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		logs, err := order_svc.GetLogs(order_id_param)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: logs,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
 
 func WasteOrderItem(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -95,32 +126,16 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 			return
 		}
 
-		order_svc := services.OrderService{
-			Logger:   logger,
-			Config:   config,
-			Settings: settings,
-		}
+		decoder := json.NewDecoder(r.Body)
 
-		err := order_svc.RefundItem(order_id_param, item_id_param, reason)
+		request := struct {
+			Data dto.OrderItemRefundRequest `json:"data"`
+		}{}
 
+		err := decoder.Decode(&request)
 		if err != nil {
 			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func RefundOrder(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		params := mux.Vars(r)
-		order_id_param := params["order_id"]
-
-		reason := r.URL.Query().Get("reason")
-		if reason == "" {
-			http.Error(w, "reason query string is required", http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -130,7 +145,7 @@ func RefundOrder(config config.Config, logger logger.ILogger, settings models.Se
 			Settings: settings,
 		}
 
-		err := order_svc.RefundOrder(order_id_param, reason)
+		err = order_svc.RefundItem(order_id_param, item_id_param, reason, request.Data)
 
 		if err != nil {
 			logger.Error(err.Error())
