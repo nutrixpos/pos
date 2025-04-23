@@ -44,6 +44,6 @@ Since nutrix is an api based project, you will need a GUI to let end users inter
 
 Following are suggested GUI(s) :
 
-- [https://github.com/nutrixpos/pos-frontend](https://github.com/nutrixpos/pos-frontend)
+- [https://github.com/nutrixpos/posui](https://github.com/nutrixpos/posui)
 
 

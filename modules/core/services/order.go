@@ -729,6 +729,10 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 	order.SubmittedAt = time.Now()
 	order.Id = primitive.NewObjectID().Hex()
 
+	for index, _ := range order.Items {
+		order.Items[index].Id = primitive.NewObjectID().Hex()
+	}
+
 	if order.State != "stashed" {
 		order.State = "pending"
 	}

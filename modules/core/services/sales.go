@@ -75,6 +75,10 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 			return salesPerDay, totalRecords, err
 		}
 
+		if spd.Refunds == nil {
+			spd.Refunds = make([]models.SalesPerDayRefund, 0)
+		}
+
 		salesPerDay = append(salesPerDay, spd)
 	}
 
@@ -108,10 +112,37 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 
 	// Connected successfully
 
+	material_refunds := make([]models.OrderItemRefundMaterial, 0)
+	products_adds := make([]models.OrderItemRefundProductAdd, 0)
+
+	for _, material_refund := range refund_request.MaterialRerunds {
+		material_refunds = append(material_refunds, models.OrderItemRefundMaterial{
+			MaterialId:         material_refund.MaterialId,
+			EntryId:            material_refund.EntryId,
+			InventoryReturnQty: material_refund.InventoryReturnQty,
+			DisposeQty:         material_refund.DisposeQty,
+			WasteQty:           material_refund.WasteQty,
+			Comment:            material_refund.Comment,
+		})
+	}
+
+	for _, product_add := range refund_request.ProductAdd {
+		products_adds = append(products_adds, models.OrderItemRefundProductAdd{
+			ProductId: product_add.ProductId,
+			Quantity:  product_add.Quantity,
+			Comment:   product_add.Comment,
+		})
+	}
+
 	sales_refund := models.SalesPerDayRefund{
-		OrderId: refund_request.OrderId,
-		ItemId:  refund_request.ItemId,
-		Reason:  refund_request.Reason,
+		OrderId:         refund_request.OrderId,
+		ItemId:          refund_request.ItemId,
+		Reason:          refund_request.Reason,
+		Amount:          refund_request.RefundValue,
+		ProductId:       refund_request.OrderId,
+		Destination:     refund_request.Destination,
+		MaterialRerunds: material_refunds,
+		ProductAdd:      products_adds,
 	}
 
 	collection := client.Database(ss.Config.Databases[0].Database).Collection("sales")
@@ -122,12 +153,12 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		return err
 	}
 	if count == 0 {
-		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []models.SalesPerDayRefund{sales_refund},"orders":[]})
+		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []models.SalesPerDayRefund{sales_refund}, "orders": []bson.M{}, "refunds_value": refund_request.RefundValue})
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = collection.UpdateOne(ctx, filter, bson.M{"$push": bson.M{"refunds": sales_refund}}, options.Update().SetUpsert(true))
+		_, err = collection.UpdateOne(ctx, filter, bson.M{"$push": bson.M{"refunds": sales_refund}, "$inc": bson.M{"refunds_value": refund_request.RefundValue}}, options.Update().SetUpsert(true))
 		if err != nil {
 			return err
 		}
@@ -179,7 +210,7 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 		return err
 	}
 	if count == 0 {
-		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds":[]bson.M{}, "orders": []models.SalesPerDayOrder{sales_order}, "costs": sales_order.Order.Cost, "total_sales": sales_order.Order.SalePrice})
+		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []bson.M{}, "orders": []models.SalesPerDayOrder{sales_order}, "costs": sales_order.Order.Cost, "total_sales": sales_order.Order.SalePrice})
 		if err != nil {
 			return err
 		}
