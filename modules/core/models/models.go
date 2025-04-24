@@ -66,6 +66,7 @@ type Category struct {
 // and the costs of the components.
 type ItemCost struct {
 	ProductId  string
+	ItemId     string `json:"item_id" bson:"item_id"`
 	ItemName   string
 	Cost       float64
 	SalePrice  float64

@@ -474,6 +474,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 			ItemName:  items[itemIndex].Product.Name,
 			Cost:      0.0,
 			ProductId: items[itemIndex].Product.Id,
+			ItemId:    items[itemIndex].Id,
 		}
 
 		for _, component := range item.Materials {

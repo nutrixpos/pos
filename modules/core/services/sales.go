@@ -139,7 +139,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		ItemId:          refund_request.ItemId,
 		Reason:          refund_request.Reason,
 		Amount:          refund_request.RefundValue,
-		ProductId:       refund_request.OrderId,
+		ProductId:       refund_request.ProductId,
 		Destination:     refund_request.Destination,
 		MaterialRerunds: material_refunds,
 		ProductAdd:      products_adds,
