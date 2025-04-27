@@ -30,6 +30,43 @@ type MaterialService struct {
 	Settings models.Settings
 }
 
+func (ms *MaterialService) GetMaterial(material_id string) (material models.Material, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
+
+	timeout := 1000 * time.Second
+
+	if ms.Config.Env == "dev" {
+		timeout = 5 * time.Minute
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	// Connected successfully
+
+	collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
+	err = collection.FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
+	if err != nil {
+		return
+	}
+
+	return material, err
+}
+
 func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64, order_id string, reason string, is_consume bool) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
 

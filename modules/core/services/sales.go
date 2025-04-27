@@ -112,31 +112,72 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 
 	// Connected successfully
 
+	order_svc := OrderService{
+		Logger: ss.Logger,
+		Config: ss.Config,
+	}
+
+	order, err := order_svc.GetOrder(refund_request.OrderId)
+	if err != nil {
+		return err
+	}
+
+	var orderItem models.OrderItem
+	for _, item := range order.Items {
+		if item.Id == refund_request.ItemId {
+			orderItem = item
+			break
+		}
+	}
+
 	material_refunds := make([]models.OrderItemRefundMaterial, 0)
 	products_adds := make([]models.OrderItemRefundProductAdd, 0)
 
-	for _, material_refund := range refund_request.MaterialRerunds {
-		material_refunds = append(material_refunds, models.OrderItemRefundMaterial{
-			MaterialId:         material_refund.MaterialId,
-			EntryId:            material_refund.EntryId,
-			InventoryReturnQty: material_refund.InventoryReturnQty,
-			DisposeQty:         material_refund.DisposeQty,
-			WasteQty:           material_refund.WasteQty,
-			Comment:            material_refund.Comment,
-		})
-	}
+	if refund_request.Destination == "custom" {
+		for _, material_refund := range refund_request.MaterialRerunds {
 
-	for _, product_add := range refund_request.ProductAdd {
-		products_adds = append(products_adds, models.OrderItemRefundProductAdd{
-			ProductId: product_add.ProductId,
-			Quantity:  product_add.Quantity,
-			Comment:   product_add.Comment,
-		})
+			material_svc := MaterialService{
+				Config: ss.Config,
+				Logger: ss.Logger,
+			}
+
+			material, err := material_svc.GetMaterial(material_refund.MaterialId)
+			if err != nil {
+				return err
+			}
+
+			var material_entry models.MaterialEntry
+			for _, entry := range material.Entries {
+				if entry.Id == material_refund.EntryId {
+					material_entry = entry
+					break
+				}
+			}
+
+			material_refunds = append(material_refunds, models.OrderItemRefundMaterial{
+				MaterialId:         material_refund.MaterialId,
+				EntryId:            material_refund.EntryId,
+				InventoryReturnQty: material_refund.InventoryReturnQty,
+				DisposeQty:         material_refund.DisposeQty,
+				WasteQty:           material_refund.WasteQty,
+				CostPerUnit:        material_entry.PurchasePrice / float64(material_entry.PurchaseQuantity),
+				Comment:            material_refund.Comment,
+			})
+		}
+
+		for _, product_add := range refund_request.ProductAdd {
+			products_adds = append(products_adds, models.OrderItemRefundProductAdd{
+				ProductId: product_add.ProductId,
+				Quantity:  product_add.Quantity,
+				Comment:   product_add.Comment,
+			})
+		}
 	}
 
 	sales_refund := models.SalesPerDayRefund{
 		OrderId:         refund_request.OrderId,
 		ItemId:          refund_request.ItemId,
+		ItemCost:        orderItem.Cost,
 		Reason:          refund_request.Reason,
 		Amount:          refund_request.RefundValue,
 		ProductId:       refund_request.ProductId,

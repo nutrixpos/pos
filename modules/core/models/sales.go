@@ -7,11 +7,12 @@ type SalesPerDayOrder struct {
 }
 
 type OrderItemRefundMaterial struct {
-	MaterialId         string  `json:"material_id"`
-	EntryId            string  `json:"entry_id"`
-	InventoryReturnQty float64 `json:"inventory_return_qty"`
-	DisposeQty         float64 `json:"dispose_qty"`
-	WasteQty           float64 `json:"waste_qty"`
+	MaterialId         string  `json:"material_id" bson:"material_id"`
+	EntryId            string  `json:"entry_id" bson:"entry_id"`
+	InventoryReturnQty float64 `json:"inventory_return_qty" bson:"inventory_return_qty"`
+	DisposeQty         float64 `json:"dispose_qty" bson:"dispose_qty"`
+	WasteQty           float64 `json:"waste_qty" bson:"waste_qty"`
+	CostPerUnit        float64 `json:"cost_per_unit" bson:"cost_per_unit"`
 	Comment            string  `json:"comment" bson:"comment"`
 }
 
@@ -27,6 +28,7 @@ type SalesPerDayRefund struct {
 	ProductId       string                      `json:"product_id" bson:"product_id"`
 	Reason          string                      `json:"reason" bons:"reason"`
 	Amount          float64                     `json:"amount" bson:"amount"`
+	ItemCost        float64                     `json:"item_cost" bson:"item_cost"`
 	Destination     string                      `json:"destination" bson:"destination"`
 	MaterialRerunds []OrderItemRefundMaterial   `json:"material_refunds" bson:"material_refunds"`
 	ProductAdd      []OrderItemRefundProductAdd `json:"products_add" bson:"products_add"`
