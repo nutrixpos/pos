@@ -194,8 +194,6 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 				return err
 			}
 		}
-
-		return nil
 	}
 
 	order, err := os.GetOrder(request.OrderId)
