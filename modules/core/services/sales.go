@@ -33,6 +33,8 @@ type SalesService struct {
 func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
+	salesPerDay = make([]models.SalesPerDay, 0)
+
 	deadline := 5 * time.Second
 	if ss.Config.Env == "dev" {
 		deadline = 1000 * time.Second
