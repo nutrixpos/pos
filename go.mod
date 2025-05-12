@@ -10,6 +10,7 @@ require (
 	github.com/elmawardy/escpos v0.0.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/olahol/melody v1.2.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
@@ -47,14 +48,12 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
-	github.com/qiniu/iconv v1.2.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

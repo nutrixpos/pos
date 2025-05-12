@@ -597,15 +597,19 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 		totalSalePrice += recipe_cost.SalePrice
 	}
 
-	logs_data := bson.M{
-		"type":          models.LogTypeOrderFinish,
-		"date":          time.Now(),
-		"cost":          totalCost,
-		"sale_price":    totalSalePrice,
-		"items":         items_cost,
-		"order_id":      order_id,
-		"time_consumed": time.Since(order.SubmittedAt),
+	logs_data := models.OrderFinishLog{
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: models.LogTypeOrderFinish,
+			Date: time.Now(),
+		},
+		Cost:         totalCost,
+		SalePrice:    totalSalePrice,
+		Items:        items_cost,
+		OrderId:      order_id,
+		TimeConsumed: time.Since(order.SubmittedAt),
 	}
+
 	_, err = client.Database(os.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 	if err != nil {
 		log.Fatal(err)
@@ -995,11 +999,15 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 		return err
 	}
 
-	logs_data := bson.M{
-		"type":          "order_Start",
-		"date":          time.Now(),
-		"order_details": order,
+	logs_data := models.OrderStartLog{
+		Log: models.Log{
+			Id:   primitive.NewObjectID().Hex(),
+			Type: models.LogTypeOrderStart,
+			Date: time.Now(),
+		},
+		OrderDetails: order,
 	}
+
 	_, err = client.Database(os.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 	if err != nil {
 		return err

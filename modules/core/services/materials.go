@@ -491,6 +491,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 		logs_data := bson.M{
 			"type":             "component_consume",
 			"date":             time.Now(),
+			"id":               primitive.NewObjectID().Hex(),
 			"component_id":     component.Material.Id,
 			"quantity":         component.Quantity * item.Quantity,
 			"entry_id":         component.Entry.Id,
@@ -777,11 +778,14 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 	for _, entry := range material.Entries {
 
 		logs_data := bson.M{
-			"type":     "component_add",
-			"date":     time.Now(),
-			"company":  entry.Company,
-			"quantity": entry.Quantity,
-			"price":    entry.PurchasePrice,
+			"id":          primitive.NewObjectID().Hex(),
+			"type":        "component_add",
+			"date":        time.Now(),
+			"material_id": material.Id,
+			"entry_id":    entry.Id,
+			"company":     entry.Company,
+			"quantity":    entry.Quantity,
+			"price":       entry.PurchasePrice,
 		}
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
@@ -826,9 +830,10 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 	for _, entry := range entries {
 
 		entry.PurchaseQuantity = entry.Quantity
+		entry_id := primitive.NewObjectID().Hex()
 
 		entry_data := bson.M{
-			"id":                primitive.NewObjectID().Hex(),
+			"id":                entry_id,
 			"purchase_quantity": entry.PurchaseQuantity,
 			"price":             entry.PurchasePrice,
 			"quantity":          entry.Quantity,
@@ -842,6 +847,22 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(ctx, filter, update, opts)
 		if err != nil {
+			return err
+		}
+
+		logs_data := bson.M{
+			"type":        "component_add",
+			"id":          primitive.NewObjectID().Hex(),
+			"date":        time.Now(),
+			"material_id": componentId,
+			"entry_id":    entry_id,
+			"company":     entry.Company,
+			"quantity":    entry.Quantity,
+			"price":       entry.PurchasePrice,
+		}
+		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
+		if err != nil {
+			cs.Logger.Error(err.Error())
 			return err
 		}
 	}

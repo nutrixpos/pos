@@ -25,11 +25,11 @@ type AppManager struct {
 	Logger logger.ILogger
 }
 
-// Ignite starts all saved module builders by igniting each module.
-func (manager *AppManager) Ignite() (err error) {
+// Run starts all saved module builders by igniting each module.
+func (manager *AppManager) Run() (err error) {
 
 	for _, saved_module_builder := range saved_module_builders {
-		manager.IgniteModule("core", manager.Logger, saved_module_builder)
+		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder)
 	}
 
 	return err
@@ -48,14 +48,14 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 	return builder
 }
 
-// IgniteModule initializes and registers a module from the module builder.
-func (manager *AppManager) IgniteModule(name string, logger logger.ILogger, module_builder *ModuleBuilder) error {
+// RunModule initializes and registers a module from the module builder.
+func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder) error {
 
 	if manager.Modules == nil {
 		manager.Modules = make(map[string]IBaseModule)
 	}
 
-	msg := fmt.Sprintf(`Running module : (%s) ...`, name)
+	msg := fmt.Sprintf(`Starting module : (%s) ...`, name)
 	logger.Info(msg)
 
 	if _, ok := manager.Modules[name]; ok {
@@ -91,7 +91,7 @@ func (manager *AppManager) IgniteModule(name string, logger logger.ILogger, modu
 
 	}
 
-	logger.Info("Successfully registered module (" + name + ")")
+	logger.Info("Started module (" + name + ")")
 
 	return nil
 }

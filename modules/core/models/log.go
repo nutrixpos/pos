@@ -11,8 +11,9 @@ const (
 	LogTypeOrderStart              = "order_Start"
 	LogTypeOrderFinish             = "order_finish"
 	LogTypeMaterialConsume         = "component_consume"
-	LogTypeProductIncrease         = "product_increase"
+	LogTypeMaterialAdd             = "component_add"
 	LogTypeMaterialWaste           = "material_waste"
+	LogTypeProductIncrease         = "product_increase"
 )
 
 type Log struct {
@@ -26,6 +27,20 @@ type RefundOrderLog struct {
 	Log     `json:",inline" bson:",inline"`
 	Reason  string `json:"reason" bson:"reason"`
 	OrderId string `json:"order_id" bson:"order_id"`
+}
+
+type OrderStartLog struct {
+	Log          `json:",inline" bson:",inline"`
+	OrderDetails Order `json:"order_details" bson:"order_details"`
+}
+
+type OrderFinishLog struct {
+	Log          `json:",inline" bson:",inline"`
+	Cost         float64       `json:"cost" bson:"cost"`
+	SalePrice    float64       `json:"sale_price" bson:"sale_price"`
+	Items        []ItemCost    `json:"items" bson:"items"`
+	OrderId      string        `json:"order_id" bson:"order_id"`
+	TimeConsumed time.Duration `json:"time_consumed" bson:"time_consumed"`
 }
 
 type OrderItemRefundLog struct {

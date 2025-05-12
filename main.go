@@ -15,6 +15,7 @@ import (
 	"github.com/nutrixpos/pos/modules"
 	"github.com/nutrixpos/pos/modules/core"
 	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/nutrixpos/pos/modules/hubsync"
 )
 
 func main() {
@@ -72,8 +73,13 @@ func main() {
 		Settings: settings,
 	}, "core").RegisterHttpHandlers(router).RegisterBackgroundWorkers().Save()
 
+	appmanager.LoadModule(&hubsync.HubSyncModule{
+		Logger: &logger,
+		Config: conf,
+	}, "hubsync").RegisterBackgroundWorkers().Save()
+
 	// Ignite the app manager to start all modules
-	appmanager.Ignite()
+	appmanager.Run()
 
 	// Retrieve all registered modules
 	modules, err := appmanager.GetModules()

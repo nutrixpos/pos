@@ -24,8 +24,6 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/elmawardy/escpos v0.0.3 h1:9Q2YXjFkp3a64qQs/14VTyu4YHkYASZw21EmqsFJnXA=
-github.com/elmawardy/escpos v0.0.3/go.mod h1:fYCh4UOQgL+RfeOK/00YsiGN7b7iLyZVPuydcO3gbh4=
 github.com/elmawardy/escpos v0.0.4 h1:ufVYKWM/5NrJ6OB8OCxoXerfRDPmyIDfxJ8qwsQKsTQ=
 github.com/elmawardy/escpos v0.0.4/go.mod h1:fYCh4UOQgL+RfeOK/00YsiGN7b7iLyZVPuydcO3gbh4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
@@ -120,7 +118,6 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/qiniu/iconv v1.2.0 h1:2LJKwoF+4LJ3lNM+7cE3P1kNQzAI/HMZuWhkmFoY2U8=
 github.com/qiniu/iconv v1.2.0/go.mod h1:5bxb2h9lptZt2eHLgY+Jw4X06TMtKb6tvvok0DwSwGA=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
