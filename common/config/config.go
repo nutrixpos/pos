@@ -48,11 +48,12 @@ type Config struct {
 
 // Database holds the configuration for database connections
 type Database struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Type     string `mapstructure:"type"`
-	Name     string `mapstructure:"name"`
-	Database string `mapstructure:"database"`
+	Host     string            `mapstructure:"host"`
+	Port     int               `mapstructure:"port"`
+	Username string            `mapstructure:"username"`
+	Password string            `mapstructure:"password"`
+	Type     string            `mapstructure:"type"`
+	Name     string            `mapstructure:"name"`
+	Database string            `mapstructure:"database"`
+	Tables   map[string]string `mapstructure:"tables"`
 }

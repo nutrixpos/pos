@@ -57,6 +57,12 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 
 	vc.BindAllEnv()
 
+	tables := make(map[string]string)
+
+	for k, v := range vc.v.GetStringMap("databases.0.tables") {
+		tables[k] = v.(string)
+	}
+
 	databases := make([]Database, 1)
 	databases[0] = Database{
 		Host:     vc.v.GetString("databases.0.host"),
@@ -66,7 +72,9 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		Password: vc.v.GetString("databases.0.password"),
 		Type:     vc.v.GetString("databases.0.type"),
 		Name:     vc.v.GetString("databases.0.name"),
+		Tables:   tables,
 	}
+
 	zitadel_domain := vc.v.GetString("zitadel.domain")
 	zitadel_port := vc.v.GetInt("zitadel.port")
 

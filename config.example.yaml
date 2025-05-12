@@ -6,6 +6,8 @@ databases:
     database: nutrix
     username: ""
     password: ""
+    tables: # this is to allow changing the following specific table names
+      sales: sales
 
 uploads_path: "./mnt/public"
   
