@@ -120,7 +120,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 		return err
 	}
 
-	log_material_return := models.WasteMaterialLog{
+	log_material_return := models.LogWasteMaterial{
 		Log: models.Log{
 			Type: models.LogTypeMaterialWaste,
 			Date: time.Now(),
@@ -222,7 +222,7 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 		}
 	}
 
-	log_material_return := models.MaterialInventoryReturnLog{
+	log_material_return := models.LogMaterialInventoryReturn{
 		Log: models.Log{
 			Type: models.LogTypeMaterialInventoryReturn,
 			Date: time.Now(),
@@ -298,7 +298,7 @@ func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_
 		return notifications, err
 	}
 
-	logs_data := models.MaterialConsumeLog{
+	logs_data := models.LogMaterialConsume{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: "component_consume",

@@ -87,7 +87,7 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 	}
 	// connected to db
 
-	log_waste_order_item := models.WasteOrderItemLog{
+	log_waste_order_item := models.LogWasteOrderItem{
 		Log: models.Log{
 			Type: "waste_orderitem",
 			Date: time.Now(),
@@ -141,7 +141,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 	// Connected successfully
 
 	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
-		for _, material_refund := range request.MaterialRerunds {
+		for _, material_refund := range request.MaterialRefunds {
 			material_svc := MaterialService{
 				Config:   os.Config,
 				Logger:   os.Logger,
@@ -259,7 +259,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 		return err
 	}
 
-	refund_log := models.OrderItemRefundLog{
+	refund_log := models.LogOrderItemRefund{
 		OrderId: request.OrderId,
 		ItemId:  request.ItemId,
 		Reason:  request.Reason,
@@ -597,7 +597,7 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 		totalSalePrice += recipe_cost.SalePrice
 	}
 
-	logs_data := models.OrderFinishLog{
+	logs_data := models.LogOrderFinish{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: models.LogTypeOrderFinish,
@@ -999,7 +999,7 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 		return err
 	}
 
-	logs_data := models.OrderStartLog{
+	logs_data := models.LogOrderStart{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: models.LogTypeOrderStart,

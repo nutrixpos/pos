@@ -1,8 +1,12 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/nutrixpos/pos/common/config"
@@ -57,13 +61,8 @@ func (s *SyncerService) CopyToBuffer() error {
 				{"hubsync_status": bson.M{"$eq": false}},
 			}},
 			{"type": bson.M{"$in": []string{
-				core_models.LogTypeMaterialAdd,
-				core_models.LogTypeMaterialConsume,
-				core_models.LogTypeMaterialInventoryReturn,
-				core_models.LogTypeMaterialWaste,
-				core_models.LogTypeOrderStart,
-				core_models.LogTypeOrderFinish,
-				core_models.LogTypeOrderItemRefunded,
+				core_models.LogTypeSalesPerDayOrder,
+				core_models.LogTypeSalesPerDayRefund,
 			}}},
 		},
 	})
@@ -92,7 +91,7 @@ func (s *SyncerService) CopyToBuffer() error {
 
 		switch logType {
 		case core_models.LogTypeOrderStart:
-			var db_log core_models.OrderStartLog
+			var db_log core_models.LogOrderStart
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
@@ -100,59 +99,154 @@ func (s *SyncerService) CopyToBuffer() error {
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
 			}
+
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
+			}
+
 		case core_models.LogTypeOrderFinish:
-			var db_log core_models.OrderFinishLog
+			var db_log core_models.LogOrderFinish
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 		case core_models.LogTypeMaterialConsume:
-			var db_log core_models.MaterialConsumeLog
+			var db_log core_models.LogMaterialConsume
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 		case core_models.LogTypeMaterialAdd:
-			var db_log core_models.MaterialAddLog
+			var db_log core_models.LogMaterialAdd
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 		case core_models.LogTypeMaterialInventoryReturn:
-			var db_log core_models.MaterialInventoryReturnLog
+			var db_log core_models.LogMaterialInventoryReturn
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 		case core_models.LogTypeMaterialWaste:
-			var db_log core_models.WasteMaterialLog
+			var db_log core_models.LogWasteMaterial
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 		case core_models.LogTypeOrderItemRefunded:
-			var db_log core_models.OrderItemRefundLog
+			var db_log core_models.LogOrderItemRefund
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
 			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
 			if err != nil {
 				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
+			}
+		case core_models.LogTypeSalesPerDayOrder:
+			var db_log core_models.LogSalesPerDayOrder
+			if err := cursor.Decode(&db_log); err != nil {
+				return fmt.Errorf("error decoding user log: %v", err)
+			}
+			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
+			if err != nil {
+				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
+			}
+		case core_models.LogTypeSalesPerDayRefund:
+			var db_log core_models.LogSalesPerDayRefund
+			if err := cursor.Decode(&db_log); err != nil {
+				return fmt.Errorf("error decoding user log: %v", err)
+			}
+			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
+			if err != nil {
+				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
+			}
+			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
+				"$set": bson.M{
+					"hubsync_status": true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
 
 		default:
@@ -178,8 +272,98 @@ func (s *SyncerService) CopyToBuffer() error {
 	return nil
 }
 
+func (s *SyncerService) UploadToServer() error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if s.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database(s.Config.Databases[0].Database).Collection("hubsync_buffer")
+
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+
+	defer cursor.Close(ctx)
+
+	db_logs := make([]interface{}, 0)
+
+	for cursor.Next(ctx) {
+		var db_log interface{}
+		if err := cursor.Decode(&db_log); err != nil {
+			return fmt.Errorf("error decoding user log: %v", err)
+		}
+
+		db_logs = append(db_logs, db_log)
+	}
+
+	if len(db_logs) == 0 {
+		return nil
+	}
+
+	body := struct {
+		Data []interface{} `json:"data"`
+	}{Data: db_logs}
+
+	json_body, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:8001/v1/api/logs?tenant_id=1", bytes.NewBuffer(json_body))
+	if err != nil {
+		return fmt.Errorf("error creating request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error sending request: %v", resp.Status)
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		_, err = collection.DeleteMany(ctx, bson.M{})
+		if err != nil {
+			return fmt.Errorf("error deleting logs from db: %v", err)
+		}
+
+	}
+
+	s.Logger.Info(fmt.Sprintf("Uploaded %s logs to hub successfully", strconv.Itoa(len(db_logs))))
+
+	return nil
+}
+
 func (s *SyncerService) Sync() error {
-	s.CopyToBuffer()
+
+	s.Logger.Info("Starting sync...")
+	err := s.CopyToBuffer()
+	if err != nil {
+		return err
+	}
+	err = s.UploadToServer()
+	if err != nil {
+		return err
+	}
+
+	s.Logger.Info("Sync completed successfully")
 
 	return nil
 }

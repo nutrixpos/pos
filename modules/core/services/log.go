@@ -125,7 +125,7 @@ func (l *LogService) GetSalesLogs() []models.SalesLogs {
 	return sales_logs
 }
 
-func (l *LogService) GetOrderItemsRefundLogs(order_items_ids [][]string) (logs []models.OrderItemRefundLog, err error) {
+func (l *LogService) GetOrderItemsRefundLogs(order_items_ids [][]string) (logs []models.LogOrderItemRefund, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", l.Config.Databases[0].Host, l.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -156,7 +156,7 @@ func (l *LogService) GetOrderItemsRefundLogs(order_items_ids [][]string) (logs [
 	}
 	defer cursor.Close(ctx)
 
-	refund_logs := []models.OrderItemRefundLog{}
+	refund_logs := []models.LogOrderItemRefund{}
 	if err = cursor.All(ctx, &refund_logs); err != nil {
 		l.Logger.Error(err.Error())
 	}

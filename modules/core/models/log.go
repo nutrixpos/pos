@@ -14,6 +14,8 @@ const (
 	LogTypeMaterialAdd             = "component_add"
 	LogTypeMaterialWaste           = "material_waste"
 	LogTypeProductIncrease         = "product_increase"
+	LogTypeSalesPerDayOrder        = "sales_per_day_order"
+	LogTypeSalesPerDayRefund       = "sales_per_day_refund"
 )
 
 type Log struct {
@@ -23,18 +25,18 @@ type Log struct {
 	UserId string    `json:"user_id" bson:"user_id"`
 }
 
-type RefundOrderLog struct {
+type LogRefundOrder struct {
 	Log     `json:",inline" bson:",inline"`
 	Reason  string `json:"reason" bson:"reason"`
 	OrderId string `json:"order_id" bson:"order_id"`
 }
 
-type OrderStartLog struct {
+type LogOrderStart struct {
 	Log          `json:",inline" bson:",inline"`
 	OrderDetails Order `json:"order_details" bson:"order_details"`
 }
 
-type OrderFinishLog struct {
+type LogOrderFinish struct {
 	Log          `json:",inline" bson:",inline"`
 	Cost         float64       `json:"cost" bson:"cost"`
 	SalePrice    float64       `json:"sale_price" bson:"sale_price"`
@@ -43,21 +45,21 @@ type OrderFinishLog struct {
 	TimeConsumed time.Duration `json:"time_consumed" bson:"time_consumed"`
 }
 
-type OrderItemRefundLog struct {
+type LogOrderItemRefund struct {
 	Log     `json:",inline" bson:",inline"`
 	OrderId string `json:"order_id" bson:"order_id"`
 	ItemId  string `json:"item_id" bson:"item_id"`
 	Reason  string `json:"reason" bson:"reason"`
 }
 
-type MaterialInventoryReturnLog struct {
+type LogMaterialInventoryReturn struct {
 	Log      `json:",inline" bson:",inline"`
 	OrderId  string  `json:"order_id" bson:"order_id"`
 	Quantity float64 `json:"quantity" bson:"quantity"`
 	Reason   string  `json:"reason" bson:"reason"`
 }
 
-type ProductIncreaseLog struct {
+type LogProductIncrease struct {
 	Log       `json:",inline" bson:",inline"`
 	ProductId string  `json:"product_id" bson:"product_id"`
 	Quantity  float64 `json:"quantity" bson:"quantity"`
@@ -65,7 +67,7 @@ type ProductIncreaseLog struct {
 	OrderId   string  `json:"order_id" bson:"order_id"`
 }
 
-type WasteOrderItemLog struct {
+type LogWasteOrderItem struct {
 	Log      `json:",inline" bson:",inline"`
 	Item     OrderItem `json:"item" bson:"item"`
 	OrderId  string    `json:"order_id" bson:"order_id"`
@@ -73,17 +75,17 @@ type WasteOrderItemLog struct {
 	Reason   string    `json:"reason" bson:"reason"`
 }
 
-type DisposalMaterialAddLog struct {
+type LogDisposalMaterialAdd struct {
 	Log      `json:",inline" bson:",inline"`
 	Disposal MaterialDisposal `json:"disposal"`
 }
 
-type DisposalProductAddLog struct {
+type LogDisposalProductAdd struct {
 	Log      `json:",inline" bson:",inline"`
 	Disposal ProductDisposal `json:"disposal"`
 }
 
-type WasteMaterialLog struct {
+type LogWasteMaterial struct {
 	Log        `json:",inline" bson:",inline"`
 	MaterialId string  `json:"material_id" bson:"material_id"`
 	EntryId    string  `json:"entry_id" bson:"entry_id"`
@@ -93,7 +95,7 @@ type WasteMaterialLog struct {
 	Quantity   float64 `json:"quantity" bson:"quantity"`
 }
 
-type MaterialConsumeLog struct {
+type LogMaterialConsume struct {
 	Log            `json:",inline" bson:",inline"`
 	MaterialId     string  `json:"material_id" bson:"material_id"`
 	EntryId        string  `json:"entry_id" bson:"entry_id"`
@@ -104,14 +106,14 @@ type MaterialConsumeLog struct {
 	Quantity       float64 `json:"quantity" bson:"quantity"`
 }
 
-type MaterialAddLog struct {
+type LogMaterialAdd struct {
 	Log        `json:",inline" bson:",inline"`
 	MaterialId string  `json:"material_id" bson:"material_id"`
 	EntryId    string  `json:"entry_id" bson:"entry_id"`
 	Quantity   float64 `json:"quantity" bson:"quantity"`
 }
 
-type ProductWasteLog struct {
+type LogProductWaste struct {
 	Log         `json:",inline" bson:",inline"`
 	ProductId   string    `json:"product_id" bson:"product_id"`
 	OrderId     string    `json:"order_id" bson:"order_id"`
@@ -119,4 +121,14 @@ type ProductWasteLog struct {
 	Reason      string    `json:"reason" bson:"reason"`
 	Quantity    float64   `json:"quantity" bson:"quantity"`
 	Item        OrderItem `json:"item" bson:"item"`
+}
+
+type LogSalesPerDayOrder struct {
+	Log              `json:",inline" bson:",inline"`
+	SalesPerDayOrder SalesPerDayOrder `json:"sales_per_day_order" bson:"sales_per_day_order"`
+}
+
+type LogSalesPerDayRefund struct {
+	Log               `json:",inline" bson:",inline"`
+	SalesPerDayRefund SalesPerDayRefund `json:"sales_per_day_refund" bson:"sales_per_day_refund"`
 }

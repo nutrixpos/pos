@@ -14,6 +14,7 @@ import (
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -136,7 +137,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 	products_adds := make([]models.OrderItemRefundProductAdd, 0)
 
 	if refund_request.Destination == "custom" {
-		for _, material_refund := range refund_request.MaterialRerunds {
+		for _, material_refund := range refund_request.MaterialRefunds {
 
 			material_svc := MaterialService{
 				Config: ss.Config,
@@ -207,6 +208,21 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		}
 	}
 
+	log := models.LogSalesPerDayRefund{
+		Log: models.Log{
+			Type: models.LogTypeSalesPerDayOrder,
+			Id:   primitive.NewObjectID().Hex(),
+			Date: time.Now(),
+		},
+		SalesPerDayRefund: sales_refund,
+	}
+
+	logs_collection := client.Database(ss.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -262,6 +278,21 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 		if err != nil {
 			return err
 		}
+	}
+
+	log := models.LogSalesPerDayOrder{
+		Log: models.Log{
+			Type: models.LogTypeSalesPerDayOrder,
+			Id:   primitive.NewObjectID().Hex(),
+			Date: time.Now(),
+		},
+		SalesPerDayOrder: sales_order,
+	}
+
+	logs_collection := client.Database(ss.Config.Databases[0].Database).Collection("logs")
+	_, err = logs_collection.InsertOne(ctx, log)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -63,7 +63,7 @@ func (rs *RecipeService) Waste(product_id string, quantity float64, order_id str
 		}
 	}
 
-	log_product_waste := models.ProductWasteLog{
+	log_product_waste := models.LogProductWaste{
 		Log: models.Log{
 			Type: "product_waste",
 			Date: time.Now(),
@@ -117,7 +117,7 @@ func (rs *RecipeService) Increase(product_id string, quantity float64, source st
 		return err
 	}
 
-	log_product_increase := models.ProductIncreaseLog{
+	log_product_increase := models.LogProductIncrease{
 		Log: models.Log{
 			Type: "product_increase",
 			Date: time.Now(),

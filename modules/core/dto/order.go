@@ -14,7 +14,7 @@ type OrderItemRefundRequest struct {
 	Reason          string                         `json:"reason" bons:"reason"`
 	RefundValue     float64                        `json:"refund_value"`
 	Destination     string                         `json:"destination" bson:"destination"`
-	MaterialRerunds []OrderItemRefundMaterialDTO   `json:"material_refunds"`
+	MaterialRefunds []OrderItemRefundMaterialDTO   `json:"material_refunds"`
 	ProductAdd      []OrderItemRefundProductAddDTO `json:"products_add"`
 }
 

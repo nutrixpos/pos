@@ -269,7 +269,7 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal)
 		return err
 	}
 
-	disposal_add_log := models.DisposalMaterialAddLog{
+	disposal_add_log := models.LogDisposalMaterialAdd{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: models.LogTypeDisposalAdd,
@@ -324,7 +324,7 @@ func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal) (
 		return err
 	}
 
-	disposal_add_log := models.DisposalProductAddLog{
+	disposal_add_log := models.LogDisposalProductAdd{
 		Log: models.Log{
 			Id:   primitive.NewObjectID().Hex(),
 			Type: models.LogTypeDisposalAdd,
