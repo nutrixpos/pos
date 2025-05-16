@@ -301,12 +301,27 @@ func (s *SyncerService) UploadToServer() error {
 	db_logs := make([]interface{}, 0)
 
 	for cursor.Next(ctx) {
-		var db_log interface{}
+		var db_log core_models.Log
 		if err := cursor.Decode(&db_log); err != nil {
 			return fmt.Errorf("error decoding user log: %v", err)
 		}
 
-		db_logs = append(db_logs, db_log)
+		if db_log.Type == core_models.LogTypeSalesPerDayOrder {
+			var db_log_sales_order core_models.LogSalesPerDayOrder
+			if err := cursor.Decode(&db_log_sales_order); err != nil {
+				return fmt.Errorf("error decoding user log: %v", err)
+			}
+			db_logs = append(db_logs, db_log_sales_order)
+		}
+
+		if db_log.Type == core_models.LogTypeSalesPerDayRefund {
+			var db_log_order_item_refund core_models.LogSalesPerDayRefund
+			if err := cursor.Decode(&db_log_order_item_refund); err != nil {
+				return fmt.Errorf("error decoding user log: %v", err)
+			}
+			db_logs = append(db_logs, db_log_order_item_refund)
+		}
+
 	}
 
 	if len(db_logs) == 0 {
@@ -334,11 +349,11 @@ func (s *SyncerService) UploadToServer() error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("error sending request: %v", resp.Status)
 	}
 
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusCreated {
 		_, err = collection.DeleteMany(ctx, bson.M{})
 		if err != nil {
 			return fmt.Errorf("error deleting logs from db: %v", err)
