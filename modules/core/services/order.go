@@ -478,11 +478,11 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 		for _, component := range item.Materials {
 
 			itemComponent := struct {
-				ComponentName string
-				ComponentId   string
-				EntryId       string
-				Quantity      float64
-				Cost          float64
+				ComponentName string  `json:"component_name" bson:"component_name" mapstructure:"component_name"`
+				ComponentId   string  `json:"component_id" bson:"component_id" mapstructure:"component_id"`
+				EntryId       string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
+				Quantity      float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
+				Cost          float64 `json:"cost" bson:"cost" mapstructure:"cost"`
 			}{
 				ComponentName: component.Material.Name,
 				ComponentId:   component.Material.Id,
