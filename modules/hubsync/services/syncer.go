@@ -314,7 +314,7 @@ func (s *SyncerService) UploadToServer() error {
 			db_logs = append(db_logs, db_log_sales_order)
 		}
 
-		if db_log.Type == core_models.LogTypeSalesPerDayRefund {
+		if db_log.Type == core_models.LogTypeOrderItemRefunded {
 			var db_log_order_item_refund core_models.LogSalesPerDayRefund
 			if err := cursor.Decode(&db_log_order_item_refund); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)

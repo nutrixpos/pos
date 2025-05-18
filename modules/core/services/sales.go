@@ -70,6 +70,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 		ss.Logger.Error(err.Error())
 		return salesPerDay, totalRecords, err
 	}
+
 	defer cursor.Close(ctx)
 
 	for cursor.Next(context.Background()) {
@@ -79,7 +80,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 		}
 
 		if spd.Refunds == nil {
-			spd.Refunds = make([]models.SalesPerDayRefund, 0)
+			spd.Refunds = make([]models.ItemRefund, 0)
 		}
 
 		salesPerDay = append(salesPerDay, spd)
@@ -177,7 +178,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		}
 	}
 
-	sales_refund := models.SalesPerDayRefund{
+	sales_refund := models.ItemRefund{
 		OrderId:         refund_request.OrderId,
 		ItemId:          refund_request.ItemId,
 		ItemCost:        orderItem.Cost,
@@ -197,7 +198,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		return err
 	}
 	if count == 0 {
-		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []models.SalesPerDayRefund{sales_refund}, "orders": []bson.M{}, "refunds_value": refund_request.RefundValue})
+		_, err = collection.InsertOne(ctx, bson.M{"date": time.Now().Format("2006-01-02"), "refunds": []models.ItemRefund{sales_refund}, "orders": []bson.M{}, "refunds_value": refund_request.RefundValue})
 		if err != nil {
 			return err
 		}
@@ -210,7 +211,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 
 	log := models.LogSalesPerDayRefund{
 		Log: models.Log{
-			Type: models.LogTypeSalesPerDayOrder,
+			Type: models.LogTypeOrderItemRefunded,
 			Id:   primitive.NewObjectID().Hex(),
 			Date: time.Now(),
 		},

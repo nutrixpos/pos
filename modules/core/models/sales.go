@@ -22,7 +22,7 @@ type OrderItemRefundProductAdd struct {
 	Comment   string  `json:"comment" bson:"comment" mapstructure:"comment"`
 }
 
-type SalesPerDayRefund struct {
+type ItemRefund struct {
 	OrderId         string                      `json:"order_id" bson:"order_id" mapstructure:"order_id"`
 	ItemId          string                      `json:"order_item_id" bson:"order_item_id" mapstructure:"order_item_id"`
 	ProductId       string                      `json:"product_id" bson:"product_id" mapstructure:"product_id"`
@@ -36,11 +36,11 @@ type SalesPerDayRefund struct {
 
 // SalesPerDay aggregates sales data for a specific day, including total costs and sales.
 type SalesPerDay struct {
-	Id           string              `json:"id" bson:"id,omitempty" mapstructure:"id"`
-	Date         string              `json:"date" bson:"date" mapstructure:"date"`
-	Orders       []SalesPerDayOrder  `json:"orders" bson:"orders" mapstructure:"orders"`
-	Refunds      []SalesPerDayRefund `json:"refunds" bson:"refunds" mapstructure:"refunds"`
-	Costs        float64             `json:"costs" bson:"costs" mapstructure:"costs"`
-	TotalSales   float64             `json:"total_sales" bson:"total_sales" mapstructure:"total_sales"`
-	RefundsValue float64             `json:"refunds_value" bson:"refunds_value" mapstructure:"refunds_value"`
+	Id           string             `json:"id" bson:"id,omitempty" mapstructure:"id"`
+	Date         string             `json:"date" bson:"date" mapstructure:"date"`
+	Orders       []SalesPerDayOrder `json:"orders" bson:"orders" mapstructure:"orders"`
+	Refunds      []ItemRefund       `json:"refunds" bson:"refunds" mapstructure:"refunds"`
+	Costs        float64            `json:"costs" bson:"costs" mapstructure:"costs"`
+	TotalSales   float64            `json:"total_sales" bson:"total_sales" mapstructure:"total_sales"`
+	RefundsValue float64            `json:"refunds_value" bson:"refunds_value" mapstructure:"refunds_value"`
 }

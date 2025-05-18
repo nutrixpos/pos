@@ -130,5 +130,5 @@ type LogSalesPerDayOrder struct {
 
 type LogSalesPerDayRefund struct {
 	Log               `json:",inline" bson:",inline" mapstructure:",squash"`
-	SalesPerDayRefund SalesPerDayRefund `json:"sales_per_day_refund" bson:"sales_per_day_refund" mapstructure:"sales_per_day_refund"`
+	SalesPerDayRefund ItemRefund `json:"sales_per_day_refund" bson:"sales_per_day_refund" mapstructure:"sales_per_day_refund"`
 }
