@@ -46,10 +46,16 @@ type LogOrderFinish struct {
 }
 
 type LogOrderItemRefund struct {
-	Log     `json:",inline" bson:",inline" mapstructure:",squash"`
-	OrderId string `json:"order_id" bson:"order_id" mapstructure:"order_id"`
-	ItemId  string `json:"item_id" bson:"item_id" mapstructure:"item_id"`
-	Reason  string `json:"reason" bson:"reason" mapstructure:"reason"`
+	Log             `json:",inline" bson:",inline" mapstructure:",squash"`
+	OrderId         string                      `json:"order_id" bson:"order_id" mapstructure:"order_id"`
+	ItemId          string                      `json:"order_item_id" bson:"order_item_id" mapstructure:"order_item_id"`
+	ProductId       string                      `json:"product_id" bson:"product_id" mapstructure:"product_id"`
+	Reason          string                      `json:"reason" bons:"reason" mapstructure:"reason"`
+	Amount          float64                     `json:"amount" bson:"amount" mapstructure:"amount"`
+	ItemCost        float64                     `json:"item_cost" bson:"item_cost" mapstructure:"item_cost"`
+	Destination     string                      `json:"destination" bson:"destination" mapstructure:"destination"`
+	MaterialRerunds []OrderItemRefundMaterial   `json:"material_refunds" bson:"material_refunds" mapstructure:"material_refunds"`
+	ProductAdd      []OrderItemRefundProductAdd `json:"products_add" bson:"products_add" mapstructure:"products_add"`
 }
 
 type LogMaterialInventoryReturn struct {
@@ -126,9 +132,4 @@ type LogProductWaste struct {
 type LogSalesPerDayOrder struct {
 	Log              `json:",inline" bson:",inline" mapstructure:",squash"`
 	SalesPerDayOrder SalesPerDayOrder `json:"sales_per_day_order" bson:"sales_per_day_order" mapstructure:"sales_per_day_order"`
-}
-
-type LogSalesPerDayRefund struct {
-	Log               `json:",inline" bson:",inline" mapstructure:",squash"`
-	SalesPerDayRefund ItemRefund `json:"sales_per_day_refund" bson:"sales_per_day_refund" mapstructure:"sales_per_day_refund"`
 }

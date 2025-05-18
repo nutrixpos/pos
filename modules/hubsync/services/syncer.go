@@ -62,7 +62,7 @@ func (s *SyncerService) CopyToBuffer() error {
 			}},
 			{"type": bson.M{"$in": []string{
 				core_models.LogTypeSalesPerDayOrder,
-				core_models.LogTypeSalesPerDayRefund,
+				core_models.LogTypeOrderItemRefunded,
 			}}},
 		},
 	})
@@ -197,23 +197,6 @@ func (s *SyncerService) CopyToBuffer() error {
 			if err != nil {
 				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
-		case core_models.LogTypeOrderItemRefunded:
-			var db_log core_models.LogOrderItemRefund
-			if err := cursor.Decode(&db_log); err != nil {
-				return fmt.Errorf("error decoding user log: %v", err)
-			}
-			_, err = db.Collection("hubsync_buffer").InsertOne(ctx, db_log)
-			if err != nil {
-				return fmt.Errorf("error inserting log into hubsync_buffer: %v", err)
-			}
-			_, err = db.Collection("logs").UpdateOne(ctx, bson.M{"id": db_log.Id}, bson.M{
-				"$set": bson.M{
-					"hubsync_status": true,
-				},
-			})
-			if err != nil {
-				return fmt.Errorf("error updating log in logs collection: %v", err)
-			}
 		case core_models.LogTypeSalesPerDayOrder:
 			var db_log core_models.LogSalesPerDayOrder
 			if err := cursor.Decode(&db_log); err != nil {
@@ -231,8 +214,8 @@ func (s *SyncerService) CopyToBuffer() error {
 			if err != nil {
 				return fmt.Errorf("error updating log in logs collection: %v", err)
 			}
-		case core_models.LogTypeSalesPerDayRefund:
-			var db_log core_models.LogSalesPerDayRefund
+		case core_models.LogTypeOrderItemRefunded:
+			var db_log core_models.LogOrderItemRefund
 			if err := cursor.Decode(&db_log); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}
@@ -315,7 +298,7 @@ func (s *SyncerService) UploadToServer() error {
 		}
 
 		if db_log.Type == core_models.LogTypeOrderItemRefunded {
-			var db_log_order_item_refund core_models.LogSalesPerDayRefund
+			var db_log_order_item_refund core_models.LogOrderItemRefund
 			if err := cursor.Decode(&db_log_order_item_refund); err != nil {
 				return fmt.Errorf("error decoding user log: %v", err)
 			}

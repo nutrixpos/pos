@@ -209,13 +209,21 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 		}
 	}
 
-	log := models.LogSalesPerDayRefund{
+	log := models.LogOrderItemRefund{
 		Log: models.Log{
 			Type: models.LogTypeOrderItemRefunded,
 			Id:   primitive.NewObjectID().Hex(),
 			Date: time.Now(),
 		},
-		SalesPerDayRefund: sales_refund,
+		OrderId:         sales_refund.OrderId,
+		ItemId:          sales_refund.ItemId,
+		Reason:          sales_refund.Reason,
+		ProductId:       sales_refund.ProductId,
+		Amount:          sales_refund.Amount,
+		ItemCost:        sales_refund.ItemCost,
+		Destination:     sales_refund.Destination,
+		MaterialRerunds: sales_refund.MaterialRerunds,
+		ProductAdd:      sales_refund.ProductAdd,
 	}
 
 	logs_collection := client.Database(ss.Config.Databases[0].Database).Collection("logs")

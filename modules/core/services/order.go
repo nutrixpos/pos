@@ -259,20 +259,6 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 		return err
 	}
 
-	refund_log := models.LogOrderItemRefund{
-		OrderId: request.OrderId,
-		ItemId:  request.ItemId,
-		Reason:  request.Reason,
-		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: models.LogTypeOrderItemRefunded,
-			Date: time.Now(),
-		},
-	}
-
-	logs_collection := client.Database(os.Config.Databases[0].Database).Collection("logs")
-	_, err = logs_collection.InsertOne(ctx, refund_log)
-
 	sales_svc := SalesService{
 		Logger: os.Logger,
 		Config: os.Config,
