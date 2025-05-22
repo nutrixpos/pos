@@ -210,6 +210,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 	}
 
 	log := models.LogOrderItemRefund{
+		Id: primitive.NewObjectID().Hex(),
 		Log: models.Log{
 			Type: models.LogTypeOrderItemRefunded,
 			Id:   primitive.NewObjectID().Hex(),
@@ -266,6 +267,7 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 	// Connected successfully
 
 	sales_order := models.SalesPerDayOrder{
+		Id:    primitive.NewObjectID().Hex(),
 		Order: order,
 		Costs: items_cost,
 	}

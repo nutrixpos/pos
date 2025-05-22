@@ -46,6 +46,7 @@ type LogOrderFinish struct {
 }
 
 type LogOrderItemRefund struct {
+	Id              string `json:"id" bson:"id" mapstructure:"id"`
 	Log             `json:",inline" bson:",inline" mapstructure:",squash"`
 	OrderId         string                      `json:"order_id" bson:"order_id" mapstructure:"order_id"`
 	ItemId          string                      `json:"order_item_id" bson:"order_item_id" mapstructure:"order_item_id"`

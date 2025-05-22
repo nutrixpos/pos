@@ -2,6 +2,7 @@ package models
 
 // SalesPerDayOrder represents an order and its associated costs for a specific day.
 type SalesPerDayOrder struct {
+	Id    string     `json:"id" bson:"id" mapstructure:"id"`
 	Order Order      `json:"order" bson:"order,inline" mapstructure:"order"`
 	Costs []ItemCost `json:"costs" bson:"costs" mapstructure:"costs"`
 }
@@ -23,6 +24,7 @@ type OrderItemRefundProductAdd struct {
 }
 
 type ItemRefund struct {
+	Id              string                      `json:"id" bson:"id" mapstructure:"id"`
 	OrderId         string                      `json:"order_id" bson:"order_id" mapstructure:"order_id"`
 	ItemId          string                      `json:"order_item_id" bson:"order_item_id" mapstructure:"order_item_id"`
 	ProductId       string                      `json:"product_id" bson:"product_id" mapstructure:"product_id"`
