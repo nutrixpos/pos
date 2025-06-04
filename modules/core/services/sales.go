@@ -267,7 +267,7 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 	// Connected successfully
 
 	sales_order := models.SalesPerDayOrder{
-		Id:    primitive.NewObjectID().Hex(),
+		Id:    order.Id,
 		Order: order,
 		Costs: items_cost,
 	}
