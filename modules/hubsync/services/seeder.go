@@ -73,10 +73,13 @@ func (s *SeederService) seedHubsyncCollection() error {
 		// Insert a simple document into the "hubsync" collection
 		hubsyncCollection := db.Collection("hubsync")
 		_, err = hubsyncCollection.InsertOne(ctx, models.Hubsync{
+			Settings: models.Settings{
+				Enabled:      false,
+				BufferSize:   100,
+				SyncInterval: 60,
+			},
 			LastSynced:   time.Now().Unix(),
-			SyncInterval: 60,
 			SyncProgress: 0,
-			BufferSize:   100,
 		})
 		if err != nil {
 			return err
@@ -91,9 +94,11 @@ func (s *SeederService) seedHubsyncCollection() error {
 		if !cursor.Next(ctx) {
 			_, err = hubsyncCollection.InsertOne(ctx, models.Hubsync{
 				LastSynced:   0,
-				SyncInterval: 60,
 				SyncProgress: 0,
-				BufferSize:   100,
+				Settings: models.Settings{
+					SyncInterval: 60,
+					BufferSize:   100,
+				},
 			})
 			if err != nil {
 				return err

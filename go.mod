@@ -1,6 +1,6 @@
 module github.com/nutrixpos/pos
 
-go 1.23
+go 1.24
 
 require (
 	github.com/cbroglie/mustache v1.4.0

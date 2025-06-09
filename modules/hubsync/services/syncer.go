@@ -22,6 +22,7 @@ import (
 type SyncerService struct {
 	Config config.Config
 	Logger logger.ILogger
+	Info   models.Hubsync
 }
 
 func (s *SyncerService) CopyToBuffer() error {
@@ -255,7 +256,7 @@ func (s *SyncerService) CopyToBuffer() error {
 	return nil
 }
 
-func (s *SyncerService) UploadToServer() error {
+func (s *SyncerService) UploadToServer(host string, port int) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -320,7 +321,8 @@ func (s *SyncerService) UploadToServer() error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8001/v1/api/logs?tenant_id=1", bytes.NewBuffer(json_body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%v/v1/api/logs?tenant_id=1", host, port), bytes.NewBuffer(json_body))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.Info.Settings.Token))
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
 	}
@@ -351,12 +353,28 @@ func (s *SyncerService) UploadToServer() error {
 
 func (s *SyncerService) Sync() error {
 
-	s.Logger.Info("Starting sync...")
-	err := s.CopyToBuffer()
+	settings_svc := SettingsSvc{
+		Config: s.Config,
+		Logger: s.Logger,
+	}
+	hubsync, err := settings_svc.Get()
+	s.Info = hubsync
+
 	if err != nil {
 		return err
 	}
-	err = s.UploadToServer()
+
+	if !hubsync.Settings.Enabled {
+		s.Logger.Info("Sync is disabled")
+		return nil
+	}
+
+	s.Logger.Info("Starting sync...")
+	err = s.CopyToBuffer()
+	if err != nil {
+		return err
+	}
+	err = s.UploadToServer(hubsync.Settings.ServerHost, hubsync.Settings.ServerPort)
 	if err != nil {
 		return err
 	}

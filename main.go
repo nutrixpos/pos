@@ -76,7 +76,7 @@ func main() {
 	appmanager.LoadModule(&hubsync.HubSyncModule{
 		Logger: &logger,
 		Config: conf,
-	}, "hubsync").RegisterBackgroundWorkers().Save()
+	}, "hubsync").RegisterBackgroundWorkers().RegisterHttpHandlers(router).Save()
 
 	// Ignite the app manager to start all modules
 	appmanager.Run()
