@@ -30,6 +30,7 @@ func NewZitadelAuth(conf config.Config) ZitadelAuth {
 	za := ZitadelAuth{
 		Domain: conf.Zitadel.Domain,
 		Key:    conf.Zitadel.KeyPath,
+		Config: conf,
 	}
 
 	portStr := strconv.Itoa(conf.Zitadel.Port)
@@ -92,7 +93,9 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 				return
 			}
 
-			_, err := za.AuthZ.CheckAuthorization(r.Context(), reqToken, authorization.WithRole(role))
+			authCtx, err := za.AuthZ.CheckAuthorization(r.Context(), reqToken, authorization.WithRole(role))
+
+			r = r.WithContext(context.WithValue(r.Context(), "auth_ctx", authCtx.IntrospectionResponse))
 
 			if err == nil {
 				authorized = true
