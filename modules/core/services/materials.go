@@ -67,7 +67,7 @@ func (ms *MaterialService) GetMaterial(material_id string) (material models.Mate
 	return material, err
 }
 
-func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64, order_id string, reason string, is_consume bool) (err error) {
+func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64, order_id string, reason string, is_consume bool, user_id string) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
 
 	timeout := 1000 * time.Second
@@ -104,7 +104,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 		if err != nil {
 			return err
 		}
-		ms.ConsumeFromInventory(material, material.Entries[0].Id, quantity, reason, order_id)
+		ms.ConsumeFromInventory(material, material.Entries[0].Id, quantity, reason, order_id, user_id)
 	}
 
 	filter := bson.M{"id": material_id, "entries.id": entry_id}
@@ -122,9 +122,10 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 
 	log_material_return := models.LogWasteMaterial{
 		Log: models.Log{
-			Type: models.LogTypeMaterialWaste,
-			Date: time.Now(),
-			Id:   primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeMaterialWaste,
+			Date:   time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			UserId: entry_id,
 		},
 		MaterialId: material_id,
 		EntryId:    entry_id,
@@ -144,7 +145,7 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 	return nil
 }
 
-func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string, is_refunded bool) (err error) {
+func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string, is_refunded bool, user_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
 
@@ -224,9 +225,10 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 
 	log_material_return := models.LogMaterialInventoryReturn{
 		Log: models.Log{
-			Type: models.LogTypeMaterialInventoryReturn,
-			Date: time.Now(),
-			Id:   primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeMaterialInventoryReturn,
+			Date:   time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			UserId: user_id,
 		},
 		OrderId:  order_id,
 		Quantity: quantity,
@@ -243,7 +245,7 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 	return nil
 }
 
-func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_id string, quantity float64, reason string, order_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_id string, quantity float64, reason string, order_id string, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -300,9 +302,10 @@ func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_
 
 	logs_data := models.LogMaterialConsume{
 		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: "component_consume",
-			Date: time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			Type:   "component_consume",
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		MaterialId: material.Id,
 		EntryId:    entry_id,
@@ -421,7 +424,7 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 
 // ConsumeItemComponentsForOrder consumes components for an order item, and returns the notifications to be sent via websocket.
 // It returns an error if something goes wrong.
-func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -498,6 +501,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			"order_id":         order.Id,
 			"recipe_id":        item.Product.Id,
 			"order_item_index": order_item_index,
+			"user_id":          user_id,
 		}
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
@@ -523,7 +527,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 	for _, subrecipe := range item.SubItems {
 
-		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, order_item_index)
+		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, order_item_index, user_id)
 		if err != nil {
 			return notifications, err
 		}
@@ -738,7 +742,7 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 // It first inserts the material into the "materials" collection,
 // then logs the addition of each entry into the "logs" collection.
 // If there is any error during the database operations, it returns the error.
-func (cs *MaterialService) AddComponent(material models.Material) error {
+func (cs *MaterialService) AddComponent(material models.Material, user_id string) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -786,6 +790,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 			"company":     entry.Company,
 			"quantity":    entry.Quantity,
 			"price":       entry.PurchasePrice,
+			"user_id":     user_id,
 		}
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {
@@ -802,7 +807,7 @@ func (cs *MaterialService) AddComponent(material models.Material) error {
 // The function takes a component ID and a slice of MaterialEntry structs as parameters.
 // It then finds the material with the given ID and appends the new entries to the material's
 // entries array. If the material is not found, the function will return an error.
-func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry) error {
+func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry, user_id string) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
@@ -859,6 +864,7 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 			"company":     entry.Company,
 			"quantity":    entry.Quantity,
 			"price":       entry.PurchasePrice,
+			"user_id":     user_id,
 		}
 		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
 		if err != nil {

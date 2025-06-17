@@ -20,6 +20,7 @@ import (
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
 // CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
@@ -128,6 +129,11 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Parse the request body into a DBComponent struct
 
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
 		request := struct {
 			Data models.Material `json:"data"`
 		}{}
@@ -146,7 +152,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			Logger: logger,
 			Config: config,
 		}
-		err = materialService.AddComponent(request.Data)
+		err = materialService.AddComponent(request.Data, user_id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -241,6 +247,11 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
 		params := mux.Vars(r)
 		material_id := params["id"]
 
@@ -259,7 +270,7 @@ func PushMaterialEntry(config config.Config, logger logger.ILogger) http.Handler
 			Config: config,
 		}
 
-		err = materialService.PushMaterialEntry(material_id, request.Data)
+		err = materialService.PushMaterialEntry(material_id, request.Data, user_id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

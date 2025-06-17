@@ -10,6 +10,7 @@ import (
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
 // UpdateDisposal returns a HTTP handler function to update a disposal in the database.
@@ -128,7 +129,12 @@ func InsertDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 				Config: config,
 			}
 
-			err = recipeService.AddMaterialDisposal(material_disposal)
+			user_id := "0"
+			if config.Zitadel.Enabled {
+				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			}
+
+			err = recipeService.AddMaterialDisposal(material_disposal, user_id)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -144,7 +150,12 @@ func InsertDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 				Config: config,
 			}
 
-			err = recipeService.AddProductDisposal(product_disposal)
+			user_id := "0"
+			if config.Zitadel.Enabled {
+				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			}
+
+			err = recipeService.AddProductDisposal(product_disposal, user_id)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

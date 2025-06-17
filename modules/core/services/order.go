@@ -69,7 +69,7 @@ func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
 	return logs, err
 }
 
-func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id string, quantity float64, reason string, other map[string]interface{}) (err error) {
+func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id string, quantity float64, reason string, other map[string]interface{}, user_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -89,9 +89,10 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 
 	log_waste_order_item := models.LogWasteOrderItem{
 		Log: models.Log{
-			Type: "waste_orderitem",
-			Date: time.Now(),
-			Id:   primitive.NewObjectID().Hex(),
+			Type:   "waste_orderitem",
+			Date:   time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			UserId: user_id,
 		},
 		Quantity: quantity,
 		Reason:   reason,
@@ -112,7 +113,7 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 // it receives order_id and material_returns that will go back to the inventory
 // and the return_to_products which can be used to return parts of the order to specific products (like pizza slice from pizza)
 // disposals are used to return the specified products or materials which can not be added to a normal product, to be uniquely processed later on.
-func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err error) {
+func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -149,7 +150,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 			}
 
 			if material_refund.InventoryReturnQty > 0 {
-				err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true)
+				err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true, user_id)
 				if err != nil {
 					return err
 				}
@@ -172,11 +173,11 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 					},
 					MaterialId: material_refund.MaterialId,
 					EntryId:    material_refund.EntryId,
-				})
+				}, user_id)
 			}
 
 			if material_refund.WasteQty > 0 {
-				err = material_svc.Waste(material_refund.EntryId, material_refund.MaterialId, material_refund.WasteQty, request.OrderId, request.Reason, false)
+				err = material_svc.Waste(material_refund.EntryId, material_refund.MaterialId, material_refund.WasteQty, request.OrderId, request.Reason, false, user_id)
 				if err != nil {
 					return err
 				}
@@ -189,7 +190,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 				Config: os.Config,
 			}
 
-			err = product_svc.Increase(product_inc.ProductId, product_inc.Quantity, "order_item_refund", request.OrderId)
+			err = product_svc.Increase(product_inc.ProductId, product_inc.Quantity, "order_item_refund", request.OrderId, user_id)
 			if err != nil {
 				return err
 			}
@@ -215,7 +216,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 			Config: os.Config,
 		}
 
-		err = product_svc.Increase(request.ProductId, orderItem.Quantity, "order_item_refund", request.OrderId)
+		err = product_svc.Increase(request.ProductId, orderItem.Quantity, "order_item_refund", request.OrderId, user_id)
 		if err != nil {
 			return err
 		}
@@ -237,7 +238,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 				Comment:  request.Reason,
 			},
 			Item: orderItem,
-		})
+		}, user_id)
 	}
 
 	if request.Destination == dto.DTOOrderItemRefundDestination_Waste {
@@ -246,7 +247,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 			Config: os.Config,
 		}
 
-		product_svc.Waste(request.ProductId, orderItem.Quantity, request.OrderId, request.Reason, false, orderItem)
+		product_svc.Waste(request.ProductId, orderItem.Quantity, request.OrderId, request.Reason, false, orderItem, user_id)
 	}
 
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
@@ -264,7 +265,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest) (err erro
 		Config: os.Config,
 	}
 
-	err = sales_svc.AddOrderItemToDayRefund(request)
+	err = sales_svc.AddOrderItemToDayRefund(request, user_id)
 	if err != nil {
 		return err
 	}
@@ -528,7 +529,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 }
 
 // FinishOrder sets the state of the order with the given order_id to "finished".
-func (os *OrderService) FinishOrder(order_id string) (err error) {
+func (os *OrderService) FinishOrder(order_id string, user_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
@@ -585,9 +586,10 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 
 	logs_data := models.LogOrderFinish{
 		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: models.LogTypeOrderFinish,
-			Date: time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeOrderFinish,
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		Cost:         totalCost,
 		SalePrice:    totalSalePrice,
@@ -605,7 +607,7 @@ func (os *OrderService) FinishOrder(order_id string) (err error) {
 	order.SalePrice = totalSalePrice
 
 	salesSvc := SalesService{Config: os.Config, Logger: os.Logger}
-	err = salesSvc.AddOrderToSalesDay(order, items_cost)
+	err = salesSvc.AddOrderToSalesDay(order, items_cost, user_id)
 	if err != nil {
 		return err
 	}
@@ -874,7 +876,7 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 
 }
 
-func (os *OrderService) ConsumeOrderComponents(order models.Order) error {
+func (os *OrderService) ConsumeOrderComponents(order models.Order, user_id string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -902,7 +904,7 @@ func (os *OrderService) ConsumeOrderComponents(order models.Order) error {
 	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
 
 	for itemIndex, item := range order.Items {
-		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex)
+		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex, user_id)
 		for _, notification := range notifications {
 			if _, ok := refined_notifications[notification.Key]; !ok {
 				refined_notifications[notification.Key] = notification
@@ -937,7 +939,7 @@ func (os *OrderService) ConsumeOrderComponents(order models.Order) error {
 // StartOrder sets the state of the order with the given order_id to "in_progress",
 // and updates the "started_at" field with the current time.
 // It also consumes the item components from the inventory and sends a notification to the websockets.
-func (os *OrderService) StartOrder(order_id string, order_items []models.OrderItem) error {
+func (os *OrderService) StartOrder(order_id string, order_items []models.OrderItem, user_id string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -967,7 +969,7 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 	}
 
 	// decrease the ingredient component quantity from the components inventory
-	err = os.ConsumeOrderComponents(order)
+	err = os.ConsumeOrderComponents(order, user_id)
 	if err != nil {
 		return err
 	}
@@ -987,9 +989,10 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 
 	logs_data := models.LogOrderStart{
 		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: models.LogTypeOrderStart,
-			Date: time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeOrderStart,
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		OrderDetails: order,
 	}

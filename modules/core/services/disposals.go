@@ -232,7 +232,7 @@ func (cs *DisposalService) DeleteDisposal(disposal_id string) (err error) {
 	return err
 }
 
-func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal) (err error) {
+func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal, user_id string) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
 
 	timeout := 1000 * time.Second
@@ -271,9 +271,10 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal)
 
 	disposal_add_log := models.LogDisposalMaterialAdd{
 		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: models.LogTypeDisposalAdd,
-			Date: time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeDisposalAdd,
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		Disposal: disposal,
 	}
@@ -287,7 +288,7 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal)
 	return nil
 }
 
-func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal) (err error) {
+func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal, user_id string) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
 
 	timeout := 1000 * time.Second
@@ -326,9 +327,10 @@ func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal) (
 
 	disposal_add_log := models.LogDisposalProductAdd{
 		Log: models.Log{
-			Id:   primitive.NewObjectID().Hex(),
-			Type: models.LogTypeDisposalAdd,
-			Date: time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			Type:   models.LogTypeDisposalAdd,
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		Disposal: disposal,
 	}

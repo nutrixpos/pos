@@ -89,7 +89,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 	return salesPerDay, totalRecords, nil
 }
 
-func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefundRequest) error {
+func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefundRequest, user_id string) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
@@ -212,9 +212,10 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 	log := models.LogOrderItemRefund{
 		Id: primitive.NewObjectID().Hex(),
 		Log: models.Log{
-			Type: models.LogTypeOrderItemRefunded,
-			Id:   primitive.NewObjectID().Hex(),
-			Date: time.Now(),
+			Type:   models.LogTypeOrderItemRefunded,
+			Id:     primitive.NewObjectID().Hex(),
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		OrderId:         sales_refund.OrderId,
 		ItemId:          sales_refund.ItemId,
@@ -239,7 +240,7 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 // AddOrderToSalesDay adds an order to the "sales" collection in the database.
 // It takes two parameters, order and items_cost, which are the order and its associated item costs.
 // It returns an error if the query fails.
-func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []models.ItemCost) error {
+func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []models.ItemCost, user_id string) error {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
@@ -293,9 +294,10 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 
 	log := models.LogSalesPerDayOrder{
 		Log: models.Log{
-			Type: models.LogTypeSalesPerDayOrder,
-			Id:   primitive.NewObjectID().Hex(),
-			Date: time.Now(),
+			Type:   models.LogTypeSalesPerDayOrder,
+			Id:     primitive.NewObjectID().Hex(),
+			Date:   time.Now(),
+			UserId: user_id,
 		},
 		SalesPerDayOrder: sales_order,
 	}

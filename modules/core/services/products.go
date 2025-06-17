@@ -30,7 +30,7 @@ type RecipeService struct {
 	Config config.Config
 }
 
-func (rs *RecipeService) Waste(product_id string, quantity float64, order_id string, reason string, is_consume bool, orderItem models.OrderItem) (err error) {
+func (rs *RecipeService) Waste(product_id string, quantity float64, order_id string, reason string, is_consume bool, orderItem models.OrderItem, user_id string) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -65,9 +65,10 @@ func (rs *RecipeService) Waste(product_id string, quantity float64, order_id str
 
 	log_product_waste := models.LogProductWaste{
 		Log: models.Log{
-			Type: "product_waste",
-			Date: time.Now(),
-			Id:   primitive.NewObjectID().Hex(),
+			Type:   "product_waste",
+			Date:   time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			UserId: user_id,
 		},
 		Quantity:    quantity,
 		Reason:      reason,
@@ -87,7 +88,7 @@ func (rs *RecipeService) Waste(product_id string, quantity float64, order_id str
 	return nil
 }
 
-func (rs *RecipeService) Increase(product_id string, quantity float64, source string, order_id string) (err error) {
+func (rs *RecipeService) Increase(product_id string, quantity float64, source string, order_id string, user_id string) (err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -119,9 +120,10 @@ func (rs *RecipeService) Increase(product_id string, quantity float64, source st
 
 	log_product_increase := models.LogProductIncrease{
 		Log: models.Log{
-			Type: "product_increase",
-			Date: time.Now(),
-			Id:   primitive.NewObjectID().Hex(),
+			Type:   "product_increase",
+			Date:   time.Now(),
+			Id:     primitive.NewObjectID().Hex(),
+			UserId: user_id,
 		},
 		Quantity: quantity,
 		Source:   source,

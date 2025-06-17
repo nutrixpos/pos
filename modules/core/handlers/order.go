@@ -25,6 +25,7 @@ import (
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
 func GetOrderLogs(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
@@ -103,7 +104,12 @@ func WasteOrderItem(config config.Config, logger logger.ILogger, settings models
 			Settings: settings,
 		}
 
-		err = order_svc.WasteOrderItem(request.Data.OrderItem, order_id_param, quantity, reason, request.Data.Other)
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
+		err = order_svc.WasteOrderItem(request.Data.OrderItem, order_id_param, quantity, reason, request.Data.Other, user_id)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -149,7 +155,12 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 			Settings: settings,
 		}
 
-		err = order_svc.RefundItem(request.Data)
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
+		err = order_svc.RefundItem(request.Data, user_id)
 
 		if err != nil {
 			logger.Error(err.Error())
@@ -395,6 +406,11 @@ func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
 		params := mux.Vars(r)
 		id_param := params["id"]
 
@@ -403,7 +419,7 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			Config: config,
 		}
 
-		err := orderService.FinishOrder(id_param)
+		err := orderService.FinishOrder(id_param, user_id)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -481,7 +497,13 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 		}
 
 		if request.Data.IsAutoStart {
-			err = orderService.StartOrder(order.Id, request.Data.Items)
+
+			user_id := "0"
+			if config.Zitadel.Enabled {
+				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			}
+
+			err = orderService.StartOrder(order.Id, request.Data.Items, user_id)
 			if err != nil {
 				logger.Error(err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -710,7 +732,12 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 			Settings: settings,
 		}
 
-		err = orderService.StartOrder(id_param, request_body.Data)
+		user_id := "0"
+		if config.Zitadel.Enabled {
+			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		}
+
+		err = orderService.StartOrder(id_param, request_body.Data, user_id)
 		if err != nil {
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
