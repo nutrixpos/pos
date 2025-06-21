@@ -11,6 +11,6 @@ FROM alpine
 WORKDIR /app
 COPY --from=build /go/src/app/pos .
 COPY --from=build /go/src/app/assets ./assets/
-COPY --from=build /go/src/app/config.yaml .
+COPY --from=build /go/src/app/config.example.yaml ./config.yaml
 EXPOSE 8000
 CMD ["./pos"]
