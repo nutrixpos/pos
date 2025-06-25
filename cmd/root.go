@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -45,7 +46,12 @@ func (root *RootProcess) Execute() error {
 				ReadTimeout:  15 * time.Second,
 			}
 
-			log.Fatal(srv.ListenAndServe())
+			listener, err := net.Listen("tcp4", srv.Addr)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Fatal(srv.Serve(listener))
 		},
 	}
 
