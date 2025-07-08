@@ -383,7 +383,7 @@ func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, q
 // The function takes a material ID and an entry ID as parameters and returns the
 // quantity of the specified entry in the material. If the entry is not found in
 // the material, the function returns an error.
-func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float32, err error) {
+func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -547,7 +547,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 // The function is used to check the availability of a specific component before
 // consuming it. The component quantity is calculated by summing up the quantity
 // of all entries of the component.
-func (cs *MaterialService) GetComponentAvailability(componentid string) (amount float32, err error) {
+func (cs *MaterialService) GetComponentAvailability(componentid string) (amount float64, err error) {
 
 	amount = 0.0
 

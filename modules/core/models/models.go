@@ -138,9 +138,9 @@ type Order struct {
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.
 type MaterialEntry struct {
 	Id               string    `json:"id,omitempty" bson:"id,omitempty" mapstructure:"id,omitempty"`
-	PurchaseQuantity float32   `json:"purchase_quantity" bson:"purchase_quantity" mapstructure:"purchase_quantity"`
+	PurchaseQuantity float64   `json:"purchase_quantity" bson:"purchase_quantity" mapstructure:"purchase_quantity"`
 	PurchasePrice    float64   `json:"purchase_price" bson:"price" mapstructure:"purchase_price"`
-	Quantity         float32   `json:"quantity" mapstructure:"quantity"`
+	Quantity         float64   `json:"quantity" mapstructure:"quantity"`
 	Company          string    `json:"company" mapstructure:"company"`
 	SKU              string    `json:"sku" mapstructure:"sku"`
 	ExpirationDate   time.Time `json:"expiration_date" bson:"expiration_date" mapstructure:"expiration_date"`
@@ -159,9 +159,9 @@ type Material struct {
 // ProductEntry represents an entry of a product, detailing purchase and quantity information.
 type ProductEntry struct {
 	Id               string  `json:"id,omitempty" bson:"id,omitempty" mapstructure:"id,omitempty"`
-	PurchaseQuantity float32 `json:"purchase_quantity" bson:"purchase_quantity" mapstructure:"purchase_quantity"`
+	PurchaseQuantity float64 `json:"purchase_quantity" bson:"purchase_quantity" mapstructure:"purchase_quantity"`
 	PurchasePrice    float64 `json:"purchase_price" mapstructure:"purchase_price"`
-	Quantity         float32 `json:"quantity" mapstructure:"quantity"`
+	Quantity         float64 `json:"quantity" mapstructure:"quantity"`
 	Company          string  `json:"company" mapstructure:"company"`
 	Unit             string  `json:"unit" mapstructure:"unit"`
 	SKU              string  `json:"sku" mapstructure:"sku"`
