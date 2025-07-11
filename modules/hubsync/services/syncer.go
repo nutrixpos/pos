@@ -256,7 +256,7 @@ func (s *SyncerService) CopyToBuffer() error {
 	return nil
 }
 
-func (s *SyncerService) UploadToServer(host string, port int) error {
+func (s *SyncerService) UploadToServer(host string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -321,14 +321,17 @@ func (s *SyncerService) UploadToServer(host string, port int) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%v/v1/api/logs?tenant_id=1", host, port), bytes.NewBuffer(json_body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/api/logs?tenant_id=1", host), bytes.NewBuffer(json_body))
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.Info.Settings.Token))
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	http_client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := http_client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error sending request: %v", err)
 	}
@@ -374,7 +377,7 @@ func (s *SyncerService) Sync() error {
 	if err != nil {
 		return err
 	}
-	err = s.UploadToServer(hubsync.Settings.ServerHost, hubsync.Settings.ServerPort)
+	err = s.UploadToServer(hubsync.Settings.ServerHost)
 	if err != nil {
 		return err
 	}

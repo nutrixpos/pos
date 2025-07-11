@@ -3,7 +3,6 @@ package models
 type Settings struct {
 	Enabled      bool   `bson:"enabled" json:"enabled" mapstructure:"enabled"`
 	ServerHost   string `bson:"server_host" json:"server_host" mapstructure:"server_host"`
-	ServerPort   int    `bson:"server_port" json:"server_port" mapstructure:"server_port"`
 	Token        string `bson:"token" json:"token" mapstructure:"token"`
 	SyncInterval int64  `json:"sync_interval" bson:"sync_interval"`
 	BufferSize   int64  `json:"buffer_size" bson:"buffer_size"`
