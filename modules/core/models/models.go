@@ -169,16 +169,17 @@ type ProductEntry struct {
 
 // Product represents a product with its details, including materials, entries, and pricing.
 type Product struct {
-	Id          string         `bson:"id,omitempty" json:"id" mapstructure:"id,omitempty"`
-	Name        string         `bson:"name" json:"name" mapstructure:"name"`
-	Materials   []Material     `bson:"materials" json:"materials" mapstructure:"materials"`
-	SubProducts []Product      `bson:"sub_products" json:"sub_products" mapstructure:"sub_products"`
-	Entries     []ProductEntry `bson:"entries" json:"entries" mapstructure:"entries"`
-	Price       float64        `bson:"price" json:"price" mapstructure:"price"`
-	ImageURL    string         `bson:"image_url" json:"image_url" mapstructure:"image_url"`
-	Unit        string         `bson:"unit" json:"unit" mapstructure:"unit"`
-	Quantity    float64        `bson:"quantity" json:"quantity" mapstructure:"quantity"`
-	Ready       float64        `bson:"ready" json:"ready" mapstructure:"ready"`
+	Id                         string         `bson:"id,omitempty" json:"id" mapstructure:"id,omitempty"`
+	Name                       string         `bson:"name" json:"name" mapstructure:"name"`
+	Materials                  []Material     `bson:"materials" json:"materials" mapstructure:"materials"`
+	SubProducts                []Product      `bson:"sub_products" json:"sub_products" mapstructure:"sub_products"`
+	Entries                    []ProductEntry `bson:"entries" json:"entries" mapstructure:"entries"`
+	Price                      float64        `bson:"price" json:"price" mapstructure:"price"`
+	ImageURL                   string         `bson:"image_url" json:"image_url" mapstructure:"image_url"`
+	Unit                       string         `bson:"unit" json:"unit" mapstructure:"unit"`
+	Quantity                   float64        `bson:"quantity" json:"quantity" mapstructure:"quantity"`
+	Ready                      float64        `bson:"ready" json:"ready" mapstructure:"ready"`
+	EnableInventoryConsumption bool           `bson:"enable_inventory_consumption" json:"enable_inventory_consumption" mapstructure:"enable_inventory_consumption"`
 }
 
 // SalesLogs represents logs of sales, capturing sale price, items, and consumption details.

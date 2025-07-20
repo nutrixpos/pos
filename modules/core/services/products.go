@@ -195,13 +195,14 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 		bson.M{"id": product_id},
 		bson.M{
 			"$set": bson.M{
-				"name":         product.Name,
-				"materials":    product.Materials,
-				"sub_products": product.SubProducts,
-				"ready":        product.Ready,
-				"recipeId":     product.Id,
-				"price":        product.Price,
-				"image_url":    product.ImageURL,
+				"name":                         product.Name,
+				"materials":                    product.Materials,
+				"sub_products":                 product.SubProducts,
+				"ready":                        product.Ready,
+				"recipeId":                     product.Id,
+				"price":                        product.Price,
+				"image_url":                    product.ImageURL,
+				"enable_inventory_consumption": product.EnableInventoryConsumption,
 			},
 		},
 	)

@@ -904,6 +904,12 @@ func (os *OrderService) ConsumeOrderComponents(order models.Order, user_id strin
 	refined_notifications := map[string]models.WebsocketTopicServerMessage{}
 
 	for itemIndex, item := range order.Items {
+
+		if !item.Product.EnableInventoryConsumption {
+			os.Logger.Info(fmt.Sprintf("Item %s does not have inventory consumption enabled", item.Product.Name))
+			return nil
+		}
+
 		notifications, err := materialService.ConsumeItemComponentsForOrder(item, order, itemIndex, user_id)
 		for _, notification := range notifications {
 			if _, ok := refined_notifications[notification.Key]; !ok {
