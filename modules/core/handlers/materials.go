@@ -23,6 +23,54 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
+func GetMaterialEntries(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil {
+			page_number = 1
+		}
+
+		page_size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
+		if err != nil {
+			page_size = 50
+		}
+
+		search := r.URL.Query().Get("filter[search]")
+
+		materialService := services.MaterialService{
+			Logger: logger,
+			Config: config,
+		}
+
+		args := services.GetMaterialEntriesParams{
+			PageNumber: page_number,
+			PageSize:   page_size,
+			Search:     search,
+		}
+
+		entries, totalRecords, err := materialService.GetMaterialEntries(args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: entries,
+			Meta: JSONAPIMeta{
+				TotalRecords: int(totalRecords),
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 // CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
 //
 // This handler retrieves the entry ID, material ID, and quantity from the query string,
