@@ -39,7 +39,7 @@ type GetMaterialEntriesParams struct {
 	Search string
 }
 
-func (rs *MaterialService) GetMaterialEntries(entry_id string, params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
+func (rs *MaterialService) GetMaterialEntries(material_id string, params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -64,11 +64,33 @@ func (rs *MaterialService) GetMaterialEntries(entry_id string, params GetMateria
 	// findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
 	// findOptions.SetLimit(int64(params.PageSize))
 
-	skip := (params.PageNumber - 1) * params.PageNumber
+	// Get the total number of entries
+	entryCountPipeline := []bson.M{
+		{"$match": bson.M{"id": material_id}},
+		{"$project": bson.M{"entryCount": bson.M{"$size": "$entries"}}},
+	}
+
+	entryCountCursor, err := collection.Aggregate(ctx, entryCountPipeline)
+	if err != nil {
+		return entries, totalRecords, err
+	}
+	defer entryCountCursor.Close(ctx)
+
+	totalRecords = 0
+
+	var entryCountResult []bson.M
+	if err = entryCountCursor.All(ctx, &entryCountResult); err != nil {
+		return entries, totalRecords, err
+	}
+	if len(entryCountResult) > 0 {
+		totalRecords = int64(entryCountResult[0]["entryCount"].(int32))
+	}
+
+	skip := (params.PageNumber) * params.PageSize
 
 	// Create aggregation pipeline
 	pipeline := []bson.M{
-		{"$match": bson.M{"id": entry_id}},
+		{"$match": bson.M{"id": material_id}},
 		{"$project": bson.M{
 			"entries": bson.M{
 				"$slice": []interface{}{"$entries", skip, params.PageSize},
@@ -685,7 +707,8 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 	fmt.Println("Connected to MongoDB!")
 
 	materials = make([]models.Material, 0)
-	findOptions := options.Find().SetProjection(bson.M{"entries": 0})
+	// findOptions := options.Find().SetProjection(bson.M{"entries": 0})
+	findOptions := options.Find()
 
 	skip := (page_number - 1) * page_size
 	findOptions.SetSkip(int64(skip))
@@ -708,6 +731,15 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 			cs.Logger.Error(err.Error())
 			return materials, err
 		}
+
+		var sum float64
+		for _, entry := range material.Entries {
+			sum += entry.Quantity
+		}
+
+		material.Quantity = sum
+		material.Entries = make([]models.MaterialEntry, 0)
+
 		materials = append(materials, material)
 	}
 
