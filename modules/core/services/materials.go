@@ -30,6 +30,93 @@ type MaterialService struct {
 	Settings models.Settings
 }
 
+type GetMaterialEntriesParams struct {
+	// PageNumber sets the first index of the record to begin with in the select transaction
+	PageNumber int
+	// PageSize sets the limit of the number of desired rows
+	PageSize int
+	// Search is a text that the function should use to search for products that has a title contains the contians string
+	Search string
+}
+
+func (rs *MaterialService) GetMaterialEntries(material_id string, params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if rs.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	entries = make([]models.MaterialEntry, 0)
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		rs.Logger.Error(err.Error())
+		return entries, totalRecords, err
+	}
+
+	collection := client.Database(rs.Config.Databases[0].Database).Collection("materials")
+	// findOptions.SetSort(bson.M{"name": 1})
+	// findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
+	// findOptions.SetLimit(int64(params.PageSize))
+
+	// Get the total number of entries
+	entryCountPipeline := []bson.M{
+		{"$match": bson.M{"id": material_id}},
+		{"$project": bson.M{"entryCount": bson.M{"$size": "$entries"}}},
+	}
+
+	entryCountCursor, err := collection.Aggregate(ctx, entryCountPipeline)
+	if err != nil {
+		return entries, totalRecords, err
+	}
+	defer entryCountCursor.Close(ctx)
+
+	totalRecords = 0
+
+	var entryCountResult []bson.M
+	if err = entryCountCursor.All(ctx, &entryCountResult); err != nil {
+		return entries, totalRecords, err
+	}
+	if len(entryCountResult) > 0 {
+		totalRecords = int64(entryCountResult[0]["entryCount"].(int32))
+	}
+
+	skip := (params.PageNumber) * params.PageSize
+
+	// Create aggregation pipeline
+	pipeline := []bson.M{
+		{"$match": bson.M{"id": material_id}},
+		{"$project": bson.M{
+			"entries": bson.M{
+				"$slice": []interface{}{"$entries", skip, params.PageSize},
+			},
+		}},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return entries, totalRecords, err
+	}
+	defer cursor.Close(ctx)
+
+	// Get results
+	var results []models.Material
+	if err = cursor.All(ctx, &results); err != nil {
+		return entries, totalRecords, err
+	}
+
+	if len(results) == 0 {
+		return entries, totalRecords, err
+	}
+
+	return results[0].Entries, totalRecords, err
+}
+
 func (ms *MaterialService) GetMaterial(material_id string) (material models.Material, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
@@ -620,14 +707,14 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 	fmt.Println("Connected to MongoDB!")
 
 	materials = make([]models.Material, 0)
-
+	// findOptions := options.Find().SetProjection(bson.M{"entries": 0})
 	findOptions := options.Find()
 
 	skip := (page_number - 1) * page_size
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetLimit(int64(page_size))
 
-	// Get the "test" collection from the database
+	// Get the "materials" collection from the database
 	cur, err := client.Database(cs.Config.Databases[0].Database).Collection("materials").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		cs.Logger.Error(err.Error())
@@ -644,6 +731,15 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 			cs.Logger.Error(err.Error())
 			return materials, err
 		}
+
+		var sum float64
+		for _, entry := range material.Entries {
+			sum += entry.Quantity
+		}
+
+		material.Quantity = sum
+		material.Entries = make([]models.MaterialEntry, 0)
+
 		materials = append(materials, material)
 	}
 
