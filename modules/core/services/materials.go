@@ -39,7 +39,7 @@ type GetMaterialEntriesParams struct {
 	Search string
 }
 
-func (rs *MaterialService) GetMaterialEntries(params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
+func (rs *MaterialService) GetMaterialEntries(entry_id string, params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
 
@@ -47,6 +47,8 @@ func (rs *MaterialService) GetMaterialEntries(params GetMaterialEntriesParams) (
 	if rs.Config.Env == "dev" {
 		deadline = 1000 * time.Second
 	}
+
+	entries = make([]models.MaterialEntry, 0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	defer cancel()
@@ -58,7 +60,6 @@ func (rs *MaterialService) GetMaterialEntries(params GetMaterialEntriesParams) (
 	}
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("materials")
-	findOptions := options.Find()
 	// findOptions.SetSort(bson.M{"name": 1})
 	// findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
 	// findOptions.SetLimit(int64(params.PageSize))
@@ -67,52 +68,31 @@ func (rs *MaterialService) GetMaterialEntries(params GetMaterialEntriesParams) (
 
 	// Create aggregation pipeline
 	pipeline := []bson.M{
-		{"$match": bson.M{"_id": objID}},
+		{"$match": bson.M{"id": entry_id}},
 		{"$project": bson.M{
 			"entries": bson.M{
-				"$slice": []interface{}{"$entries", skip, perPage},
+				"$slice": []interface{}{"$entries", skip, params.PageSize},
 			},
 		}},
 	}
 
-	filter := bson.M{}
-	if params.Search != "" {
-		filter["name"] = bson.M{
-			"$regex": fmt.Sprintf("(?i).*%s.*", params.Search),
-		}
-	}
-
-	totalRecords, err = collection.CountDocuments(ctx, filter)
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		rs.Logger.Error(err.Error())
-		return entries, totalRecords, err
-	}
-
-	cursor, err := collection.Find(ctx, filter, findOptions)
-	if err != nil {
-		rs.Logger.Error(err.Error())
 		return entries, totalRecords, err
 	}
 	defer cursor.Close(ctx)
-	for cursor.Next(context.Background()) {
-		var product models.Product
-		if err := cursor.Decode(&product); err != nil {
-			return entries, totalRecords, err
-		}
 
-		for index, sub_product := range product.SubProducts {
-
-			err = collection.FindOne(ctx, bson.M{"id": sub_product.Id}, options.FindOne()).Decode(&sub_product)
-			if err != nil {
-				return entries, totalRecords, err
-			}
-			product.SubProducts[index].Name = sub_product.Name
-		}
-
-		entries = append(entries, product)
+	// Get results
+	var results []models.Material
+	if err = cursor.All(ctx, &results); err != nil {
+		return entries, totalRecords, err
 	}
 
-	return entries, totalRecords, err
+	if len(results) == 0 {
+		return entries, totalRecords, err
+	}
+
+	return results[0].Entries, totalRecords, err
 }
 
 func (ms *MaterialService) GetMaterial(material_id string) (material models.Material, err error) {
@@ -705,14 +685,13 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 	fmt.Println("Connected to MongoDB!")
 
 	materials = make([]models.Material, 0)
-
-	findOptions := options.Find()
+	findOptions := options.Find().SetProjection(bson.M{"entries": 0})
 
 	skip := (page_number - 1) * page_size
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetLimit(int64(page_size))
 
-	// Get the "test" collection from the database
+	// Get the "materials" collection from the database
 	cur, err := client.Database(cs.Config.Databases[0].Database).Collection("materials").Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		cs.Logger.Error(err.Error())

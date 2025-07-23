@@ -27,6 +27,9 @@ func GetMaterialEntries(config config.Config, logger logger.ILogger) http.Handle
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		params := mux.Vars(r)
+		material_id_param := params["material_id"]
+
 		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
 		if err != nil {
 			page_number = 1
@@ -50,7 +53,7 @@ func GetMaterialEntries(config config.Config, logger logger.ILogger) http.Handle
 			Search:     search,
 		}
 
-		entries, totalRecords, err := materialService.GetMaterialEntries(args)
+		entries, totalRecords, err := materialService.GetMaterialEntries(material_id_param, args)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
