@@ -426,38 +426,6 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		display_id, err := orderService.GetOrderDisplayId()
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		msg := models.WebsocketOrderFinishServerMessage{
-			OrderId: display_id,
-			WebsocketTopicServerMessage: models.WebsocketTopicServerMessage{
-				Type:      "topic_message",
-				TopicName: "order_finished",
-				Severity:  "info",
-			},
-		}
-
-		msgJson, err := json.Marshal(msg)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		notifications_svc, err := services.SpawnNotificationSingletonSvc("melody", logger, config)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		notifications_svc.SendToTopic("order_finished", string(msgJson))
-
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -489,6 +457,23 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			Config: config,
 		}
 
+		product_svc := services.RecipeService{
+			Logger: logger,
+			Config: config,
+		}
+
+		for index, item := range request.Data.Items {
+			product, err := product_svc.GetProduct(item.Product.Id)
+			if err != nil {
+				logger.Error(err.Error())
+				w.Write([]byte(err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			request.Data.Items[index].Product.EnableInventoryConsumption = product.EnableInventoryConsumption
+		}
+
 		order, err = orderService.SubmitOrder(request.Data)
 		if err != nil {
 			logger.Error(err.Error())
@@ -496,7 +481,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			return
 		}
 
-		if request.Data.IsAutoStart {
+		if request.Data.IsAutoStart || request.Data.IsAutoFinish {
 
 			user_id := "0"
 			if config.Zitadel.Enabled {
@@ -508,6 +493,15 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 				logger.Error(err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
 				return
+			}
+
+			if request.Data.IsAutoFinish {
+				err = orderService.FinishOrder(order.Id, user_id)
+				if err != nil {
+					logger.Error(err.Error())
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 		}
 

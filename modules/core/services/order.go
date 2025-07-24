@@ -612,6 +612,35 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 		return err
 	}
 
+	display_id, err := os.GetOrderDisplayId()
+	if err != nil {
+		os.Logger.Error(err.Error())
+		return err
+	}
+
+	msg := models.WebsocketOrderFinishServerMessage{
+		OrderId: display_id,
+		WebsocketTopicServerMessage: models.WebsocketTopicServerMessage{
+			Type:      "topic_message",
+			TopicName: "order_finished",
+			Severity:  "info",
+		},
+	}
+
+	msgJson, err := json.Marshal(msg)
+	if err != nil {
+		os.Logger.Error(err.Error())
+		return err
+	}
+
+	notifications_svc, err := SpawnNotificationSingletonSvc("melody", os.Logger, os.Config)
+	if err != nil {
+		os.Logger.Error(err.Error())
+		return err
+	}
+
+	notifications_svc.SendToTopic("order_finished", string(msgJson))
+
 	return err
 }
 
