@@ -256,7 +256,7 @@ func (s *SyncerService) CopyToBuffer() error {
 	return nil
 }
 
-func (s *SyncerService) UploadToServer(host string) error {
+func (s *SyncerService) UploadSalesToServer(host string) error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
 
 	deadline := 5 * time.Second
@@ -377,9 +377,15 @@ func (s *SyncerService) Sync() error {
 	if err != nil {
 		return err
 	}
-	err = s.UploadToServer(hubsync.Settings.ServerHost)
-	if err != nil {
-		return err
+
+	if hubsync.Settings.SyncSales {
+		s.Logger.Info("Syncing sales...")
+		err = s.UploadSalesToServer(hubsync.Settings.ServerHost)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.Logger.Info("Sales sync is disabled, skipping...")
 	}
 
 	s.Logger.Info("Sync completed successfully")
