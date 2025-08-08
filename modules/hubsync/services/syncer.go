@@ -25,6 +25,84 @@ type SyncerService struct {
 	Info   models.Hubsync
 }
 
+func (s *SyncerService) SyncInventory(host string) error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if s.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database(s.Config.Databases[0].Database).Collection("materials")
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return err
+	}
+
+	defer cursor.Close(ctx)
+
+	var materials []core_models.Material
+	if err := cursor.All(ctx, &materials); err != nil {
+		return err
+	}
+
+	for index, material := range materials {
+		quantity := 0.0
+		for _, entry := range material.Entries {
+			quantity += entry.Quantity
+		}
+		materials[index].Quantity = quantity
+	}
+
+	if len(materials) == 0 {
+		s.Logger.Info("No materials found to sync")
+		return nil
+	}
+
+	body := struct {
+		Data []core_models.Material `json:"data"`
+	}{Data: materials}
+
+	json_body, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/v1/api/inventories", host), bytes.NewBuffer(json_body))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.Info.Settings.Token))
+	if err != nil {
+		return fmt.Errorf("error creating request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	http_client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := http_client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending sync inventories request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error sending sync inventories request: %v", resp.Status)
+	}
+
+	s.Logger.Info(fmt.Sprintf("Synced %s materials to hub successfully", strconv.Itoa(len(materials))))
+
+	return nil
+
+}
+
 func (s *SyncerService) CopyToBuffer() error {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
 
@@ -386,6 +464,16 @@ func (s *SyncerService) Sync() error {
 		}
 	} else {
 		s.Logger.Info("Sales sync is disabled, skipping...")
+	}
+
+	if hubsync.Settings.SyncInventory {
+		s.Logger.Info("Syncing inventory...")
+		err = s.SyncInventory(hubsync.Settings.ServerHost)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.Logger.Info("Inventory sync is disabled, skipping...")
 	}
 
 	s.Logger.Info("Sync completed successfully")
