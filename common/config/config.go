@@ -39,11 +39,12 @@ type ZitadelConfig struct {
 
 // Config represents the overall configuration structure
 type Config struct {
-	Databases   []Database    `mapstructure:"databases"`
-	Zitadel     ZitadelConfig `mapstructure:"zitadel"`
-	Env         string        `mapstructure:"env"`
-	TimeZone    string        `mapstructure:"timezone"`
-	UploadsPath string        `mapstructure:"uploads_path"`
+	Databases     []Database    `mapstructure:"databases"`
+	Zitadel       ZitadelConfig `mapstructure:"zitadel"`
+	Env           string        `mapstructure:"env"`
+	TimeZone      string        `mapstructure:"timezone"`
+	UploadsPath   string        `mapstructure:"uploads_path"`
+	ServeFrontEnd bool          `mapstructure:"serve_frontend"`
 }
 
 // Database holds the configuration for database connections

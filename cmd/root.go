@@ -51,6 +51,10 @@ func (root *RootProcess) Execute() error {
 				log.Fatal(err)
 			}
 
+			if root.Config.ServeFrontEnd {
+				go startFrontendServer(root.Logger)
+			}
+
 			log.Fatal(srv.Serve(listener))
 		},
 	}
@@ -75,4 +79,33 @@ func (root *RootProcess) Execute() error {
 	}
 
 	return nil
+}
+
+func startFrontendServer(logger logger.ILogger) {
+	// Create a new ServeMux for the static file server to keep its handlers separate
+	// from the main API router.
+	staticMux := http.NewServeMux()
+
+	// Create a FileServer to serve files from a "web" directory.
+	// You should create a folder named `web` and place your static files there.
+	fs := http.FileServer(http.Dir("./mnt/frontend"))
+
+	// Handle requests for static files. The http.StripPrefix ensures that
+	// a request for /static/index.html looks for /index.html in the `web` directory.
+	staticMux.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	// Optionally, serve the index.html from the root path of the static server.
+	staticMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./mnt/frontend/index.html")
+	})
+
+	srv := &http.Server{
+		Handler:      staticMux,
+		Addr:         "0.0.0.0:8080", // Listen on a new, separate port
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	logger.Info("Serving static files on http://localhost:8080/")
+	log.Fatal(srv.ListenAndServe())
 }

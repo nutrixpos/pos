@@ -1,0 +1,70 @@
+$sm:10px;
+$md:960px;
+$lg:1500px !default;
+$xl:2000px;
+
+$breakpoints: (
+    'sm': $sm,
+    'md': $md,
+    'lg': $lg,
+    'xl': $xl
+) !default;
+
+
+// @media (max-width: $sm) {
+//   // Styles for small screens
+  
+// }
+
+// @media (min-width: $sm + 1) and (max-width: $md) {
+//   // Styles for medium screens
+// }
+
+// @media (min-width: $md + 1) and (max-width: $lg) {
+//   // Styles for large screens
+// }
+
+// @media (min-width: $lg + 1) and (max-width: $xl) {
+//   // Styles for extra-large screens
+// }
+
+// @media (min-width: $xl + 1) {
+//   // Styles for extra-extra-large screens
+// }
+
+
+// $primary-color:  #20232a;
+// $primary-color-text: white;
+// $secondary-color: #00763B;
+
+// :root {
+//     --p-button-primary-color: #001F3E
+// }
+
+
+
+
+// .p-button-primary, .p-button {
+//   background: $primary-color;
+//   border: 1px solid $primary-color;
+//   color: white;
+//   &.p-button-outlined {
+//     background:transparent;
+//     color: $primary-color;
+//   }
+// }
+
+// .p-button-secondary {
+//   background: $secondary-color;
+//   border: 1px solid $secondary-color;
+//   &.p-button-outlined {
+//     background:transparent;
+//     color: $secondary-color;
+//   }
+// }
+
+// body {
+//     margin-bottom:0px;
+// }
+
+@use 'primeflex/primeflex.scss'
