@@ -2,7 +2,7 @@
 
 Nutrix is a point of sale management system RESTful api. It allows you to manage inventory, sales and products for your restaurant or shop.
 
-You need to integrate with a separage GUI service to provide an interface for end users, you can find suggested GUIs in the [GUI](#gui) section.
+You need to integrate with a GUI service to provide an interface for end users, you can find the standard GUI in the [frontend](./frontend) dir, it's a vuejs app, you can build it and put the content of the dist into /mnt/frontend
 
 > Currently nutrix supports only restaurant style cycle, where the order is sent first to the kitchen awaiting to be started then begin processing the inventory.
 
@@ -37,13 +37,4 @@ To install the entire system including [posui](https://github.com/nutrixpos/posu
 ### DB Seeding
 - Run `go run . seed` in the backend directory which will prompt for entities to seed.
     > **Warning**  quiting the prompt with `ctrl+q` or `esc` will run the seeding process, if you want to quit, just deselect all the entities
-
-
-### GUI
-Since nutrix is an api based project, you will need a GUI to let end users interact with the api, you are free to create your own GUI and integrate it with the api. if you have an api you can open a discussion with a reference url.
-
-Following are suggested GUI(s) :
-
-- [https://github.com/nutrixpos/posui](https://github.com/nutrixpos/posui)
-
 
