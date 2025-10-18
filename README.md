@@ -22,7 +22,8 @@ To install the entire system including [posui](https://github.com/nutrixpos/posu
 - #### Mongo
     - Before running the web server or seeding, make sure to set the [MongoDB](https://www.mongodb.com/) credentials properly in **config.yaml**
 - #### Zitadel
-    -  Also make sure that a Zitadel instance is up and running, [Zitadel](https://zitadel.com/) is used for auth in the project.
+- **Note** [Zitadel](https://zitadel.com/) is used for auth in the project, if you want to disable using auth and neglect Zitadel, you can set *zitadel.enabled* to false in the config.yaml
+    -  Also make sure that a Zitadel instance is up and running.
     - Make sure to create a Zitadel api app inside your project and download the zitadel-key.json to a safe location
     - Make sure the domain, port and key path are set properly in **config.yaml**
 
