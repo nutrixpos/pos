@@ -39,3 +39,28 @@ jobs:
         run: makensis -VERSION
       - name: Print NSIS compile flags
         run: makensis -HDRINFO
+
+      - name: Create nsis-runtime dir
+        run: mkdir nsis-runtime
+
+      - name: Download earlier artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend
+          path: ./dist
+
+      - name: Rename frontend artifact directory
+        run: |
+          mv ./dist ./nsis-runtime/frontend
+          mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
+          mv ./package.nsi ./nsis-runtime/package.nsi
+
+      - name: Download golang artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: golang
+          path: ./nutrixpos.exe
+
+      - name: Run makensis
+        working-directory: ./nsis-runtime
+        run: makensis
