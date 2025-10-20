@@ -49,12 +49,13 @@ jobs:
           name: frontend
           path: ./dist
 
-      - name: move required files to nsis-runtime
+      - name: prepare required files to nsis-runtime
         run: |
           mv ./dist ./nsis-runtime/frontend
           mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
           cp ./package.nsi ./nsis-runtime/package.nsi
           cp ./LICENSE ./nsis-runtime/license.txt
+          cp ./config.example.yaml ./nsis-runtime/config.yaml
 
       - name: Download nssm
         run: |
