@@ -13,7 +13,7 @@ jobs:
       - name: Build frontend
         env:
           NODE_OPTIONS: --max_old_space_size=2048
-        run: npm run build
+        run: npm run build-only
         working-directory: ./frontend
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
