@@ -33,8 +33,8 @@ jobs:
 
       - name: Install NSIS
         run: |
-          apt update -y
-          apt -y install nsis
+          sudo apt update -y
+          sudo apt -y install nsis
       - name: Print NSIS version
         run: makensis -VERSION
       - name: Print NSIS compile flags
