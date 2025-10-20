@@ -54,7 +54,7 @@ jobs:
           mv ./dist ./nsis-runtime/frontend
           mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
           cp ./package.nsi ./nsis-runtime/package.nsi
-          cp ./license.txt ./nsis-runtime/license.txt
+          cp ./LICENSE ./nsis-runtime/license.txt
 
       - name: Download nssm
         run: |
