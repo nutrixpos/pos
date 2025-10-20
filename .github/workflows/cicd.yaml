@@ -20,3 +20,21 @@ jobs:
         with:
           name: frontend
           path: ./frontend/dist
+      - name: Build golang app
+        run: export GOOS=windows; go build -o nutrixpos.exe .
+        working-directory: ./backend
+
+      - name: Upload golang artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: golang
+          path: ./backend/nutrixpos.exe
+
+      - name: Install NSIS
+        run: |
+          apt update -y
+          apt -y install nsis
+      - name: Print NSIS version
+        run: makensis -VERSION
+      - name: Print NSIS compile flags
+        run: makensis -HDRINFO
