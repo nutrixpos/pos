@@ -49,7 +49,7 @@ jobs:
           name: frontend
           path: ./dist
 
-      - name: Rename frontend artifact directory
+      - name: move required files to nsis-runtime
         run: |
           mv ./dist ./nsis-runtime/frontend
           mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
@@ -63,4 +63,4 @@ jobs:
 
       - name: Run makensis
         working-directory: ./nsis-runtime
-        run: makensis
+        run: makensis package.nsi
