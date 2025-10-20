@@ -59,8 +59,8 @@ jobs:
       - name: Download nssm
         run: |
           curl -L -o ./nsis-runtime/nssm-2.24-101-g897c7ad.zip https://nssm.cc/ci/nssm-2.24-101-g897c7ad.zip
-          unzip ./nsis-runtime/nssm-2.24-101-g897c7ad.zip -d ./nsis-runtime/nssm
-          cp ./nsis-runtime/nssm/win64/nssm.exe ./nsis-runtime/nssm.exe
+          unzip ./nsis-runtime/nssm-2.24-101-g897c7ad.zip -d ./nsis-runtime
+          cp ./nsis-runtime/nssm-2.24-101-g897c7ad/win64/nssm.exe ./nsis-runtime/nssm.exe
 
       - name: Download golang artifact
         uses: actions/download-artifact@v4
