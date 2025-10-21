@@ -63,13 +63,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend
-          path: ./nsis-runtime
+          path: ./nsis-runtime/frontend
       
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
           name: backend-windows64
-          path: ./nsis-runtime/frontend
+          path: ./nsis-runtime
       
       - name: Install NSIS using Chocolatey
         run: choco install nsis -y
@@ -80,6 +80,7 @@ jobs:
           dir
           cd .\nsis-runtime
           dir
+          ca ..\
           
           # Download files using PowerShell
           Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
@@ -97,8 +98,9 @@ jobs:
           Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
           (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.msi', "nutrixpos-${{github.ref_name}}-windows64.msi" | Set-Content ./nsis-runtime/package.nsi
 
+          cd .\nsis-runtime
           dir
-          
+
           & "C:\Program Files (x86)\NSIS\makensis.exe" ./package.nsi
 
       - name: Create Release and Upload MSI
