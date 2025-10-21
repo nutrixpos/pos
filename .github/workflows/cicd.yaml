@@ -18,6 +18,7 @@ jobs:
       - name: Install dependencies
         run: npm install
         working-directory: ./frontend
+
       - name: Build frontend
         env:
           NODE_OPTIONS: --max_old_space_size=2048
@@ -33,13 +34,13 @@ jobs:
       - name: Build golang app
         env:
           NODE_OPTIONS: --max_old_space_size=2048
-        run: export GOOS=windows; go build -o nutrixpos.exe .
+        run: export GOOS=windows; go build -o nutrixpos64.exe .
         working-directory: ./
 
       - name: Upload backend windows64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: backend
+          name: backend-windows64
           path: ./nutrixpos64.exe
 
   
@@ -64,7 +65,7 @@ jobs:
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          name: backend
+          name: backend-windows64
           path: ./nsis-runtime
       
       - name: Install NSIS using Chocolatey
