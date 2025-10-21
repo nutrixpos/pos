@@ -58,7 +58,7 @@ jobs:
           mv ./dist ./nsis-runtime/frontend
           mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
           cp ./package.nsi ./nsis-runtime/package.nsi
-          sed -i "s/nutrixpos-installer.msi/nutrixpos-${GITHUB_TAG_NAME}-windows64.msi/g" ./nsis-runtime/package.nsi
+          sed -i "s/nutrixpos-installer.msi/nutrixpos-${{github.ref_name}}-windows64.msi/g" ./nsis-runtime/package.nsi
           cp ./LICENSE ./nsis-runtime/license.txt
           cp ./config.example.yaml ./nsis-runtime/config.yaml
 
