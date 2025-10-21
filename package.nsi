@@ -3,7 +3,7 @@
 
 ; Basic setup
 Name "Nutrix POS"
-OutFile "nutrixpos-installer.msi"
+OutFile "nutrixpos-installer.exe"
 Unicode True
 
 ; Default installation folder

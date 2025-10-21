@@ -96,15 +96,15 @@ jobs:
           Copy-Item -Path "./package.nsi" -Destination "./nsis-runtime/package.nsi" -Force
           Copy-Item -Path "./LICENSE" -Destination "./nsis-runtime/license.txt" -Force
           Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
-          (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.msi', "nutrixpos-${{github.ref_name}}-windows64.msi" | Set-Content ./nsis-runtime/package.nsi
+          (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.exe', "nutrixpos-${{github.ref_name}}-windows64.exe" | Set-Content ./nsis-runtime/package.nsi
 
           cd .\nsis-runtime
           dir
 
           & "C:\Program Files (x86)\NSIS\makensis.exe" ./package.nsi
 
-      - name: Create Release and Upload MSI
+      - name: Create Release and Upload windows64 package.
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: ./nsis-runtime/nutrixpos-${{github.ref_name}}-windows64.msi
+          files: ./nsis-runtime/nutrixpos-${{github.ref_name}}-windows64.exe
