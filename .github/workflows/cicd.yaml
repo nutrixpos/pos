@@ -1,6 +1,10 @@
 name: GitHub Actions Demo
 run-name: Packaging a new nutrixpos version 🚀
-on: [push]
+on:
+  push:
+    tags: 
+      - "v*.*.*"
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -79,10 +83,9 @@ jobs:
         working-directory: ./nsis-runtime
         run: makensis package.nsi
 
-      - name: Upload to Release
-        uses: actions/upload-release-asset@v1
+
+      - name: Create Release and Upload MSI
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./nssm-runtime/nutrixpos-${GITHUB_TAG_NAME}-windows64.msi
-          asset_name: nutrixpos-${GITHUB_TAG_NAME}-windows64.msi
-          asset_content_type: application/octet-stream
+          files: ./nsis-runtime/nutrixpos-${GITHUB_TAG_NAME}-windows64.msi
