@@ -22,7 +22,9 @@ jobs:
       - name: Build frontend
         env:
           NODE_OPTIONS: --max_old_space_size=2048
-        run: npm run build-only
+        run: |
+          cp .env.example .env
+          npm run build-only
         working-directory: ./frontend
 
       - name: Upload frontend artifact
