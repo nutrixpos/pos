@@ -5,6 +5,9 @@ on:
     tags: 
       - "v*.*.*"
 
+permissions:
+  contents: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -82,7 +85,6 @@ jobs:
       - name: Run makensis
         working-directory: ./nsis-runtime
         run: makensis package.nsi
-
 
       - name: Create Release and Upload MSI
         uses: softprops/action-gh-release@v2
