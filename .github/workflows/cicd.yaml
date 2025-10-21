@@ -80,7 +80,7 @@ jobs:
           dir
           cd .\nsis-runtime
           dir
-          ca ..\
+          cd ..\
           
           # Download files using PowerShell
           Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
