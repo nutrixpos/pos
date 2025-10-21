@@ -5,6 +5,7 @@ on:
     tags: 
       - "v*.*.*"
 
+# required to create releases
 permissions:
   contents: write
 
@@ -22,6 +23,7 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=2048
         run: npm run build-only
         working-directory: ./frontend
+
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -29,62 +31,67 @@ jobs:
           path: ./frontend/dist
 
       - name: Build golang app
+        env:
+          NODE_OPTIONS: --max_old_space_size=2048
         run: export GOOS=windows; go build -o nutrixpos.exe .
         working-directory: ./
 
-      - name: Upload golang artifact
+      - name: Upload backend windows64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: golang
-          path: ./nutrixpos.exe
+          name: backend
+          path: ./nutrixpos64.exe
 
-      - name: Install NSIS
+  
+  package-windows:
+    runs-on: windows-latest
+    needs: ci
+    steps:
+
+      - name: create nsis-runtime directory
         run: |
-          sudo apt update -y
-          sudo apt -y install nsis
-      - name: Print NSIS version
-        run: makensis -VERSION
-      - name: Print NSIS compile flags
-        run: makensis -HDRINFO
-
-      - name: Create nsis-runtime dir
-        run: mkdir nsis-runtime
+            # Create directory if it doesn't exist
+            if (!(Test-Path -Path "./nsis-runtime")) {
+              New-Item -ItemType Directory -Path "./nsis-runtime" -Force
+            }
 
       - name: Download earlier artifacts
         uses: actions/download-artifact@v4
         with:
           name: frontend
-          path: ./dist
-
-      - name: prepare required files to nsis-runtime
-        run: |
-          mv ./dist ./nsis-runtime/frontend
-          mv ./nutrixpos.exe ./nsis-runtime/nutrixpos.exe
-          cp ./package.nsi ./nsis-runtime/package.nsi
-          sed -i "s/nutrixpos-installer.msi/nutrixpos-${{github.ref_name}}-windows64.msi/g" ./nsis-runtime/package.nsi
-          cp ./LICENSE ./nsis-runtime/license.txt
-          cp ./config.example.yaml ./nsis-runtime/config.yaml
-
-      - name: Download nssm
-        run: |
-          curl -L -o ./nsis-runtime/nssm-2.24-101-g897c7ad.zip https://nssm.cc/ci/nssm-2.24-101-g897c7ad.zip
-          unzip ./nsis-runtime/nssm-2.24-101-g897c7ad.zip -d ./nsis-runtime
-          cp ./nsis-runtime/nssm-2.24-101-g897c7ad/win64/nssm.exe ./nsis-runtime/nssm.exe
-
-      - name: Download golang artifact
+          path: ./nsis-runtime
+      
+      - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          name: golang
-          path: ./nutrixpos.exe
+          name: backend
+          path: ./nsis-runtime
+      
+      - name: Install NSIS using Chocolatey
+        run: choco install nsis -y
 
-      - name: Download icon and mongodb installer
+      - name: Download required files to nsis-runtime
         run: |
-          curl -L -o ./nsis-runtime/icon.ico https://elmawardy.sirv.com/nutrix-icon-0.ico
-          curl -L -o ./nsis-runtime/mongodb-windows-x86_64-8.2.1-signed.msi https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.2.1-signed.msi
+          
+          # Download files using PowerShell
+          Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
+          Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.2.1-signed.msi" -OutFile "./nsis-runtime/mongodb-windows-x86_64-8.2.1-signed.msi"
+          Invoke-WebRequest -Uri "https://nssm.cc/ci/nssm-2.24-101-g897c7ad.zip" -OutFile "./nsis-runtime/nssm-2.24-101-g897c7ad.zip"
+          
+          # Extract zip file
+          Expand-Archive -Path "./nsis-runtime/nssm-2.24-101-g897c7ad.zip" -DestinationPath "./nsis-runtime/nssm-temp" -Force
+          
+          # Copy nssm.exe
+          Copy-Item -Path "./nsis-runtime/nssm-temp/nssm-2.24-101-g897c7ad/win64/nssm.exe" -Destination "./nsis-runtime/nssm.exe" -Force
 
-      - name: Run makensis
-        working-directory: ./nsis-runtime
-        run: makensis package.nsi
+          Copy-Item -Path "./package.nsi" -Destination "./nsis-runtime/package.nsi" -Force
+          Copy-Item -Path "./LICENSE" -Destination "./nsis-runtime/license.txt" -Force
+          Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
+          (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.msi', "nutrixpos-${{github.ref_name}}-windows64.msi" | Set-Content ./nsis-runtime/package.nsi
+
+          Move-Item -Path "./nsis-runtime/dist" -Destination "./nsis-runtime/frontend" -Force
+
+          & "C:\Program Files (x86)\NSIS\makensis.exe" ./nsis-runtime/package.nsi
 
       - name: Create Release and Upload MSI
         uses: softprops/action-gh-release@v2
