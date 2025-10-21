@@ -49,6 +49,9 @@ jobs:
     needs: ci
     steps:
 
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: create nsis-runtime directory
         run: |
             # Create directory if it doesn't exist
