@@ -54,7 +54,7 @@ UninstPage custom un.UninstallOptionsPage un.UninstallOptionsPageLeave
 Section "Main Application" SecMain
     SectionIn RO
     SetOutPath "$INSTDIR"
-    File "nutrixpos.exe"
+    File "nutrixpos64.exe"
     File "config.yaml"
     
     CreateDirectory "$INSTDIR\mnt"
@@ -78,20 +78,20 @@ Section "Main Application" SecMain
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
         CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$INSTDIR\nutrixpos.exe"
+        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe"
         CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninstall.exe"
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
 Section "Install nutrixpos windows service"
     SetOutPath "$INSTDIR"
-    File "nutrixpos.exe"
+    File "nutrixpos64.exe"
     File "nssm.exe"
 
-    ;nsExec::ExecToLog 'sc create NutrixPosService binPath= "$INSTDIR\nutrixpos.exe" DisplayName= "Nutrix POS" start= auto obj= "NT AUTHORITY\NetworkService"'
+    ;nsExec::ExecToLog 'sc create NutrixPosService binPath= "$INSTDIR\nutrixpos64.exe" DisplayName= "Nutrix POS" start= auto obj= "NT AUTHORITY\NetworkService"'
     ;nsExec::ExecToLog 'sc start NutrixPosService'
     ; Install your app as a service via NSSM under NetworkService
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install NutrixPosService "$INSTDIR\nutrixpos.exe"'
+    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install NutrixPosService "$INSTDIR\nutrixpos64.exe"'
     
     ; Set display name
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set NutrixPosService DisplayName "NutrixPOS Service"'
@@ -185,7 +185,7 @@ Section "Uninstall"
     nsExec::ExecToLog 'sc delete NutrixPosService'
 
     Delete "$INSTDIR\license.txt"
-    Delete "$INSTDIR\nutrixpos.exe"
+    Delete "$INSTDIR\nutrixpos64.exe"
     Delete "$INSTDIR\nssm.exe"
     Delete "$INSTDIR\config.yaml"
     Delete "$INSTDIR\uninstall.exe"
