@@ -15,9 +15,9 @@ zitadel:
   domain: "zitadel"
   port: 8080
   key_path: "./mnt/zitadel-key.json" # this is the path to your zitadel key related to your root directory of backend
-  enabled: true
+  enabled: false
 
-serve_frontend: false
+serve_frontend: true
   
 timezone: Africa/Cairo
 env: dev
