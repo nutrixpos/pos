@@ -23,8 +23,8 @@
                 <InputText type="number" @change="MaterialInputChanged(index)" :invalid="!material.isQuantityValid" v-model.number="model.materials[index].quantity" size="small"/>
                 <span class="ml-2 mt-2">{{ material.material.unit }}</span>
             </div>
-            <Dropdown @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
-            {{$t('cost')}}: {{ material.entry?.cost * model.quantity }}
+            <Dropdown v-if="settings?.orders.default_cost_calculation_method == 'exact'" @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
+            {{$t('cost')}} ({{ settings?.orders.default_cost_calculation_method }}): {{ material.entry?.cost * model.quantity }}
         </div>
     </div>
     <div v-if="model.sub_items != null && !model.is_consume_from_ready">
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import {defineModel,ref, watch,defineEmits} from 'vue'
+import {defineModel,ref, watch,defineEmits, getCurrentInstance} from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
@@ -46,16 +46,20 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import { Material, OrderItem } from '@/classes/OrderItem'
 import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
+import axios from 'axios'
 
 const model = defineModel<OrderItem>({
     required: true})
 
+
+const { proxy } = getCurrentInstance();
 
 const emit = defineEmits(['changed'])
 
 
 const new_component_dialog = ref(false)
 const materialValidity = ref<boolean[]>([])
+const settings = ref<any>(null)
 
 
 const removeMaterialByIndex = (index:number) => {
@@ -118,6 +122,24 @@ watch(materialValidity, (newValidities) => {
     model.value.isValid = valid
 },
 {deep:true})
+
+
+const getSettings = () => {
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        },
+    })
+    .then((response)=>{
+        console.log(response.data.data)
+        settings.value = response.data.data
+    })
+    .catch((err) => {
+        console.log(err)
+    });
+}
+
+getSettings()
 
 
 // watch(model.value.materials, () => {

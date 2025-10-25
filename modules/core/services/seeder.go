@@ -86,6 +86,7 @@ func (s *Seeder) SeedSettings() error {
 						Next:   1,
 					},
 				},
+				DefaultCostCalculationMethod: "average",
 			},
 			Language: models.LanguageSettings{
 				Code:     "en",

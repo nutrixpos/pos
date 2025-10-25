@@ -15,7 +15,7 @@
                         
                         <Divider />
                         <h4 class="mb-2"><i class="pi pi-box"></i> {{$t('order',3)}}</h4>
-                        <span class="mt-1">Queues</span>
+                        <span class="mt-1">Queues:</span>
                         <div class="flex align-items-center">
                             <div class="flex flex-column">
                                 <div v-for="(queue,index) in order_queues" :key="index" class="flex align-items-center mt-2">
@@ -33,6 +33,19 @@
 
                                     <Button label="Add" @click="order_queues.push({prefix:new_queue_prefix,next:new_queue_next}); new_queue_prefix = ''; new_queue_next = 1" />
                                 </div>
+                            </div>
+                        </div>
+                        <span class="mt-5">Default cost calculation method:</span>
+                        <div class="flex flex-wrap flex-column gap-4 my-3">
+                            <div class="flex items-center gap-2">
+                                <RadioButton v-model="default_cost_calculation_method" inputId="exact" name="exact" value="exact" />
+                                <label for="exact">Exact</label>
+                                <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Exact cost of materials will be used for each product during order creation chosen from specific material entry'"></Badge>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <RadioButton v-model="default_cost_calculation_method" inputId="average" name="average" value="average" />
+                                <label for="average">Average</label>
+                                <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Average cost of materials available in the inventory will be used for each product during order creation, FIFO will be used for material consumption'"></Badge>
                             </div>
                         </div>
 
@@ -72,6 +85,7 @@ import {getCurrentInstance,ref} from 'vue'
 import Dropdown from 'primevue/dropdown';
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '../stores';
+import {RadioButton,Avatar,Badge} from 'primevue';
 
 const { proxy } = getCurrentInstance();
 
@@ -81,6 +95,8 @@ const order_queues = ref<any>({})
 const new_queue_prefix = ref("")
 const new_queue_next = ref(1)
 const receipt_printer_host = ref()
+
+const default_cost_calculation_method = ref("average")
 
 const toast = useToast();
 
@@ -113,7 +129,8 @@ const saveSettings = () => {
                     stock_alert_treshold:stock_alert_treshold.value
                 },
                 orders: {
-                    queues: order_queues.value
+                    queues: order_queues.value,
+                    default_cost_calculation_method: default_cost_calculation_method.value
                 },
                 language:{
                     code: selectedLang.value.code,
@@ -149,6 +166,7 @@ const getSettings = () => {
         console.log(response.data.data)
         stock_alert_treshold.value = response.data.data.inventory.stock_alert_treshold
         order_queues.value = response.data.data.orders.queues
+        default_cost_calculation_method.value = response.data.data.orders.default_cost_calculation_method
         selectedLang.value = response.data.data.language
         receipt_printer_host.value = response.data.data.receipt_printer.host
     })

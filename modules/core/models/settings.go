@@ -8,7 +8,8 @@ type OrderQueueSettings struct {
 
 // OrderSettings represents the configuration settings for orders
 type OrderSettings struct {
-	Queues []OrderQueueSettings `json:"queues" bson:"queues" mapstructure:"queues"`
+	Queues                       []OrderQueueSettings `json:"queues" bson:"queues" mapstructure:"queues"`
+	DefaultCostCalculationMethod string               `json:"default_cost_calculation_method" bson:"default_cost_calculation_method" mapstructure:"default_cost_calculation_method"`
 }
 
 type LanguageSettings struct {
