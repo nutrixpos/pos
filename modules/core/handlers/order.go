@@ -403,7 +403,7 @@ func CancelOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 }
 
 // FinishOrder returns a HTTP handler function to finish an order.
-func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func FinishOrder(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		user_id := "0"
@@ -414,12 +414,25 @@ func FinishOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		params := mux.Vars(r)
 		id_param := params["id"]
 
-		orderService := services.OrderService{
-			Logger: logger,
+		settings_Svc := services.SettingsService{
 			Config: config,
 		}
 
-		err := orderService.FinishOrder(id_param, user_id)
+		settings, err := settings_Svc.GetSettings()
+		if err != nil {
+			logger.Error(err.Error())
+			w.Write([]byte(err.Error()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
+		}
+
+		err = orderService.FinishOrder(id_param, user_id)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -452,9 +465,22 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			return
 		}
 
-		orderService := services.OrderService{
-			Logger: logger,
+		settings_Svc := services.SettingsService{
 			Config: config,
+		}
+
+		settings, err = settings_Svc.GetSettings()
+		if err != nil {
+			logger.Error(err.Error())
+			w.Write([]byte(err.Error()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger:   logger,
+			Config:   config,
+			Settings: settings,
 		}
 
 		product_svc := services.RecipeService{
@@ -716,6 +742,18 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 		err := decoder.Decode(&request_body)
 		if err != nil {
 			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		settings_Svc := services.SettingsService{
+			Config: config,
+		}
+
+		settings, err = settings_Svc.GetSettings()
+		if err != nil {
+			logger.Error(err.Error())
+			w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

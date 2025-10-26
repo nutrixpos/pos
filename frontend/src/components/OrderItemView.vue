@@ -14,17 +14,30 @@
     </div>
     <div v-if="!model.is_consume_from_ready">
         <Button :label="$t('add_material')" @click="new_component_dialog = true" />
-        <div class="flex my-3 py-2 justify-content-between align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
+        <div class="flex my-3 py-2 gap-4 align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
 
             <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="removeMaterialByIndex(index)" />
 
             {{ material.material.name }}
-            <div class="flex">
-                <InputText type="number" @change="MaterialInputChanged(index)" :invalid="!material.isQuantityValid" v-model.number="model.materials[index].quantity" size="small"/>
-                <span class="ml-2 mt-2">{{ material.material.unit }}</span>
+
+
+            <div v-if="settings?.orders.default_cost_calculation_method == 'exact'" class="flex align-items-center gap-8">
+                <div class="flex">
+                    <InputText type="number" @change="MaterialInputChanged(index)" :invalid="!material.isQuantityValid" v-model.number="model.materials[index].quantity" size="small"/>
+                    <span class="ml-2 mt-2">{{ material.material.unit }}</span>
+                </div>
+                <Dropdown @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
+                <span>{{$t('cost')}} (Exact): {{ material.entry?.cost * model.quantity }}</span>
             </div>
-            <Dropdown v-if="settings?.orders.default_cost_calculation_method == 'exact'" @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
-            {{$t('cost')}} ({{ settings?.orders.default_cost_calculation_method }}): {{ material.entry?.cost * model.quantity }}
+
+            <div v-if="settings?.orders.default_cost_calculation_method == 'average'" class="flex align-items-center gap-8 w-full">
+                <div class="flex">
+                    <InputText type="number" @change="MaterialInputChanged(index)" :invalid="!material.isQuantityValid" v-model.number="model.materials[index].quantity" size="small"/>
+                    <span class="ml-2 mt-2">{{ material.material.unit }}</span>
+                </div>
+                <span>{{$t('cost')}} (Average): {{ material?.avgcost * model.quantity }}</span>
+            </div>
+            
         </div>
     </div>
     <div v-if="model.sub_items != null && !model.is_consume_from_ready">
@@ -47,6 +60,10 @@ import { Material, OrderItem } from '@/classes/OrderItem'
 import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
 import axios from 'axios'
+import {globalStore} from '@/stores';
+
+
+const store = <any>globalStore()
 
 const model = defineModel<OrderItem>({
     required: true})
@@ -69,19 +86,31 @@ const removeMaterialByIndex = (index:number) => {
 }
 
 const MaterialInputChanged = async (index:number) => {
-    await model.value.UpdateMaterialEntryCost(index); 
-    await validateMaterialQuantity(index); 
+
+    if (settings.value?.orders.default_cost_calculation_method == 'average'){
+        await model.value.UpdateMaterialAverageCost(index);
+        await validateMaterialTotalQuantity(index)
+    }
+
+    if (settings.value?.orders.default_cost_calculation_method == 'exact'){
+        await model.value.UpdateMaterialEntryExactCost(index); 
+        await validateMaterialExactQuantity(index);
+    }
+
     emit('changed'); 
 }
 
 const EntryDropDownChanged = async (index:number) => {
-    await model.value.UpdateMaterialEntryCost(index);
+    await model.value.UpdateMaterialEntryExactCost(index);
     emit('changed'); 
 }
 
+const validateMaterialTotalQuantity = (index: number)  => {
+   model.value.ValidateMaterialTotalQuantity(index)
+}
 
-const validateMaterialQuantity = (index: number)  => {
-   model.value.ValidateMaterialQuantity(index)
+const validateMaterialExactQuantity = (index: number)  => {
+   model.value.ValidateMaterialExactQuantity(index)
 }
 
 const validateItem = () => {
@@ -91,14 +120,19 @@ const validateItem = () => {
 const Init = async () => {
     await updateEntriesCost()
     model.value.materials.forEach((_,index) => {
-        model.value.ValidateMaterialQuantity(index)
+
+        if (store.getSettings?.orders.default_cost_calculation_method == 'average')
+            model.value.ValidateMaterialTotalQuantity(index)
+        else
+            model.value.ValidateMaterialExactQuantity(index)
+        
     })
 }
 
 const updateEntriesCost = async () => {
 
     for (var i=0;i<model.value.materials.length;i++){
-        await model.value.UpdateMaterialEntryCost(i)
+        await model.value.UpdateMaterialEntryExactCost(i)
     }
 }
 
@@ -106,7 +140,11 @@ Init()
 
 const addMaterial = async (material: Material) => {
     await model.value.PushMaterial(material)
-    validateMaterialQuantity(model.value.materials.length - 1)
+
+    if (store.getSettings?.orders.default_cost_calculation_method == 'average')
+        validateMaterialTotalQuantity(model.value.materials.length - 1)
+    else
+        validateMaterialExactQuantity(model.value.materials.length - 1)
 }
 
 

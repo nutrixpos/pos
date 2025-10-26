@@ -45,7 +45,7 @@
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="default_cost_calculation_method" inputId="average" name="average" value="average" />
                                 <label for="average">Average</label>
-                                <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Average cost of materials available in the inventory will be used for each product during order creation, FIFO will be used for material consumption'"></Badge>
+                                <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Average cost of materials available in the inventory will be used for each product during order creation, material/s with earliest expiration will be consumed first'"></Badge>
                             </div>
                         </div>
 

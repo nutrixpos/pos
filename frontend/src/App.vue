@@ -21,13 +21,33 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, getCurrentInstance } from 'vue';
 import Toast from 'primevue/toast';
 import { globalStore } from '@/stores';
+import axios from 'axios';
 
 
+const { proxy } = getCurrentInstance();
 const store = globalStore()
 const orientation = computed(() => store.currentOrientation)
+
+const getSettings = () => {
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        },
+    })
+    .then((response)=>{
+        console.log(response.data.data)
+        store.setSettings(response.data.data)
+    })
+    .catch((err) => {
+        console.log(err)
+    });
+}
+
+
+getSettings()
 
 </script>
 
