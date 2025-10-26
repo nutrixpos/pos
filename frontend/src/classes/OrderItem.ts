@@ -1,6 +1,8 @@
 import axios from 'axios';
 import zitadelAuth from "@/services/zitadelAuth";
+import { globalStore } from '@/stores';
 
+const store = <any>globalStore()
 
 export class MaterialEntry {
 	id:               string;
@@ -106,8 +108,9 @@ export class OrderItemMaterial {
 	material:       Material;
 	entry: MaterialEntry; 
 	quantity:       number;
-    entries: MaterialEntry[]
+    entries: MaterialEntry[];
     isQuantityValid: boolean = true;
+    avgcost: number;
     
     constructor(material ?:Material){
 
@@ -121,8 +124,8 @@ export class OrderItemMaterial {
             this.entries = []
         }
 
+        this.avgcost = 0
         this.quantity = 0
-
     }
 }
 
@@ -153,22 +156,30 @@ export class OrderItem {
             this.ready = product.ready
 
             this.materials = product.materials.map( (material,index) => {
+
+                let material_entries_total_cost_per_unit = 0;
                 
                 material.entries.forEach((entry :MaterialEntry, entry_index) => {
                     entry.label = entry.company + " - " + entry.quantity + " " + material.unit
                     product.materials[index].entries[entry_index].label = entry.label
                     this.product.materials[index].entries[entry_index].label = entry.label
+
+                    material_entries_total_cost_per_unit = material_entries_total_cost_per_unit +  ( entry.purchase_price / entry.purchase_quantity )
                 })
 
                 const itemmaterial = <OrderItemMaterial>{
                     entry: material.entries[0],
                     entries: material.entries,
                     material: material,
-                    quantity: material.quantity
+                    quantity: material.quantity,
+                    avgcost: (material_entries_total_cost_per_unit / material.entries.length ) * material.quantity 
                 }
 
-
-                this.ValidateMaterialQuantity(index)
+                if (store.getSettings?.orders.default_cost_calculation_method == 'average'){
+                    this.ValidateMaterialTotalQuantity(index)  
+                }else{
+                    this.ValidateMaterialExactQuantity(index)
+                }
 
                 return itemmaterial
 
@@ -234,7 +245,11 @@ export class OrderItem {
         this.materials = orderItem.materials
 
         this.materials.forEach((material: OrderItemMaterial,index: number) => {
-            this.ValidateMaterialQuantity(index)
+            
+            if (store.getSettings?.orders.default_cost_calculation_method == 'average')
+                this.ValidateMaterialTotalQuantity(index)
+            else
+                this.ValidateMaterialExactQuantity(index)
         })
 
 
@@ -343,7 +358,13 @@ export class OrderItem {
                     }
                 })
 
-                this.ValidateMaterialQuantity(materialIndex)
+                let settings = <any>store.getSettings
+
+                if (settings.orders.default_cost_calculation_method == 'average'){
+                    this.ValidateMaterialTotalQuantity(materialIndex)
+                }else {
+                    this.ValidateMaterialExactQuantity(materialIndex)
+                }
 
             })
         })
@@ -358,8 +379,18 @@ export class OrderItem {
         }
     }
 
+    async UpdateMaterialAverageCost(materialIndex: number){
+        await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${this.materials[materialIndex].material.id}/avgcost?quantity=${this.materials[materialIndex].quantity}`, {
+            headers: {
+                'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+            }
+        }).then((response) => {
+            this.materials[materialIndex].avgcost = response.data.data
+            this.ValidateMaterialTotalQuantity(materialIndex)
+        })
+    }
 
-    async UpdateMaterialEntryCost(materialIndex: number){
+    async UpdateMaterialEntryExactCost(materialIndex: number){
         if (this.materials[materialIndex].entry != undefined){
             await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${this.materials[materialIndex].material.id}/entries/${this.materials[materialIndex].entry.id}/cost?quantity=${this.materials[materialIndex].quantity}`, {
                 headers: {
@@ -368,7 +399,7 @@ export class OrderItem {
             }).then((response) => {
     
                 this.materials[materialIndex].entry.cost = response.data.data
-                this.ValidateMaterialQuantity(materialIndex)
+                this.ValidateMaterialExactQuantity(materialIndex)
               
             })
         }
@@ -415,7 +446,10 @@ export class OrderItem {
 
     ValidateAllMaterials(){
         for (let i=0;i<this.materials.length;i++){
-            this.ValidateMaterialQuantity(i)
+            if (store.getSettings?.orders.default_cost_calculation_method == 'average')
+                this.ValidateMaterialTotalQuantity(i)
+            else
+                this.ValidateMaterialExactQuantity(i)
         }
 
         for (let i=0;i<this.sub_items.length;i++){
@@ -423,7 +457,28 @@ export class OrderItem {
         }
     }
 
-    ValidateMaterialQuantity(materialIndex: number){
+    ValidateMaterialTotalQuantity(materialIndex: number){
+        if (this.materials == undefined) {
+            this.isValid = false
+            return
+        }
+        
+        let material_entries_total_quantity = 0;
+
+        this.materials[materialIndex].entries.forEach((entry) => {
+            material_entries_total_quantity += entry.quantity
+        })
+        
+        if (this.materials[materialIndex].quantity > material_entries_total_quantity){
+            this.materials[materialIndex].isQuantityValid = false
+        }else {
+            this.materials[materialIndex].isQuantityValid = true
+        }
+
+        this.ValidateItem()
+    }
+
+    ValidateMaterialExactQuantity(materialIndex: number){
 
         if (this.materials == undefined) {
             this.isValid = false
@@ -472,8 +527,15 @@ export class OrderItem {
 
         const new_material = new OrderItemMaterial(material)
         this.materials.push(new_material)
-        this.ValidateMaterialQuantity(this.materials.length - 1)
-        await this.UpdateMaterialEntryCost(this.materials.length - 1)
+
+        if (store.getSettings?.orders.default_cost_calculation_method == 'average'){
+            this.ValidateMaterialTotalQuantity(this.materials.length - 1)
+            await this.UpdateMaterialAverageCost(this.materials.length - 1)
+        }else {
+            this.ValidateMaterialExactQuantity(this.materials.length - 1)
+            await this.UpdateMaterialEntryExactCost(this.materials.length - 1)
+        }
+
     }
 
 
@@ -553,17 +615,30 @@ export class OrderItem {
             this.product.materials = materials
             this.materials = materials.map( material => {
 
+                let material_entries_total_cost_per_unit = 0;
+
+                material.entries.forEach((entry :MaterialEntry, entry_index) => {
+                    material_entries_total_cost_per_unit = material_entries_total_cost_per_unit +  ( entry.purchase_price / entry.purchase_quantity )
+                })
+
                 return <OrderItemMaterial>{
                     entry: material.entries[0],
                     entries: material.entries,
                     material: material,
-                    quantity: material.quantity
+                    quantity: material.quantity,
+                    avgcost: (material_entries_total_cost_per_unit / material.entries.length ) * material.quantity
                 }
 
             })
 
             this.materials.forEach((material,materialIndex) => {
-                this.ValidateMaterialQuantity(materialIndex)
+
+                if (store.getSettings?.orders.default_cost_calculation_method == 'average'){
+                    this.ValidateMaterialTotalQuantity(materialIndex)
+                }else {
+                    this.ValidateMaterialExactQuantity(materialIndex)
+                }
+
             })
         })  
     }

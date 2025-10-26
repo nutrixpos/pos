@@ -420,10 +420,47 @@ func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_
 	return notifications, err
 }
 
-// CalculateMaterialCost calculates the cost of a material entry based on its ID, material ID, and quantity.
+func (cs *MaterialService) CalculateMaterialAverageCost(material_id string, quantity float64) (cost float64, err error) {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return 0, err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	// Connected successfully
+	cs.Logger.Info("Connected to MongoDB!")
+
+	var material models.Material
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
+	if err != nil {
+		return 0, err
+	}
+
+	total_entries_purchase_price_per_unit := 0.0
+
+	for _, entry := range material.Entries {
+		total_entries_purchase_price_per_unit += (entry.PurchasePrice / entry.PurchaseQuantity)
+	}
+
+	return (total_entries_purchase_price_per_unit / float64(len(material.Entries))) * quantity, nil
+}
+
+// CalculateMaterialExactCost calculates the cost of a material entry based on its ID, material ID, and quantity.
 // It connects to the MongoDB database, retrieves the specific material entry, and calculates the cost
 // using the purchase price and purchase quantity.
-func (cs *MaterialService) CalculateMaterialCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
+func (cs *MaterialService) CalculateMaterialExactCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
@@ -511,9 +548,9 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 
 // ConsumeItemComponentsForOrder consumes components for an order item, and returns the notifications to be sent via websocket.
 // It returns an error if something goes wrong.
-func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
+func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
 
 	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
@@ -532,11 +569,11 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 	}
 
 	// Connected successfully
-	cs.Logger.Info("Connected to MongoDB!")
+	ms.Logger.Info("Connected to MongoDB!")
 
 	productService := RecipeService{
-		Logger: cs.Logger,
-		Config: cs.Config,
+		Logger: ms.Logger,
+		Config: ms.Config,
 	}
 
 	if item.IsConsumeFromReady {
@@ -549,58 +586,143 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			return notifications, err
 		}
 
-		material_available_amount, err := cs.GetMaterialEntryAvailability(component.Material.Id, component.Entry.Id)
+		if ms.Settings.Orders.DefaultCostCalculationMethod == "exact" {
+			material_available_amount, err := ms.GetMaterialEntryAvailability(component.Material.Id, component.Entry.Id)
+			if err != nil {
+				return notifications, err
+			}
+
+			if float64(material_available_amount) < (component.Quantity*item.Quantity) || material_available_amount < 0 {
+				notifications = append(notifications, models.WebsocketTopicServerMessage{
+					TopicName: "inventory_insufficient",
+					Type:      "topic_message",
+					Severity:  "error",
+					Message:   fmt.Sprintf("Inventory for %s is insufficient, quantity requested by order_id: %s (display_id: %s) is %f, but entry %s only has %f", component.Material.Name, order.Id, order.DisplayId, (component.Quantity * item.Quantity), component.Entry.Id, float64(material_available_amount)),
+					Key:       fmt.Sprintf("inventory_insufficient@%s", component.Material.Id),
+				})
+				return notifications, fmt.Errorf("entry %s is insufficient", component.Material.Id)
+			}
+
+			filter := bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}
+			// Define the update operation
+			update := bson.M{
+				"$inc": bson.M{
+					"entries.$.quantity": -component.Quantity * item.Quantity,
+				},
+			}
+
+			_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+			if err != nil {
+				return notifications, err
+			}
+
+			logs_data := bson.M{
+				"type":             "component_consume",
+				"date":             time.Now(),
+				"id":               primitive.NewObjectID().Hex(),
+				"component_id":     component.Material.Id,
+				"quantity":         component.Quantity * item.Quantity,
+				"entry_id":         component.Entry.Id,
+				"order_id":         order.Id,
+				"recipe_id":        item.Product.Id,
+				"order_item_index": order_item_index,
+				"user_id":          user_id,
+			}
+			_, err = client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
+			if err != nil {
+				return notifications, err
+			}
+		} else if ms.Settings.Orders.DefaultCostCalculationMethod == "average" {
+
+			filter := bson.M{"id": component.Material.Id}
+			sort := bson.M{"entries.expiration_date": 1}
+			cursor, err := client.Database(ms.Config.Databases[0].Database).Collection("materials").Find(context.Background(), filter, &options.FindOptions{Sort: sort})
+			if err != nil {
+				return notifications, err
+			}
+			defer cursor.Close(context.Background())
+
+			var material models.Material
+			for cursor.Next(context.Background()) {
+				err := cursor.Decode(&material)
+				if err != nil {
+					return notifications, err
+				}
+				break
+			}
+
+			if len(material.Entries) == 0 {
+				return notifications, fmt.Errorf("no entries found for material %s", component.Material.Id)
+			}
+
+			available_quantity, err := ms.GetComponentAvailability(component.Material.Id)
+			if err != nil {
+				return notifications, err
+			}
+
+			if available_quantity < component.Quantity*item.Quantity {
+				return notifications, fmt.Errorf("not enough quantity for material %s", component.Material.Id)
+			}
+
+			demanded_quantity := component.Quantity * item.Quantity
+
+			for _, entry := range material.Entries {
+
+				if entry.Quantity < demanded_quantity {
+					demanded_quantity = demanded_quantity - entry.Quantity
+					ms.ConsumeFromInventory(component.Material, entry.Id, entry.Quantity, "order", order.Id, user_id)
+
+					logs_data := bson.M{
+						"type":             "component_consume",
+						"date":             time.Now(),
+						"id":               primitive.NewObjectID().Hex(),
+						"component_id":     component.Material.Id,
+						"quantity":         entry.Quantity,
+						"entry_id":         component.Entry.Id,
+						"order_id":         order.Id,
+						"recipe_id":        item.Product.Id,
+						"order_item_index": order_item_index,
+						"user_id":          user_id,
+					}
+					_, err = client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
+					if err != nil {
+						return notifications, err
+					}
+
+				} else {
+					ms.ConsumeFromInventory(component.Material, entry.Id, demanded_quantity, "order", order.Id, user_id)
+					demanded_quantity = 0
+
+					logs_data := bson.M{
+						"type":             "component_consume",
+						"date":             time.Now(),
+						"id":               primitive.NewObjectID().Hex(),
+						"component_id":     component.Material.Id,
+						"quantity":         demanded_quantity,
+						"entry_id":         component.Entry.Id,
+						"order_id":         order.Id,
+						"recipe_id":        item.Product.Id,
+						"order_item_index": order_item_index,
+						"user_id":          user_id,
+					}
+					_, err = client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
+					if err != nil {
+						return notifications, err
+					}
+
+					break
+				}
+
+			}
+
+		}
+
+		quantity, err := ms.GetComponentAvailability(component.Material.Id)
 		if err != nil {
 			return notifications, err
 		}
 
-		if float64(material_available_amount) < (component.Quantity*item.Quantity) || material_available_amount < 0 {
-			notifications = append(notifications, models.WebsocketTopicServerMessage{
-				TopicName: "inventory_insufficient",
-				Type:      "topic_message",
-				Severity:  "error",
-				Message:   fmt.Sprintf("Inventory for %s is insufficient, quantity requested by order_id: %s (display_id: %s) is %f, but entry %s only has %f", component.Material.Name, order.Id, order.DisplayId, (component.Quantity * item.Quantity), component.Entry.Id, float64(material_available_amount)),
-				Key:       fmt.Sprintf("inventory_insufficient@%s", component.Material.Id),
-			})
-			return notifications, fmt.Errorf("entry %s is insufficient", component.Material.Id)
-		}
-
-		filter := bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}
-		// Define the update operation
-		update := bson.M{
-			"$inc": bson.M{
-				"entries.$.quantity": -component.Quantity * item.Quantity,
-			},
-		}
-
-		_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
-		if err != nil {
-			return notifications, err
-		}
-
-		logs_data := bson.M{
-			"type":             "component_consume",
-			"date":             time.Now(),
-			"id":               primitive.NewObjectID().Hex(),
-			"component_id":     component.Material.Id,
-			"quantity":         component.Quantity * item.Quantity,
-			"entry_id":         component.Entry.Id,
-			"order_id":         order.Id,
-			"recipe_id":        item.Product.Id,
-			"order_item_index": order_item_index,
-			"user_id":          user_id,
-		}
-		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
-		if err != nil {
-			return notifications, err
-		}
-
-		quantity, err := cs.GetComponentAvailability(component.Material.Id)
-		if err != nil {
-			return notifications, err
-		}
-
-		if float64(quantity) <= cs.Settings.Inventory.StockAlertTreshold {
+		if float64(quantity) <= ms.Settings.Inventory.StockAlertTreshold {
 			notifications = append(notifications, models.WebsocketTopicServerMessage{
 				TopicName: "inventory_low",
 				Type:      "topic_message",
@@ -614,7 +736,7 @@ func (cs *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 	for _, subrecipe := range item.SubItems {
 
-		sub_notifications, err := cs.ConsumeItemComponentsForOrder(subrecipe, order, order_item_index, user_id)
+		sub_notifications, err := ms.ConsumeItemComponentsForOrder(subrecipe, order, order_item_index, user_id)
 		if err != nil {
 			return notifications, err
 		}

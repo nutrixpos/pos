@@ -479,26 +479,53 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 
 			var component_with_specific_entry models.Material
 
-			err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
-				context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+			if os.Settings.Orders.DefaultCostCalculationMethod == "average" {
+				var material models.Material
+				err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
+					context.Background(), bson.M{"id": component.Material.Id}, options.FindOne().SetProjection(bson.M{"_id": 0})).Decode(&material)
 
-			if err == nil {
-				quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity)
-
-				// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
-				if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
-					quantity_cost = 0
+				if err != nil {
+					return cost, err
 				}
 
-				itemCost.Cost += quantity_cost
-				itemComponent.Cost = quantity_cost
+				total_cost_per_unit := 0.0
+
+				for _, entry := range material.Entries {
+					if entry.Quantity > 0 {
+						total_cost_per_unit += entry.PurchasePrice / float64(entry.PurchaseQuantity)
+					}
+				}
+
+				// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+				if math.IsInf(total_cost_per_unit, 0) || math.IsInf(total_cost_per_unit, -1) {
+					total_cost_per_unit = 0.0
+					itemComponent.Cost = 0.0
+				} else {
+					itemComponent.Cost = total_cost_per_unit / float64(len(material.Entries)) * component.Quantity
+					itemCost.Cost += total_cost_per_unit / float64(len(material.Entries)) * component.Quantity
+				}
 
 			} else {
-				return cost, err
+				err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
+					context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+
+				if err == nil {
+					quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity)
+
+					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+					if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
+						quantity_cost = 0
+					}
+
+					itemCost.Cost += quantity_cost
+					itemComponent.Cost = quantity_cost
+
+				} else {
+					return cost, err
+				}
 			}
 
 			itemCost.Components = append(itemCost.Components, itemComponent)
-
 		}
 
 		var recipe models.Product

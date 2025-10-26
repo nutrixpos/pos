@@ -102,9 +102,11 @@ import { useToast } from "primevue/usetoast";
 import OrderItemView from "./OrderItemView.vue";
 import {OrderItem, Product} from '@/classes/OrderItem'
 import {getCurrentInstance,nextTick} from 'vue'
+import { globalStore } from '@/stores';
 
 
 const { proxy } = getCurrentInstance();
+const store = <any>globalStore()
 
 
 const loading = ref(false)
@@ -267,9 +269,14 @@ const prepareOrder = async () => {
         await item.RefreshReadyNumber()
         await item.FromItemData(props.order.items[i])// const item = new OrderItem(orderItem.product)
         await item.RefreshProductData()
+        
 
         item.materials.forEach((material,materialIndex) => {
-            item.ValidateMaterialQuantity(materialIndex)
+
+            if (store.getSettings?.orders?.default_cost_calculation_method == 'average')
+                item.ValidateMaterialTotalQuantity(materialIndex)
+            else
+                item.ValidateMaterialExactQuantity(materialIndex)
         })
         
 

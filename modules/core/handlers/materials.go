@@ -74,11 +74,58 @@ func GetMaterialEntries(config config.Config, logger logger.ILogger) http.Handle
 	}
 }
 
-// CalculateMaterialCost returns a HTTP handler function to calculate the cost of a material entry.
+func CalculateMaterialAverageCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+
+		material_id_param := params["material_id"]
+
+		quantityStr := r.URL.Query().Get("quantity")
+		if quantityStr == "" {
+			http.Error(w, "quantity query string is required", http.StatusBadRequest)
+			return
+		}
+
+		var quantity float64
+		quantity, err := strconv.ParseFloat(quantityStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid quantity", http.StatusBadRequest)
+			return
+		}
+
+		materialService := services.MaterialService{
+			Logger: logger,
+			Config: config,
+		}
+
+		cost, err := materialService.CalculateMaterialAverageCost(material_id_param, quantity)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response := JSONApiOkResponse{
+			Data: cost,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
+	}
+}
+
+// CalculateMaterialExactCost returns a HTTP handler function to calculate the cost of a material entry.
 //
 // This handler retrieves the entry ID, material ID, and quantity from the query string,
 // and uses the MaterialService to calculate and return the cost.
-func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func CalculateMaterialExactCost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		params := mux.Vars(r)
@@ -104,7 +151,7 @@ func CalculateMaterialCost(config config.Config, logger logger.ILogger) http.Han
 			Config: config,
 		}
 
-		cost, err := materialService.CalculateMaterialCost(entry_id_param, material_id_param, quantity)
+		cost, err := materialService.CalculateMaterialExactCost(entry_id_param, material_id_param, quantity)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
