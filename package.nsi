@@ -78,7 +78,7 @@ Section "Main Application" SecMain
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
         CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe"
+        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "http://localhost:8080" "" "$INSTDIR\icon.ico" 0
         CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninstall.exe"
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
@@ -87,6 +87,7 @@ Section "Install nutrixpos windows service"
     SetOutPath "$INSTDIR"
     File "nutrixpos64.exe"
     File "nssm.exe"
+    File "icon.ico"
 
     ;nsExec::ExecToLog 'sc create NutrixPosService binPath= "$INSTDIR\nutrixpos64.exe" DisplayName= "Nutrix POS" start= auto obj= "NT AUTHORITY\NetworkService"'
     ;nsExec::ExecToLog 'sc start NutrixPosService'
@@ -101,6 +102,8 @@ Section "Install nutrixpos windows service"
     nsExec::ExecToLog 'sc start NutrixPosService'
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
+
+
 SectionEnd
 
 Section "-Conditional MongoDB Install"
@@ -189,6 +192,7 @@ Section "Uninstall"
     Delete "$INSTDIR\nssm.exe"
     Delete "$INSTDIR\config.yaml"
     Delete "$INSTDIR\uninstall.exe"
+    Delete "$INSTDIR\icon.ico"
 
     Delete "$INSTDIR\mnt\frontend\*.*"
     RMDir "$INSTDIR\mnt\frontend"
