@@ -98,6 +98,7 @@ jobs:
           Copy-Item -Path "./package.nsi" -Destination "./nsis-runtime/package.nsi" -Force
           Copy-Item -Path "./LICENSE" -Destination "./nsis-runtime/license.txt" -Force
           Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
+          Copy-Item -Path "./assets/*" -Destination "./nsis-runtime/assets" -Force -Recurse
           (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.exe', "nutrixpos-${{github.ref_name}}-windows64.exe" | Set-Content ./nsis-runtime/package.nsi
 
           cd .\nsis-runtime
