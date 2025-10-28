@@ -56,7 +56,7 @@ Section "Main Application" SecMain
     SetOutPath "$INSTDIR"
     File "nutrixpos64.exe"
     File "config.yaml"
-    File \r "assets"
+    File /r "assets"
     
     CreateDirectory "$INSTDIR\mnt"
     CreateDirectory "$INSTDIR\mnt\public"
@@ -199,7 +199,7 @@ Section "Uninstall"
     RMDir "$INSTDIR\mnt\frontend"
     RMDir "$INSTDIR\mnt\public"
     RMDir "$INSTDIR\mnt"
-    RMDir \r "$INSTDIR\assets"
+    RMDir /r "$INSTDIR\assets"
     RMDir "$INSTDIR"
 
     ; Remove start menu shortcuts
