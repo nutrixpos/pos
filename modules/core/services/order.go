@@ -31,6 +31,72 @@ type OrderService struct {
 	Settings models.Settings
 }
 
+func (os OrderService) RemoveTip(order_id string, tip_amount float64) error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if os.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
+	filter := bson.M{"id": order_id}
+	update := bson.M{
+		"$inc": bson.M{
+			"tips": -tip_amount,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (os OrderService) AddTip(order_id string, tip_amount float64) error {
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if os.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+	// connected to db
+
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
+	filter := bson.M{"id": order_id}
+	update := bson.M{
+		"$inc": bson.M{
+			"tips": tip_amount,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))

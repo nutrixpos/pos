@@ -48,7 +48,10 @@
                                     </Column>
                                     <Column sortable field="profit" :header="$t('profit')">
                                         <template #body="slotProps">
-                                            <div :style="`${ ( slotProps.data.total_sales - slotProps.data.costs - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.total_sales - slotProps.data.costs  - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 ) }}</div>
+                                            <div :style="`${ ( slotProps.data.total_sales - slotProps.data.costs - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
+                                                {{ slotProps.data.total_sales - slotProps.data.costs  - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 ) }}
+                                                <Badge :value="`+${slotProps.data.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
+                                            </div>
                                         </template>
                                     </Column>
                                     <template #expansion="slotProps">
@@ -77,7 +80,10 @@
                                             </Column>
                                             <Column sortable field="profit" header="Profit">
                                                 <template #body="slotProps">
-                                                    <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.order.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">{{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.order.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 ) }}</div>
+                                                    <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.order.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
+                                                        {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.order.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 ) }} 
+                                                        <Badge :value="`+${slotProps.data.order.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
+                                                    </div>
                                                 </template>
                                             </Column>
                                             <template #expansion="slotProps">
@@ -307,8 +313,11 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
             chartRefunds.value.push(response.data.data[i].refunds_value)
 
             let day_inventory_refunds = 0
+            let tips = 0
             
             for (let j=0;j<response.data.data[i].orders.length;j++){
+
+                tips += response.data.data[i].orders[j].order.tips
 
                 for (let k=0;k<response.data.data[i].orders[j].order.items.length;k++){
 
@@ -362,6 +371,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
 
 
             temp_sales_log[i].inventory_refunds = day_inventory_refunds
+            temp_sales_log[i].tips = tips
             chartInventoryReturns.value.push(temp_sales_log[i].inventory_refunds)
             chartProfit.value.push((temp_sales_log[i].total_sales - temp_sales_log[i].costs - temp_sales_log[i].refunds_value + ( temp_sales_log[i].inventory_refunds || 0 )))
         }

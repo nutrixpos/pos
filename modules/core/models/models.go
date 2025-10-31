@@ -134,6 +134,7 @@ type Order struct {
 	IsTakeAway bool              `json:"is_take_away" bson:"is_take_away" mapstructure:"is_take_away"`
 	IsDineIn   bool              `json:"is_dine_in" bson:"is_dine_in" mapstructure:"is_dine_in"`
 	CustomData map[string]string `json:"custom_data" bson:"custom_data" mapstructure:"custom_data"`
+	Tips       float64           `json:"tips" bson:"tips" mapstructure:"tips"`
 }
 
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.

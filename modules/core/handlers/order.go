@@ -28,6 +28,72 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
+func OrderRemoveTip(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		tipStr := r.URL.Query().Get("tip_amount")
+		if tipStr == "" {
+			http.Error(w, "tip_amount query string is required", http.StatusBadRequest)
+			return
+		}
+
+		tip_amount, err := strconv.ParseFloat(tipStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid tip_amount", http.StatusBadRequest)
+			return
+		}
+
+		order_svc := services.OrderService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		err = order_svc.RemoveTip(order_id_param, tip_amount)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func OrderAddTip(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		order_id_param := params["order_id"]
+
+		tipStr := r.URL.Query().Get("tip_amount")
+		if tipStr == "" {
+			http.Error(w, "tip_amount query string is required", http.StatusBadRequest)
+			return
+		}
+
+		tip_amount, err := strconv.ParseFloat(tipStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid tip_amount", http.StatusBadRequest)
+			return
+		}
+
+		order_svc := services.OrderService{
+			Config:   config,
+			Logger:   logger,
+			Settings: settings,
+		}
+
+		err = order_svc.AddTip(order_id_param, tip_amount)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+	}
+}
+
 func GetOrderLogs(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)

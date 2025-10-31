@@ -46,6 +46,28 @@
             <div class="col-6">{{$t('discount')}}</div>
             <div class="col-6">{{ props.order.discount }}</div>
 
+            <div class="col-6">{{$t('tips')}}</div>
+            <div class="flex col-6 align-items-center gap-2">
+                <div>{{ props.order.tips }}</div>
+                <ButtonGroup>
+                    <Button icon="pi pi-plus" severity="success" :label="$t('add_tip')" @click="toggle_add_tip_popover" />
+                    <Popover ref="add_tip_popover">
+                        <InputGroup>
+                            <InputText :placeholder="$t('tips')" v-model.number="add_tips_amount" />
+                            <Button icon="pi pi-check" severity="success" :label="$t('save')" @click="addTip(add_tips_amount)" />
+                        </InputGroup>
+                    </Popover>
+                    <Button icon="pi pi-minus" severity="secondary" :label="$t('remove_tip')" @click="toggle_remove_tip_popover" />
+                    <Popover ref="remove_tip_popover">
+                        <InputGroup>
+                            <InputText :placeholder="$t('tips')" v-model.number="remove_tips_amount" />
+                            <Button icon="pi pi-check" severity="secondary" :label="$t('save')" @click="removeTip(remove_tips_amount)" />
+                        </InputGroup>
+                    </Popover>
+                </ButtonGroup>
+            </div>
+            
+
             <div class="col-12 flex flex-column">
                 <h4>Actions</h4>
                 <div class="flex gap-3">
@@ -79,8 +101,7 @@ import {defineProps,getCurrentInstance,computed,defineEmits,ref} from 'vue'
 import Badge from 'primevue/badge';
 import { ButtonGroup } from 'primevue';
 import Button from 'primevue/button';
-import { useConfirm } from "primevue/useconfirm";
-import ConfirmPopup from 'primevue/confirmpopup';
+import { useConfirm,ConfirmPopup,Popover,InputText,InputGroup } from "primevue";
 import axios from 'axios'
 import { useToast } from "primevue/usetoast";
 import OrderItemsInfo from './OrderItemsInfo.vue';
@@ -96,6 +117,53 @@ const order_logs_dialog = ref(false)
 const confirm = useConfirm();
 const { proxy } = getCurrentInstance();
 const emit = defineEmits(['amount_collected','finished','updated','cancelled'])
+
+const add_tip_popover = ref();
+const remove_tip_popover = ref();
+const add_tips_amount = ref(0);
+const remove_tips_amount = ref(0);
+
+
+const addTip = (amount: number) => {
+    axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/addtips?tip_amount=${amount}`,{
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+        }
+    })
+    .then(()=>{
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Tip added',group:'br' });
+        emit('updated')
+        add_tip_popover.value.hide()
+    })
+    .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to perform the request',group:'br' });
+    });
+}
+
+
+const removeTip = (amount: number) => {
+    axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/removetips?tip_amount=${amount}`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+        }
+    })
+    .then(()=>{
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Tip removed',group:'br' });
+        emit('updated')
+        remove_tip_popover.value.hide()
+    })
+    .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to perform the request',group:'br' });
+    });
+}
+
+const toggle_add_tip_popover = (event) => {
+    add_tip_popover.value.toggle(event);
+}
+
+const toggle_remove_tip_popover = (event) => {
+    remove_tip_popover.value.toggle(event);
+}
 
 
 const getOrderLogs = () => {

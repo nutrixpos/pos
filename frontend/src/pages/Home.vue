@@ -154,8 +154,14 @@
                                         <i class="fa-regular fa-credit-card mx-2"></i>
                                          Payment
                                     </h2>
-                                    <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`Collecting (${total.toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`Collecting (${(total+ ( current_order_tip || 0 )).toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <ToggleButton v-model="is_pay_later" onIcon="pi pi-hourglass" offIcon="fa fa-hourglass" offLabel="Pay later" onLabel="Paying later" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+
+
+                                    <div class="flex flex-column mt-4">
+                                        <h4>Tips</h4>
+                                        <InputText placeholder="Tip" v-model.number="current_order_tip" />
+                                    </div>
                                 </div>
                                 <Divider layout="vertical" />
                                 <div class="flex flex-column align-items-center">
@@ -468,7 +474,6 @@
   import { Notification} from '@/classes/Notification';
   import { ref,watch,computed,getCurrentInstance, nextTick, useTemplateRef, version  } from "vue";
   import StashedOrder from '@/components/StashedOrder.vue'
-  import InputGroup from 'primevue/inputgroup';
   import InlineMessage from 'primevue/inlinemessage'
   import MainSearchResultView from '@/components/MainSearchResultView.vue';
   import OrderView from '@/components/OrderView.vue';
@@ -499,6 +504,7 @@ const { proxy } = getCurrentInstance();
 const store = globalStore()
 
 
+const current_order_tip = ref(0)
 const is_print_receipt_client = ref(true)
 const is_print_receipt_kitchen = ref(true)
 const is_auto_start_order = ref(false)
@@ -1133,6 +1139,7 @@ const submitOrder = () => {
         is_delivery: is_delivery.value,
         is_paid: is_collecting_money.value,
         is_pay_later: is_pay_later.value,
+        tips: current_order_tip.value,
         custom_data: custom_data_map,
         comment: order_comment.value,
         customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null

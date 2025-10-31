@@ -668,9 +668,21 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 			for _, entry := range material.Entries {
 
-				if entry.Quantity < demanded_quantity {
+				if entry.Quantity < demanded_quantity && entry.Quantity > 0 && demanded_quantity > 0 {
 					demanded_quantity = demanded_quantity - entry.Quantity
-					ms.ConsumeFromInventory(component.Material, entry.Id, entry.Quantity, "order", order.Id, user_id)
+
+					filter := bson.M{"id": component.Material.Id, "entries.id": entry.Id}
+					// Define the update operation
+					update := bson.M{
+						"$inc": bson.M{
+							"entries.$.quantity": -entry.Quantity,
+						},
+					}
+
+					_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+					if err != nil {
+						return notifications, err
+					}
 
 					logs_data := bson.M{
 						"type":             "component_consume",
@@ -689,9 +701,20 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 						return notifications, err
 					}
 
-				} else {
-					ms.ConsumeFromInventory(component.Material, entry.Id, demanded_quantity, "order", order.Id, user_id)
-					demanded_quantity = 0
+				} else if (entry.Quantity >= demanded_quantity) && demanded_quantity > 0 {
+
+					filter := bson.M{"id": component.Material.Id, "entries.id": entry.Id}
+					// Define the update operation
+					update := bson.M{
+						"$inc": bson.M{
+							"entries.$.quantity": -demanded_quantity,
+						},
+					}
+
+					_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+					if err != nil {
+						return notifications, err
+					}
 
 					logs_data := bson.M{
 						"type":             "component_consume",
