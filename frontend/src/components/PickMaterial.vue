@@ -17,7 +17,7 @@
             <Column :header="$t('actions')">
                 <template #body="slotProps">
                     <ButtonGroup>
-                        <Button icon="pi pi-plus" :label="$t('add')" severity="secondary" aria-label="Ddd" @click="returnMaterial(slotProps.data)" />
+                        <Button icon="pi pi-plus" :label="$t('add')" severity="secondary" aria-label="Add" @click="returnMaterial(slotProps.data)" />
                     </ButtonGroup>
                 </template>
             </Column>
@@ -35,11 +35,14 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import axios from 'axios'
 import { Material, MaterialEntry } from '@/classes/OrderItem';
+import { useToast } from "primevue/usetoast";
 const { proxy } = getCurrentInstance();
 
 
 const materials = ref([])
 const loading = ref(false)
+
+const toast = useToast();
 
 const filters = ref({
     name: { value: null},
@@ -49,8 +52,25 @@ const filters = ref({
 const emit = defineEmits(['returnMaterial'])
 
 
-const returnMaterial = (material: Material) => {
-    emit('returnMaterial', material)
+const returnMaterial = async (material: Material) => {
+
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${material.id}/entries`, {
+        params: {
+            "page[number]": 0,
+            "page[size]": 999
+        },
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        material.entries = response.data.data
+        emit('returnMaterial', material)
+    })
+    .catch(() => {
+        toast.add({severity:'error', summary: 'Error', detail: 'Failed to load material entries'});
+    })
+
 }
 
 
