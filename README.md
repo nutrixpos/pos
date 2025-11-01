@@ -4,6 +4,11 @@
 
 Nutrix is a point of sale management system. It allows you to manage inventory, sales and products for your restaurant or shop.
 
+
+> :warning: Warning : 
+> NutrixPOS is currently in active development, and we are continuously making changes, updates, and working on new features and improvements. Please be aware that until a stable release is reached, backward compatibility is not guaranteed. We make every effort to maintain compatibility.
+
+
 You need to integrate with a GUI service to provide an interface for end users, you can find the standard GUI in the [frontend](./frontend) dir, it's a vuejs app, you can build it and put the content of the dist into /mnt/frontend
 
 > Currently nutrix supports only restaurant style cycle, where the order is sent first to the kitchen awaiting to be started then begin processing the inventory.
