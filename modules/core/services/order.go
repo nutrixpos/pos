@@ -61,6 +61,22 @@ func (os OrderService) RemoveTip(order_id string, tip_amount float64) error {
 		return err
 	}
 
+	var order models.Order
+	err = collection.FindOne(ctx, filter).Decode(&order)
+	if err != nil {
+		return err
+	}
+
+	sales_svc := SalesService{
+		Logger: os.Logger,
+		Config: os.Config,
+	}
+
+	err = sales_svc.SetOrderToSalesDay(order)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -90,6 +106,22 @@ func (os OrderService) AddTip(order_id string, tip_amount float64) error {
 	}
 
 	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	var order models.Order
+	err = collection.FindOne(ctx, filter).Decode(&order)
+	if err != nil {
+		return err
+	}
+
+	sales_svc := SalesService{
+		Logger: os.Logger,
+		Config: os.Config,
+	}
+
+	err = sales_svc.SetOrderToSalesDay(order)
 	if err != nil {
 		return err
 	}

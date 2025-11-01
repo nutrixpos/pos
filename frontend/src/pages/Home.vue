@@ -132,7 +132,7 @@
                 <OrderItemView v-model="orderItems[itemToEditIndex]"  />
             </Dialog>
             <Dialog v-model:visible="order_details_dialog" modal header="Order details" class="w-11 xl:w-8">
-                <OrderView @finished="finishOrderDisplayed()" @cancelled="cancelOrderDisplayed()" @amount_collected="orderToShowAmountCollected()" :order="order_to_show" />
+                <OrderView @updated="order_details_dialog=false" @finished="finishOrderDisplayed()" @cancelled="cancelOrderDisplayed()" @amount_collected="orderToShowAmountCollected()" :order="order_to_show" />
             </Dialog>
             <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
                 <InputText v-model="comment" placeholder="Comment" class="mb-4" />

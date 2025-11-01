@@ -114,6 +114,13 @@ const order_logs = ref([])
 const order_logs_dialog = ref(false)
 
 
+const props = defineProps({
+    order: {
+        type: Order,
+        required: true
+    }
+})
+
 const confirm = useConfirm();
 const { proxy } = getCurrentInstance();
 const emit = defineEmits(['amount_collected','finished','updated','cancelled'])
@@ -276,13 +283,6 @@ const confirmCancelOrder = (event) => {
         }
     });
   }
-
-const props = defineProps({
-    order: {
-        type: Order,
-        required: true
-    }
-})
 
 const payment_status: any = computed(() => {
     if (props.order.is_paid){

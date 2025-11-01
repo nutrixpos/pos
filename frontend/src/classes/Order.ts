@@ -13,6 +13,7 @@ export default class Order {
     sale_price: number
     is_auto_start: boolean
     is_paid: boolean
+    tips: number
 
     constructor(){
         this.submitted_at = new Date()
@@ -26,5 +27,6 @@ export default class Order {
         this.sale_price = 0
         this.is_auto_start = false
         this.is_paid = false
+        this.tips = 0
     }
 }

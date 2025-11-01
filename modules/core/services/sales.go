@@ -237,6 +237,47 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 	return nil
 }
 
+func (ss *SalesService) SetOrderToSalesDay(order models.Order) error {
+
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
+
+	deadline := 5 * time.Second
+	if ss.Config.Env == "dev" {
+		deadline = 1000 * time.Second
+	}
+
+	// Create a context with a timeout (optional)
+	ctx, cancel := context.WithTimeout(context.Background(), deadline)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	// Ping the database to check connectivity
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Connected successfully
+
+	filter := bson.M{"orders.id": order.Id}
+	update := bson.M{
+		"$set": bson.M{
+			"orders.$.tips": order.Tips,
+		},
+	}
+	_, err = client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"]).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // AddOrderToSalesDay adds an order to the "sales" collection in the database.
 // It takes two parameters, order and items_cost, which are the order and its associated item costs.
 // It returns an error if the query fails.
