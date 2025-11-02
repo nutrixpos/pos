@@ -5,6 +5,7 @@ export const globalStore = defineStore('global', {
     count: 0,
     orientation:'ltr',
     settings: null,
+    colorMode: 'light',
   }),
   getters: {
     double: state => state.count * 2,
@@ -13,6 +14,9 @@ export const globalStore = defineStore('global', {
     },
     currentOrientation(state) {
       return state.orientation;
+    },
+    getColorMode(state) {
+      return state.colorMode;
     }
   },
   actions: {
@@ -24,6 +28,9 @@ export const globalStore = defineStore('global', {
     },
     setSettings(settings:any){
         this.settings = settings;
+    },
+    toggleDarkMode(){
+        this.colorMode = this.colorMode === 'light' ? 'dark' : 'light';
     }
   },
 })

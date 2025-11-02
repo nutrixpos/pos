@@ -54,10 +54,17 @@ getSettings()
 <style lang="scss">
 @use '@/assets/styles.scss';
 
-
 body {
     font-family: sans-serif; /* Replace with your desired font */
     height: 100vh;
     background-color: rgb(247, 247, 247);
 }
+.my-app-dark {
+    body {
+        font-family: sans-serif; /* Replace with your desired font */
+        height: 100vh;
+        background-color: #232327;
+    }
+}
+
 </style>

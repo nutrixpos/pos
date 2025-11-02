@@ -5,7 +5,10 @@
                 <Toolbar style="border-radius: 0px;" class="py-1 lg:py-2">
                     <template #start>
                         <div @click="version_dialog_visible=true" style="text-decoration: none;color:gray">
-                            <img src="@/assets/logo.png" alt="logo" style="height:25px">
+                            <img src="@/assets/logo.png" alt="logo" style="height:25px" v-if="store.getColorMode == 'light'">
+                            <div v-else class="flex justify-content-center align-items-center" style="font-size:1rem;color:white;font-family:'FontAwesome'">
+                                nutrix
+                            </div>
                         </div>
                         <router-link v-for="(item,index) in items" :key="index" :to="item.link">
                             <Button :icon="item.icon" :label="$t(`${item.label.title}`,item.label.plural ? 3 : 1)"  :text="!item.focused" severity="secondary" />
@@ -13,6 +16,7 @@
                     </template>
 
                     <template #end>
+                        <Button outlined :icon="`pi pi-${store.getColorMode == 'light' ? 'sun' : 'moon'}`" @click="toggleDarkMode()" />
                         <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click.stop="user_profile_toggle">
                             <span style="font-size:0.9rem;" class="mr-2">{{ user?.name }}</span>
                             <span class="p-button-icon pi pi-user"></span>
@@ -40,7 +44,7 @@
                             </template>
                         </Tree>
                     </div>
-                    <div class="col-9 xl:col-10 flex p-0 pt-3 mt-2" style="background-color: white;">
+                    <div class="col-9 xl:col-10 flex p-0 pt-3 mt-2">
                         <RouterView />
                     </div>
                 </div>
@@ -97,6 +101,11 @@ const user : any = computed(() => {
     return proxy.$zitadel?.oidcAuth.userProfile
 
 })
+
+const toggleDarkMode = () => {
+    store.toggleDarkMode()
+    document.documentElement.classList.toggle('my-app-dark');
+}
 
 const sidemenuNodeSelect = (node) => {
     if (node.link) {

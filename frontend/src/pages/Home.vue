@@ -3,7 +3,10 @@
         <Toolbar style="border-radius: 0px;flex-shrink: 0;" class="py-1 lg:py-2">
             <template #start>
                 <div @click="version_dialog_visible=true" style="text-decoration: none;color:gray">
-                    <img src="@/assets/logo.png" alt="logo" style="height:25px">
+                    <img src="@/assets/logo.png" alt="logo" style="height:25px" v-if="store.getColorMode == 'light'">
+                    <div v-else class="flex justify-content-center align-items-center" style="font-size:1rem;color:white;font-family:'FontAwesome'">
+                        nutrix
+                    </div>
                 </div>
                 <div class="flex mx-2 gap-2">
                     <div  v-for="(item,index) in navbar_links" :key="index" >
@@ -35,14 +38,15 @@
                     <h4 class="m-2" style="color:#c2c2c2">{{t('current_orders')}}</h4>
                     <MainSearchResultView class="mt-2" @view-order-pressed="order_to_show = result; order_details_dialog=true" v-for="(result,index) in inProgressOrders" :key="index" :order="result" />
                 </OverlayPanel>
+                <Button outlined :icon="`pi pi-${store.getColorMode == 'light' ? 'sun' : 'moon'}`" @click="toggleDarkMode()" />
                 <Button icon="pi pi-bars" severity="secondary" size="large" text rounded aria-label="drawer" @click="drawer_visible=true" />
             </template>
         </Toolbar>
         <div class="grid m-0 p-0" style="height:calc(94vh - 1.5rem);flex-shrink: 0;">
             <div class="col-2 flex flex-column py-3">
-                <div class="w- flex my-1" v-for="(category,index) in categories" :key="index" style="background-color:white;cursor:pointer" @click="selectedCategory = category">
+                <div class="w- flex my-1" v-for="(category,index) in categories" :key="index" :style="`background-color:${store.getColorMode == 'light' ? 'white' : '#18181B' };cursor:pointer`" @click="selectedCategory = category">
                     <div :style="`width:0.5rem;background-color:${category == selectedCategory? '#FDDB00' : 'silver'}`"></div>
-                    <div class="py-3 mx-3" :style="`color:${category == selectedCategory? '#2E4762' : 'black'};font-weight:${category == selectedCategory? 'bold' : '200'}`">{{ category.name }}</div>
+                    <div class="py-3 mx-3" :style="`color:${category == selectedCategory? store.getColorMode == 'light' ? '#2E4762': '#FDDB00' : store.getColorMode == 'light' ? 'black' : 'white'};font-weight:${category == selectedCategory? 'bold' : '200'}`">{{ category.name }}</div>
                 </div>
             </div>
             <div class="xl:col-7 col-5 flex px-0 xl:px-2 overflow-auto">
@@ -62,7 +66,7 @@
                 </Card>
             </div>
             <div class="col-5 xl:col-3 flex">
-                <Card class="w-12" :style="`background-color:${is_order_valid ?  'white' : 'var(--red-100)'};border-color: ${is_order_valid ?  '' : 'red'};`">
+                <Card class="w-12" :style="`border-color: ${is_order_valid ?  '' : 'red'};`">
                     <template #content>
                         <div class="flex flex-column" style="height:calc(94vh - 1.5rem - 36px - var(--p-card-body-padding)); flex-shrink: 0">
                             <div style="height:65%;overflow: auto;">
@@ -567,6 +571,11 @@ const order_details_steps : any = ref([
     {"number": 1, "label": "Main details"},
     {"number": 3, "label": "Confirmation"},
 ])
+
+const toggleDarkMode = () => {
+    store.toggleDarkMode()
+    document.documentElement.classList.toggle('my-app-dark');
+}
 
 watch(is_delivery, (new_val) => {
 

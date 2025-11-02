@@ -275,7 +275,7 @@ if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true'){
                   preset: Noir,
                   options: {
                       prefix: 'p',
-                      darkModeSelector: 'system',
+                      darkModeSelector: '.my-app-dark',
                       cssLayer: false
                   }
               }
@@ -302,7 +302,7 @@ if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true'){
           preset: Noir,
           options: {
               prefix: 'p',
-              darkModeSelector: 'system',
+              darkModeSelector: '.my-app-dark',
               cssLayer: false
           }
       }
