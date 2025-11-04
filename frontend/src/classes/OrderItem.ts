@@ -465,7 +465,7 @@ export class OrderItem {
         
         let material_entries_total_quantity = 0;
 
-        this.materials[materialIndex].entries.forEach((entry) => {
+        this.materials[materialIndex].material.entries.forEach((entry) => {
             material_entries_total_quantity += entry.quantity
         })
         

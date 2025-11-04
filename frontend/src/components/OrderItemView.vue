@@ -118,11 +118,16 @@ const validateItem = () => {
 }
 
 const Init = async () => {
+
     await updateEntriesCost()
+
     model.value.materials.forEach((_,index) => {
 
-        if (store.getSettings?.orders.default_cost_calculation_method == 'average')
+        if (store.getSettings?.orders.default_cost_calculation_method == 'average'){
             model.value.ValidateMaterialTotalQuantity(index)
+            model.value.UpdateMaterialAverageCost(index)
+        
+        }
         else
             model.value.ValidateMaterialExactQuantity(index)
         
