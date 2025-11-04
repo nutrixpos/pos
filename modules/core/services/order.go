@@ -587,10 +587,12 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 				}
 
 				total_cost_per_unit := 0.0
+				count_entries_over_0 := 0
 
 				for _, entry := range material.Entries {
 					if entry.Quantity > 0 {
 						total_cost_per_unit += entry.PurchasePrice / float64(entry.PurchaseQuantity)
+						count_entries_over_0 += 1
 					}
 				}
 
@@ -599,8 +601,8 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 					total_cost_per_unit = 0.0
 					itemComponent.Cost = 0.0
 				} else {
-					itemComponent.Cost = total_cost_per_unit / float64(len(material.Entries)) * component.Quantity
-					itemCost.Cost += total_cost_per_unit / float64(len(material.Entries)) * component.Quantity
+					itemComponent.Cost = total_cost_per_unit / float64(count_entries_over_0) * component.Quantity
+					itemCost.Cost += total_cost_per_unit / float64(count_entries_over_0) * component.Quantity
 				}
 
 			} else {
@@ -707,6 +709,12 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 
 		totalCost += recipe_cost.Cost
 		totalSalePrice += recipe_cost.SalePrice
+	}
+
+	// decrease the ingredient component quantity from the components inventory
+	err = os.ConsumeOrderComponents(order, user_id)
+	if err != nil {
+		return err
 	}
 
 	logs_data := models.LogOrderFinish{
@@ -1124,12 +1132,6 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 	var order models.Order
 
 	err = client.Database(os.Config.Databases[0].Database).Collection("orders").FindOne(context.Background(), bson.M{"id": order_id}).Decode(&order)
-	if err != nil {
-		return err
-	}
-
-	// decrease the ingredient component quantity from the components inventory
-	err = os.ConsumeOrderComponents(order, user_id)
 	if err != nil {
 		return err
 	}
