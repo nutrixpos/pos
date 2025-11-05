@@ -104,7 +104,7 @@
                     <div class="flex flex-column w-full xl:w-3">
                         <InputText class="m-1" placeholder="Company" v-model="new_component_entry_company" aria-describedby="name-help" />
                         <InputText class="m-1" placeholder="Quantity" v-model="new_component_entry_quantity" aria-describedby="name-help" />
-                        <InputText class="m-1" placeholder="Price" v-model="new_component_entry_price" aria-describedby="name-help" />
+                        <InputText class="m-1" placeholder="Total Price" v-model="new_component_entry_price" aria-describedby="name-help" />
                         <div>
                             <Button class="mx-1 my-2" label="Add" @click="new_component_entries.push({company: new_component_entry_company, quantity: new_component_entry_quantity, unit: new_component_unit, purchase_price: new_component_entry_price})" />
                         </div>
@@ -117,7 +117,14 @@
                                 {{ slotProps.data.unit }}
                             </template>
                         </Column>
-                        <Column field="price" header="Price"></Column>
+                        <Column field="purchase_price" header="Total Price"></Column>
+                        <Column :header="$t('actions')" style="width:30rem">
+                            <template #body="slotProps">
+                                <ButtonGroup>
+                                    <Button icon="pi pi-times" severity="secondary" aria-label="Delete" @click="new_component_entries.splice(new_component_entries.findIndex(el => el === slotProps.data), 1)" />
+                                </ButtonGroup>
+                            </template>
+                        </Column>
                     </DataTable>
 
                     <div class="flex w-full mt-5 justify-content-center align-items-center">
@@ -442,6 +449,12 @@ const confirmDeleteMaterial = (material_id: string) => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Component saved successfully !', life: 3000,group:'br' });
         add_component_dialog.value = false
         loadInventory()
+        new_component_entries.value = []
+        new_component_name.value = ""
+        new_component_unit.value = ""
+        new_component_entry_company.value = ""
+        new_component_entry_quantity.value = ""
+        new_component_entry_price.value = ""
       });
   }
 
