@@ -317,7 +317,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
             
             for (let j=0;j<response.data.data[i].orders.length;j++){
 
-                tips += response.data.data[i].orders[j].order.tips
+                tips += response.data.data[i].orders[j].order.tips || 0
 
                 for (let k=0;k<response.data.data[i].orders[j].order.items.length;k++){
 
