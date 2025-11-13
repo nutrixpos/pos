@@ -19,6 +19,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+data/mongo
+
 # Editor directories and files
 .idea
 .vscode
