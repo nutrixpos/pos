@@ -160,9 +160,12 @@
                                     </h2>
                                     <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`Collecting (${(total+ ( current_order_tip || 0 )).toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <ToggleButton v-model="is_pay_later" onIcon="pi pi-hourglass" offIcon="fa fa-hourglass" offLabel="Pay later" onLabel="Paying later" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <div class="flex flex-column align-items-start justify-content-start mt-4 w-full">
+                                        <h4 class="mt-0">Payment source</h4>
+                                        <Select v-model="payment_source" :options="payment_sources" optionLabel="name" placeholder="Payment source" />
+                                    </div>
 
-
-                                    <div class="flex flex-column mt-4">
+                                    <div class="flex m-0 p-0 flex-column mt-4 align-items-start justify-content-start w-full">
                                         <h4>Tips</h4>
                                         <InputText placeholder="Tip" v-model.number="current_order_tip" />
                                     </div>
@@ -184,12 +187,12 @@
                                         Comment
                                     </h2>
                                     <Textarea v-model="order_comment" size="small" placeholder="Comment" rows="3" />
-                                    <h2 class="mt-3">
+                                    <h2 class="mt-7 w-full align-items-start justify-content-start">
                                         <i class="fa fa-pen-to-square mx-2"></i>
                                         Custom
                                     </h2>
                                     <div class="flex flex-column">
-                                        <div v-for="(item,index) in custom_data" :key="index" class="flex align-items-start flex-column mt-2 gap-1">
+                                        <div v-for="(item,index) in custom_data" :key="index" class="flex align-items-start flex-column gap-1">
                                             <span>Key:</span>
                                             <InputText v-model="custom_data[index].key" />
                                             <span>Value:</span>
@@ -202,7 +205,7 @@
                                             <span>Value:</span>
                                             <InputText v-model="new_custom_data_value"/>
 
-                                            <Button label="Add" @click="custom_data.push({key:new_custom_data_key,value:new_custom_data_value}); new_custom_data_key = ''; new_custom_data_value = ''" />
+                                            <Button class="mt-2" label="Add" @click="custom_data.push({key:new_custom_data_key,value:new_custom_data_value}); new_custom_data_key = ''; new_custom_data_value = ''" />
                                         </div>
                                     </div>
                                 </div>
@@ -245,6 +248,10 @@
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>Payment:</span>
                                     <p class="my-0"><strong> {{ is_pay_later ? t('pay_later') : t('now') }} </strong></p>
+                                </div>
+                                <div class="flex align-items-start mt-3 gap-1">
+                                    <span>Payment Source:</span>
+                                    <p class="my-0"><strong> {{ payment_source?.name }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{t('location')}}:</span>
@@ -493,12 +500,13 @@
   import PickCustomer from '@/components/PickCustomer.vue';
   import AddCustomer from '@/components/AddCustomer.vue';
   import { useI18n } from 'vue-i18n'
-  import { ToggleButton,Drawer,Avatar,ButtonGroup } from 'primevue';
+  import { ToggleButton,Drawer,Avatar,ButtonGroup, Select } from 'primevue';
   import { globalStore } from '@/stores';
 
 
 const app_version = ref("")
 const version_dialog_visible = ref(false)
+const payment_sources = ref<any[]>([])
 
 const zitadel_enabled = ref(true)
 
@@ -507,7 +515,7 @@ const { t } = useI18n()
 const { proxy } = getCurrentInstance();
 const store = globalStore()
 
-
+const payment_source = ref()
 const current_order_tip = ref(0)
 const is_print_receipt_client = ref(true)
 const is_print_receipt_kitchen = ref(true)
@@ -996,7 +1004,7 @@ const startWebsocket = () => {
 const loading = ref(true)
 const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
 
-const loadLanguage = async () => {
+const loadSettings = async () => {
 
     await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
@@ -1004,6 +1012,12 @@ const loadLanguage = async () => {
         },
     })
     .then(async (response)=>{
+
+        payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
+        if (payment_sources.value.length > 0){
+            payment_source.value = {"name": payment_sources.value[0].name}
+        }
+
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${response.data.data.language.code}`, {
             headers: {
                 Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
@@ -1038,7 +1052,7 @@ const init = async () => {
     }
 
     if (!zitadel_enabled.value || proxy.$zitadel?.oidcAuth.isAuthenticated){
-        await loadLanguage()
+        await loadSettings()
     }else {
         window.location.href = import.meta.env.VITE_APP_ZITADEL_ISSUER
         loading.value = false
@@ -1149,6 +1163,7 @@ const submitOrder = () => {
         is_paid: is_collecting_money.value,
         is_pay_later: is_pay_later.value,
         tips: current_order_tip.value,
+        payment_source: payment_source.value.name,
         custom_data: custom_data_map,
         comment: order_comment.value,
         customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null

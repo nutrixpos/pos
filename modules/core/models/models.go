@@ -113,19 +113,20 @@ type SubmitOrderMeta struct {
 
 // Order represents a customer order, containing order details, items, and financial information.
 type Order struct {
-	SubmittedAt time.Time   `json:"submitted_at" bson:"submitted_at" mapstructure:"submitted_at"`
-	Id          string      `json:"id" bson:"id,omitempty" mapstructure:"id,omitempty"`
-	DisplayId   string      `json:"display_id" bson:"display_id" mapstructure:"display_id"`
-	Items       []OrderItem `json:"items" bson:"items" mapstructure:"items"`
-	Discount    float64     `json:"discount" bson:"discount" mapstructure:"discount"`
-	State       string      `json:"state" bson:"state" mapstructure:"state"`
-	StartedAt   time.Time   `json:"started_at" bson:"started_at" mapstructure:"started_at"`
-	Comment     string      `json:"comment" bson:"comment" mapstructure:"comment"`
-	Cost        float64     `json:"cost" bson:"cost" mapstructure:"cost"`
-	SalePrice   float64     `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
-	Customer    Customer    `json:"customer" bson:"customer" mapstructure:"customer"`
-	IsPayLater  bool        `json:"is_pay_later" bson:"is_pay_later" mapstructure:"is_pay_later"`
-	IsPaid      bool        `json:"is_paid" bson:"is_paid" mapstructure:"is_paid"`
+	SubmittedAt   time.Time   `json:"submitted_at" bson:"submitted_at" mapstructure:"submitted_at"`
+	Id            string      `json:"id" bson:"id,omitempty" mapstructure:"id,omitempty"`
+	DisplayId     string      `json:"display_id" bson:"display_id" mapstructure:"display_id"`
+	Items         []OrderItem `json:"items" bson:"items" mapstructure:"items"`
+	Discount      float64     `json:"discount" bson:"discount" mapstructure:"discount"`
+	State         string      `json:"state" bson:"state" mapstructure:"state"`
+	StartedAt     time.Time   `json:"started_at" bson:"started_at" mapstructure:"started_at"`
+	Comment       string      `json:"comment" bson:"comment" mapstructure:"comment"`
+	Cost          float64     `json:"cost" bson:"cost" mapstructure:"cost"`
+	SalePrice     float64     `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
+	Customer      Customer    `json:"customer" bson:"customer" mapstructure:"customer"`
+	IsPayLater    bool        `json:"is_pay_later" bson:"is_pay_later" mapstructure:"is_pay_later"`
+	IsPaid        bool        `json:"is_paid" bson:"is_paid" mapstructure:"is_paid"`
+	PaymentSource string      `json:"payment_source" bson:"payment_source" mapstructure:"payment_source"`
 	// IsAutoStart determines whether the order is automatically started when it is submitted.
 	IsAutoStart  bool `json:"is_auto_start" bson:"is_auto_start" mapstructure:"is_auto_start"`
 	IsAutoFinish bool `json:"is_auto_finish" bson:"is_auto_finish" mapstructure:"is_auto_finish"`

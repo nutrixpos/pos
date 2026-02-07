@@ -59,9 +59,27 @@
                         </div>
 
                         <Divider />
+                        <h4 class="mb-2"><i class="pi pi-wallet"></i> {{$t('Payment',1)}}</h4>
+                        <div class="mt-3">
+                            Sources:
+                        </div>
+                        <div class="flex align-items-center">
+                            <div class="flex flex-column">
+                                <div v-for="(source,index) in payment_sources" :key="index" class="flex align-items-center mt-2">
+                                    <InputText v-model="payment_sources[index].name" class="mx-2" />
+                                    <Button severity="secondary" aria-label="Remove" icon="pi pi-times" @click="payment_sources.splice(index,1)" />
+                                </div>
+                                <div class="flex align-items-center mt-3">
+                                    <InputText v-model="new_payment_source" class="mx-2" />
+                                    <Button label="Add" @click="payment_sources.push({name:new_payment_source}); new_payment_source = ''" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <Divider />
                         <div class="flex flex-column">
                             <h3><span class="pi pi-language"></span> {{ t('language',3) }}</h3>
-                            <Dropdown @change="changedLanguage" v-model="selectedLang" :options="languages" optionLabel="language" placeholder="Select a Language" class="w-full md:w-3" />
+                            <Select @change="changedLanguage" v-model="selectedLang" :options="languages" optionLabel="language" placeholder="Select a Language" class="w-full md:w-3" />
                             <Button @click="applyLang" v-if="changedLang" class="mt-2 md:w-3" type="button" label="Apply" severity="secondary"></Button>
                         </div>
 
@@ -85,7 +103,7 @@ import {getCurrentInstance,ref} from 'vue'
 import Dropdown from 'primevue/dropdown';
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '../stores';
-import {RadioButton,Avatar,Badge} from 'primevue';
+import {RadioButton,Avatar,Badge, Select} from 'primevue';
 
 const { proxy } = getCurrentInstance();
 
@@ -102,6 +120,12 @@ const toast = useToast();
 
 const store = globalStore()
 
+
+const new_payment_source = ref("")
+const payment_sources = ref<Array<any>>([
+    {"name":"Cash"},
+    {"name":"Card"},
+])
 
 const changedLang = ref(false)
 
@@ -138,7 +162,8 @@ const saveSettings = () => {
                 },
                 receipt_printer: {
                     host: receipt_printer_host.value
-                }
+                },
+                payment_sources: payment_sources.value == null ? [] : payment_sources.value
             }
         },
         {
@@ -169,6 +194,7 @@ const getSettings = () => {
         default_cost_calculation_method.value = response.data.data.orders.default_cost_calculation_method
         selectedLang.value = response.data.data.language
         receipt_printer_host.value = response.data.data.receipt_printer.host
+        payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
     })
     .catch((err) => {
         console.log(err)

@@ -72,7 +72,14 @@
                                                     </div>
                                                 </template>
                                             </Column>
-                                            <Column sortable field="order.sale_price" header="Sales"></Column>
+                                            <Column sortable field="order.sale_price" header="Sales">
+                                                <template #body="slotProps">
+                                                    <div class="flex gap-2 align-items-center">
+                                                        <div>{{ slotProps.data.order.sale_price }} </div>
+                                                        <Badge :value="slotProps.data.order.payment_source" severity="secondary" class="mr-2" />
+                                                    </div>
+                                                </template>
+                                            </Column>
                                             <Column sortable field="order.refunds" header="Refunds">
                                                 <template #body="slotProps">
                                                     {{ orders_refunds[slotProps.data.id]?.total_refunds }}

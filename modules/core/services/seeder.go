@@ -95,6 +95,14 @@ func (s *Seeder) SeedSettings() error {
 			ReceiptPrinter: models.PrinterSettings{
 				Host: "192.168.123.123",
 			},
+			PaymentSources: []models.PaymentSource{
+				{
+					Name: "Cash",
+				},
+				{
+					Name: "Card",
+				},
+			},
 		}
 		_, err = settingsCollection.InsertOne(ctx, settings)
 		if err != nil {

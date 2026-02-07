@@ -43,6 +43,9 @@
             <div class="col-6">{{$t('paid')}}</div>
             <div class="col-6">{{ props.order.is_paid }}</div>
 
+            <div class="col-6">{{$t('payment_source')}}</div>
+            <div class="col-6">{{ props.order.payment_source }}</div>
+
             <div class="col-6">{{$t('discount')}}</div>
             <div class="col-6">{{ props.order.discount }}</div>
 

@@ -33,4 +33,9 @@ type Settings struct {
 	Orders         OrderSettings    `bson:"orders" json:"orders" mapstructure:"orders"`
 	Language       LanguageSettings `bson:"language" json:"language" mapstructure:"language"`
 	ReceiptPrinter PrinterSettings  `bson:"receipt_printer" json:"receipt_printer" mapstructure:"receipt_printer"`
+	PaymentSources []PaymentSource  `bson:"payment_sources" json:"payment_sources" mapstructure:"payment_sources"`
+}
+
+type PaymentSource struct {
+	Name string `bson:"name" json:"name" mapstructure:"name"`
 }
