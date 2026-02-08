@@ -25,79 +25,84 @@
                                 </div>
                             </div>
                             <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="salesTableTotalRecords" :loading="isSalesTableLoading" v-model:expandedRows="expandedSalesLogRows" paginatorPosition="both"  paginator :rows="salesTableRowsPerPage" :rowsPerPageOptions="[7, 14, 30, 90]" :value="sales_log" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
-                                    <Column expander style="width: 5rem" />
-                                    <Column sortable field="date" :header="$t('date')">
-                                        <template #body="slotProps">
-                                            <i class="pi pi-exclamation-circle" v-tooltip.top="'has refunds'" v-if="slotProps.data.refunds?.length > 0" style="margin-right:0.5rem;color:red"></i>                                            
-                                            {{ slotProps.data.date }}
-                                        </template>
-                                    </Column>
-                                    <Column sortable field="costs" :header="$t('cost')">
-                                        <template #body="slotProps">
-                                            <div class="flex gap-2 align-items-center">
-                                                <div>{{ slotProps.data.costs }} </div>
-                                                <Badge v-if="slotProps.data.inventory_refunds > 0 " :value="`-${slotProps.data.inventory_refunds}`" severity="success" class="mr-2" />
-                                            </div>
-                                        </template>
-                                    </Column>
-                                    <Column sortable field="total_sales" :header="$t('sales')"></Column>
-                                    <Column sortable field="refunds_value" :header="$t('refunds')">
-                                        <template #body="slotProps">
-                                            <Badge :value="`${slotProps.data.inventory_refunds > 0 ? '-' : ''}${slotProps.data.refunds_value}`" severity="secondary" style="margin-right:0.5rem" />
-                                        </template>
-                                    </Column>
-                                    <Column sortable field="profit" :header="$t('profit')">
-                                        <template #body="slotProps">
-                                            <div :style="`${ ( slotProps.data.total_sales - slotProps.data.costs - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
-                                                {{ slotProps.data.total_sales - slotProps.data.costs  - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 ) }}
-                                                <Badge :value="`+${slotProps.data.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
-                                            </div>
-                                        </template>
-                                    </Column>
-                                    <template #expansion="slotProps">
-                                        <DataTable v-model:expandedRows="expandedSalesLogOrderItems" :value="slotProps.data.orders">
-                                            <Column expander style="width: 5rem" />
-                                            <Column sortable field="order.display_id" header="Id">
-                                                <template #body="slotProps">
-                                                    <i class="pi pi-exclamation-circle" v-tooltip.top="'has refunds'" v-if="orders_refunds[slotProps.data.id]?.refunds.length > 0" style="margin-right:0.5rem;color:red"></i>                                            
-                                                    {{ slotProps.data.order.display_id }}
-                                                </template>
-                                            </Column>
-                                            <Column sortable field="order.submitted_at" header="Submitted At"></Column>
-                                            <Column sortable field="order.cost" header="Cost">
-                                                <template #body="slotProps">
-                                                    <div class="flex gap-2 align-items-center">
-                                                        <div>{{ slotProps.data.order.cost }} </div>
-                                                        <Badge v-if="orders_refunds[slotProps.data.order.id]?.inventory_refunds > 0 " :value="`-${orders_refunds[slotProps.data.order.id]?.inventory_refunds}`" severity="success" class="mr-2" />
-                                                    </div>
-                                                </template>
-                                            </Column>
-                                            <Column sortable field="order.sale_price" header="Sales">
-                                                <template #body="slotProps">
-                                                    <div class="flex gap-2 align-items-center">
-                                                        <div>{{ slotProps.data.order.sale_price }} </div>
-                                                        <Badge :value="slotProps.data.order.payment_source" severity="secondary" class="mr-2" />
-                                                    </div>
-                                                </template>
-                                            </Column>
-                                            <Column sortable field="order.refunds" header="Refunds">
-                                                <template #body="slotProps">
-                                                    {{ orders_refunds[slotProps.data.id]?.total_refunds }}
-                                                </template>
-                                            </Column>
-                                            <Column sortable field="profit" header="Profit">
-                                                <template #body="slotProps">
-                                                    <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.order.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
-                                                        {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.order.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 ) }} 
-                                                        <Badge :value="`+${slotProps.data.order.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
-                                                    </div>
-                                                </template>
-                                            </Column>
-                                            <template #expansion="slotProps">
-                                                <SalesLogTableItems :items="slotProps.data.costs" :order_refunds="orders_refunds[slotProps.data.id] || []" />
-                                            </template>
-                                        </DataTable>
+                                <template #header>
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <Button label="Export csv" icon="pi pi-file-export" raised @click="export_sales()"/>
+                                    </div>
+                                </template>
+                                <Column expander style="width: 5rem" />
+                                <Column sortable field="date" :header="$t('date')">
+                                    <template #body="slotProps">
+                                        <i class="pi pi-exclamation-circle" v-tooltip.top="'has refunds'" v-if="slotProps.data.refunds?.length > 0" style="margin-right:0.5rem;color:red"></i>                                            
+                                        {{ slotProps.data.date }}
                                     </template>
+                                </Column>
+                                <Column sortable field="costs" :header="$t('cost')">
+                                    <template #body="slotProps">
+                                        <div class="flex gap-2 align-items-center">
+                                            <div>{{ slotProps.data.costs }} </div>
+                                            <Badge v-if="slotProps.data.inventory_refunds > 0 " :value="`-${slotProps.data.inventory_refunds}`" severity="success" class="mr-2" />
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column sortable field="total_sales" :header="$t('sales')"></Column>
+                                <Column sortable field="refunds_value" :header="$t('refunds')">
+                                    <template #body="slotProps">
+                                        <Badge :value="`${slotProps.data.inventory_refunds > 0 ? '-' : ''}${slotProps.data.refunds_value}`" severity="secondary" style="margin-right:0.5rem" />
+                                    </template>
+                                </Column>
+                                <Column sortable field="profit" :header="$t('profit')">
+                                    <template #body="slotProps">
+                                        <div :style="`${ ( slotProps.data.total_sales - slotProps.data.costs - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
+                                            {{ slotProps.data.total_sales - slotProps.data.costs  - slotProps.data.refunds_value + ( slotProps.data.inventory_refunds || 0 ) }}
+                                            <Badge :value="`+${slotProps.data.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
+                                        </div>
+                                    </template>
+                                </Column>
+                                <template #expansion="slotProps">
+                                    <DataTable v-model:expandedRows="expandedSalesLogOrderItems" :value="slotProps.data.orders">
+                                        <Column expander style="width: 5rem" />
+                                        <Column sortable field="order.display_id" header="Id">
+                                            <template #body="slotProps">
+                                                <i class="pi pi-exclamation-circle" v-tooltip.top="'has refunds'" v-if="orders_refunds[slotProps.data.id]?.refunds.length > 0" style="margin-right:0.5rem;color:red"></i>                                            
+                                                {{ slotProps.data.order.display_id }}
+                                            </template>
+                                        </Column>
+                                        <Column sortable field="order.submitted_at" header="Submitted At"></Column>
+                                        <Column sortable field="order.cost" header="Cost">
+                                            <template #body="slotProps">
+                                                <div class="flex gap-2 align-items-center">
+                                                    <div>{{ slotProps.data.order.cost }} </div>
+                                                    <Badge v-if="orders_refunds[slotProps.data.order.id]?.inventory_refunds > 0 " :value="`-${orders_refunds[slotProps.data.order.id]?.inventory_refunds}`" severity="success" class="mr-2" />
+                                                </div>
+                                            </template>
+                                        </Column>
+                                        <Column sortable field="order.sale_price" header="Sales">
+                                            <template #body="slotProps">
+                                                <div class="flex gap-2 align-items-center">
+                                                    <div>{{ slotProps.data.order.sale_price }} </div>
+                                                    <Badge :value="slotProps.data.order.payment_source" severity="secondary" class="mr-2" />
+                                                </div>
+                                            </template>
+                                        </Column>
+                                        <Column sortable field="order.refunds" header="Refunds">
+                                            <template #body="slotProps">
+                                                {{ orders_refunds[slotProps.data.id]?.total_refunds }}
+                                            </template>
+                                        </Column>
+                                        <Column sortable field="profit" header="Profit">
+                                            <template #body="slotProps">
+                                                <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.order.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
+                                                    {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.order.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 ) }} 
+                                                    <Badge :value="`+${slotProps.data.order.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
+                                                </div>
+                                            </template>
+                                        </Column>
+                                        <template #expansion="slotProps">
+                                            <SalesLogTableItems :items="slotProps.data.costs" :order_refunds="orders_refunds[slotProps.data.id] || []" />
+                                        </template>
+                                    </DataTable>
+                                </template>
                             </DataTable>
                         </div>                        
                     </div>
@@ -117,7 +122,7 @@ import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import SalesLogTableItems from '@/components/SalesLogTableItems.vue'
 import { $dt } from '@primevue/themes';
-import {Badge} from 'primevue';
+import {Badge, Button} from 'primevue';
 
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,PointElement,LineElement,ArcElement, Filler)
@@ -161,6 +166,8 @@ const updatSalesTableRowsPerPage = (event) => {
 
     expandedSalesLogRows.value = []
     expandedSalesLogOrderItems.value = []
+    salesTableRowsPerPage.value = event.rows
+    salesTableFirstIndex.value = event.first
 
     const { first, rows } = event;
     loadSales(first,rows)
@@ -281,6 +288,38 @@ const setChartOptions = () => {
             }
         }
     };
+}
+
+const export_sales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.value) => {
+    let page_number = Math.floor(first/rows) + 1
+
+
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/logs/salesperday/exportcsv?page[number]=${page_number}&page[size]=${rows}`, {
+        responseType: 'blob',
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then((response) => {
+        // Logic to trigger the browser download
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'sales.csv');
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch((error) => {
+        // Handle request or server errors
+        console.error('Download failed:', error.message);
+        if (error.response) {
+            console.error('Server Status:', error.response.status);
+        }
+    });
 }
 
 
