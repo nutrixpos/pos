@@ -222,7 +222,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	}
 
 	// Serve static files from the "static" directory
-	router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", http.FileServer(http.Dir(c.Config.UploadsPath))))
+	router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", http.FileServer(http.Dir(helpers.ResolveOsEnvPath(c.Config.UploadsPath)))))
 
 	router.Handle(prefix+"/ws", handlers.HandleNotificationsWsRequest(c.Config, c.Logger, c.NotificationSvc))
 }
