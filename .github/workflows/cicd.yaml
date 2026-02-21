@@ -100,6 +100,7 @@ jobs:
           Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
           Copy-Item -Path "./assets/*" -Destination "./nsis-runtime/assets" -Force -Recurse
           (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.exe', "nutrixpos-${{github.ref_name}}-windows64.exe" | Set-Content ./nsis-runtime/package.nsi
+          (Get-Content ./nsis-runtime/config.yaml) -replace 'uploads_path: "\./mnt/public"', 'uploads_path: "%LocalAppData%\\NutrixPOS\\uploads"' | Set-Content ./nsis-runtime/config.yaml
 
           cd .\nsis-runtime
           dir
