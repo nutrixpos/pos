@@ -61,6 +61,7 @@ Section "Main Application" SecMain
     CreateDirectory "$INSTDIR\mnt"
     CreateDirectory "$INSTDIR\mnt\public"
     CreateDirectory "$INSTDIR\mnt\frontend"
+    CreateDirectory "$LocalAppData\NutrixPOS"
 
     SetOutPath "$INSTDIR\mnt\frontend"
     File /r "frontend\*.*"
@@ -201,6 +202,11 @@ Section "Uninstall"
     RMDir "$INSTDIR\mnt"
     RMDir /r "$INSTDIR\assets"
     RMDir "$INSTDIR"
+
+    RMDir /r "$LocalAppData\NutrixPOS\uploads"
+    RMDir "$LocalAppData\NutrixPOS"
+    RMDir "$LocalAppData"
+
 
     ; Remove start menu shortcuts
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder

@@ -76,7 +76,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		random_string := helpers.RandStringBytesMaskImprSrc(20)
 
 		// Create a new file on the server
-		dst, err := os.Create(config.UploadsPath + "/" + random_string + file_extension)
+		dst, err := os.Create(helpers.ResolveOsEnvPath(config.UploadsPath) + "/" + random_string + file_extension)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Error creating file: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		}
 
 		// Delete the old image file from the public directory
-		oldImagePath := config.UploadsPath + "/" + product.ImageURL
+		oldImagePath := helpers.ResolveOsEnvPath(config.UploadsPath) + "/" + product.ImageURL
 
 		if product.ImageURL != "" {
 			err = os.Remove(oldImagePath)
@@ -183,7 +183,7 @@ func DeleteProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 		}
 
 		if product.ImageURL != "" {
-			err = os.Remove(filepath.Join(config.UploadsPath, product.ImageURL))
+			err = os.Remove(filepath.Join(helpers.ResolveOsEnvPath(config.UploadsPath), product.ImageURL))
 			if err != nil {
 				logger.Error(err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)

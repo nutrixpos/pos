@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/helpers"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules"
@@ -211,7 +212,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	}
 
 	// create public folder if doesn't exist in the uploads dir directory
-	publicPath := c.Config.UploadsPath
+	publicPath := helpers.ResolveOsEnvPath(c.Config.UploadsPath)
 	if _, err := os.Stat(publicPath); os.IsNotExist(err) {
 		err = os.MkdirAll(publicPath, 0755)
 		if err != nil {
