@@ -11,6 +11,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -31,6 +32,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		// Parse the multipart form data
 		err := r.ParseMultipartForm(32 << 20) // Max file size: 32MB
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error parsing multipart form: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -45,6 +47,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 
 		product, err := product_svc.GetProduct(id_param)
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error getting product: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -52,7 +55,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		// Get the uploaded file
 		file, fileHeader, err := r.FormFile("image")
 		if err != nil {
-			logger.Error("Error uploading file %s", err.Error())
+			logger.Error(fmt.Sprintf("Error uploading file: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
@@ -64,6 +67,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		}
 
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error processing file extension: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -74,6 +78,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		// Create a new file on the server
 		dst, err := os.Create(config.UploadsPath + "/" + random_string + file_extension)
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error creating file: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -82,16 +87,20 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 		// Copy the uploaded file to the server file
 		_, err = io.Copy(dst, file)
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error saving file: %s", err.Error()))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// Delete the old image file from the public directory
 		oldImagePath := config.UploadsPath + "/" + product.ImageURL
-		err = os.Remove(oldImagePath)
-		if err != nil {
-			logger.Error("Error deleting old image file %s", err.Error())
-			// Optionally handle the error, but don't return it to the client
+
+		if product.ImageURL != "" {
+			err = os.Remove(oldImagePath)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error deleting old image file %s", err.Error()))
+				// Optionally handle the error, but don't return it to the client
+			}
 		}
 
 		product.ImageURL = random_string + file_extension
