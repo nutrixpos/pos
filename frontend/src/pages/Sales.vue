@@ -73,7 +73,7 @@
                                             <template #body="slotProps">
                                                 <div class="flex gap-2 align-items-center">
                                                     <div>{{ slotProps.data.order.cost }} </div>
-                                                    <Badge v-if="orders_refunds[slotProps.data.order.id]?.inventory_refunds > 0 " :value="`-${orders_refunds[slotProps.data.order.id]?.inventory_refunds}`" severity="success" class="mr-2" />
+                                                    <Badge v-if="orders_refunds[slotProps.data.id]?.inventory_refunds > 0 " :value="`-${orders_refunds[slotProps.data.id]?.inventory_refunds}`" severity="success" class="mr-2" />
                                                 </div>
                                             </template>
                                         </Column>
@@ -92,8 +92,8 @@
                                         </Column>
                                         <Column sortable field="profit" header="Profit">
                                             <template #body="slotProps">
-                                                <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.order.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
-                                                    {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.order.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.order.id]?.inventory_refunds || 0 ) }} 
+                                                <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
+                                                    {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.id]?.inventory_refunds || 0 ) }} 
                                                     <Badge :value="`+${slotProps.data.order.tips} ${$t('tips')}`" severity="secondary" style="margin-right:0.5rem" />
                                                 </div>
                                             </template>
