@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cbroglie/mustache"
+	"github.com/aymerick/raymond"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/elmawardy/escpos"
@@ -26,7 +26,7 @@ type ReceiptService struct {
 }
 
 // Print is used to print a 80mm receipt
-func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template string) error {
+func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template_path string) error {
 	socket, err := net.Dial("tcp", fmt.Sprintf("%s:9100", rs.Settings.ReceiptPrinter.Host))
 	if err != nil {
 		return err
@@ -58,23 +58,40 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 
 	total := subtotal - int(discount)
 
+	custom_data := []struct {
+		Key   string
+		Value string
+	}{}
+
+	for k, v := range order.CustomData {
+		custom_data = append(custom_data, struct {
+			Key   string
+			Value string
+		}{
+			Key:   k,
+			Value: v,
+		})
+	}
+
 	data := map[string]interface{}{
-		"direction":      lang.Orientation,
-		"t_date":         lang.Pack["date"],
-		"t_name":         lang.Pack["name"],
-		"t_quantity":     lang.Pack["quantity"],
-		"t_total":        lang.Pack["total"],
-		"t_price":        lang.Pack["price"],
-		"t_discount":     lang.Pack["discount"],
-		"t_subtotal":     lang.Pack["subtotal"],
-		"t_service_cost": lang.Pack["service"],
-		"order_id":       order.DisplayId,
-		"date":           d.Format("2/1/2006 15:04"),
-		"order_items":    order_items,
-		"discount":       discount,
-		"service_cost":   service_cost,
-		"total":          total,
-		"subtotal":       subtotal,
+		"direction":       lang.Orientation,
+		"t_date":          lang.Pack["date"],
+		"t_name":          lang.Pack["name"],
+		"t_quantity":      lang.Pack["quantity"],
+		"t_total":         lang.Pack["total"],
+		"t_price":         lang.Pack["price"],
+		"t_discount":      lang.Pack["discount"],
+		"t_subtotal":      lang.Pack["subtotal"],
+		"t_service_cost":  lang.Pack["service"],
+		"order_id":        order.DisplayId,
+		"date":            d.Format("2/1/2006 15:04"),
+		"order_items":     order_items,
+		"discount":        discount,
+		"service_cost":    service_cost,
+		"total":           total,
+		"subtotal":        subtotal,
+		"custom_data":     custom_data,
+		"has_custom_data": len(custom_data) > 0,
 	}
 
 	if order.IsDelivery {
@@ -90,7 +107,12 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		data["is_delivery"] = false
 	}
 
-	output, err := mustache.RenderFile(template, data)
+	template, err := raymond.ParseFile(template_path)
+	if err != nil {
+		return err
+	}
+
+	output, err := template.Exec(data)
 	if err != nil {
 		return err
 	}
