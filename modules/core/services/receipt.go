@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/png"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
@@ -111,6 +112,29 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 	if err != nil {
 		return err
 	}
+
+	template.RegisterHelper("getByKey", func(items []struct {
+		Key   string
+		Value string
+	}, targetKey string) string {
+		for _, item := range items {
+			if item.Key == targetKey {
+				return item.Value
+			}
+		}
+		return "" // Return empty if not found
+	})
+
+	template.RegisterHelper("add", func(val1, val2 string) string {
+		// Parse the first value, default to 0 if empty/invalid
+		f1, _ := strconv.ParseFloat(val1, 64)
+
+		// Parse the second value, default to 0 if empty/invalid
+		f2, _ := strconv.ParseFloat(val2, 64)
+
+		// Perform addition and format back to string (2 decimal places)
+		return fmt.Sprintf("%.2f", f1+f2)
+	})
 
 	output, err := template.Exec(data)
 	if err != nil {
