@@ -303,7 +303,7 @@
         </div>
     </div>
     <div style="width:100vw;height:100vh;display:flex;justify-content:center;align-items:center" v-if="loading">
-      <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" fill="transparent"
+      <ProgressSpinner style="width: 35px; height: 35px;stroke:blue !important;" strokeWidth="6" fill="transparent"
       animationDuration=".5s" aria-label="Custom ProgressSpinner" />
     </div>
     <Drawer v-model:visible="drawer_visible">

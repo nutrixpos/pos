@@ -190,28 +190,28 @@ const i18n = createI18n({
 })
 
 const Noir = definePreset(Aura, {
-  // components: {
-  //   button: {
-  //     colorScheme: {
-  //       light: {
-  //           root: {
-  //               primary: {
-  //                 color: '#2e4762',
-  //                 hover: {
-  //                   color: '#2e4762',
-  //                 },
-  //                 active: {
-  //                   color: '#2e4762',
-  //                 }
-  //               }
-  //           },
-  //           subtitle: {
-  //               color: '#2e4762'
-  //           }
-  //       },
-  //     }
-  //   },
-  // },
+  components: {
+    progressspinner: {
+        colorScheme: {
+            light: {
+                root: {
+                    colorOne: '{primary.900}',
+                    colorTwo: '{primary.900}',
+                    colorThree: '{primary.900}',
+                    colorFour: '{primary.900}'
+                }
+            },
+            dark: {
+                root: {
+                    colorOne: '{primary.900}',
+                    colorTwo: '{primary.900}',
+                    colorThree: '{primary.900}',
+                    colorFour: '{primary.900}'
+                }
+            }
+        }
+    }
+  },
   semantic: {
       primary: {
           50: '{zinc.50}',
