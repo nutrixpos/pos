@@ -15,6 +15,9 @@ export default class Order {
     is_paid: boolean
     tips: number
     payment_source: string
+    customer: any
+    delivery_info: any
+    custom_data: any
 
     constructor(){
         this.submitted_at = new Date()
@@ -30,5 +33,8 @@ export default class Order {
         this.is_paid = false
         this.tips = 0
         this.payment_source = ""
+        this.customer = {}
+        this.delivery_info = null
+        this.custom_data = null
     }
 }

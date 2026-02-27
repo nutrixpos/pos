@@ -111,6 +111,12 @@ type SubmitOrderMeta struct {
 	IsPrintKitchenReceipt bool `json:"is_print_kitchen_receipt" bson:"is_print_kitchen_receipt" mapstructure:"is_print_kitchen_receipt"`
 }
 
+type OrderDeliveryInfo struct {
+	ReceiverName string `json:"receiver_name" bson:"receiver_name" mapstructure:"receiver_name"`
+	Address      string `json:"address" bson:"address" mapstructure:"address"`
+	PhoneNumber  string `json:"phone" bson:"phone" mapstructure:"phone"`
+}
+
 // Order represents a customer order, containing order details, items, and financial information.
 type Order struct {
 	SubmittedAt   time.Time   `json:"submitted_at" bson:"submitted_at" mapstructure:"submitted_at"`
@@ -131,11 +137,12 @@ type Order struct {
 	IsAutoStart  bool `json:"is_auto_start" bson:"is_auto_start" mapstructure:"is_auto_start"`
 	IsAutoFinish bool `json:"is_auto_finish" bson:"is_auto_finish" mapstructure:"is_auto_finish"`
 	// ServiceStyle  dine_in, takeaway or delivery
-	IsDelivery bool              `json:"is_delivery" bson:"is_delivery" mapstructure:"is_delivery"`
-	IsTakeAway bool              `json:"is_take_away" bson:"is_take_away" mapstructure:"is_take_away"`
-	IsDineIn   bool              `json:"is_dine_in" bson:"is_dine_in" mapstructure:"is_dine_in"`
-	CustomData map[string]string `json:"custom_data" bson:"custom_data" mapstructure:"custom_data"`
-	Tips       float64           `json:"tips" bson:"tips" mapstructure:"tips"`
+	IsDelivery   bool               `json:"is_delivery" bson:"is_delivery" mapstructure:"is_delivery"`
+	DeliveryInfo *OrderDeliveryInfo `json:"delivery_info,omitempty" bson:"delivery_info,omitempty" mapstructure:"delivery_info,omitempty"`
+	IsTakeAway   bool               `json:"is_take_away" bson:"is_take_away" mapstructure:"is_take_away"`
+	IsDineIn     bool               `json:"is_dine_in" bson:"is_dine_in" mapstructure:"is_dine_in"`
+	CustomData   map[string]string  `json:"custom_data" bson:"custom_data" mapstructure:"custom_data"`
+	Tips         float64            `json:"tips" bson:"tips" mapstructure:"tips"`
 }
 
 // MaterialEntry represents an entry of material, detailing purchase and quantity information.

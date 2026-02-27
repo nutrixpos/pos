@@ -145,7 +145,7 @@
                     <Button type="button" label="Add" @click="addWithComment()"></Button>
                 </div>
             </Dialog>
-            <Dialog v-model:visible="order_additional_details_dialog" modal header="Order details" class="xs:w-12 md:w-10 lg:w-8">
+            <Dialog v-model:visible="order_additional_details_dialog" modal header="Order details" class="xs:w-12 md:w-11 lg:w-11">
                 <Stepper linear value="1">
                     <StepList>
                         <Step v-for="(step,index) in order_details_steps" :key="index" :value="`${index+1}`" >{{ step.label }}</Step>
@@ -174,7 +174,7 @@
                                 <div class="flex flex-column align-items-center">
                                     <h2 class="mt-0">
                                         <i class="fa fa-box-open mx-2"></i>
-                                        Service Style
+                                        Service Type
                                     </h2>
                                     <ToggleButton v-model="is_serve_inside" onIcon="fa fa-bowl-food" offIcon="fa fa-bowl-food" offLabel="Dine in" onLabel="Dine in" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <ToggleButton v-model="is_take_away" onIcon="pi pi-box" offIcon="pi pi-box" offLabel="Takeaway" onLabel="Takeaway" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
@@ -187,9 +187,21 @@
                                         Comment
                                     </h2>
                                     <Textarea v-model="order_comment" size="small" placeholder="Comment" rows="3" />
-                                    <h2 class="mt-7 w-full align-items-start justify-content-start">
+                                    <h2 class="mt-6 mb-0 w-full align-items-start justify-content-start">
+                                        <i class="fa fa-user mx-2"></i>
+                                        Customer
+                                        <Button icon="pi pi-pencil" severity="primary" @click="pick_customer_dialog=true" />
+                                    </h2>
+                                    <div class="flex flex-column">
+                                        <DataTable class="mt-2" :value="new_order_delivery_customer">
+                                            <Column field="name" header="Name"></Column>
+                                            <Column field="address" header="Address"></Column>
+                                            <Column field="phone" header="Phone"></Column>
+                                        </DataTable>
+                                    </div>
+                                    <h2 class="mt-6 mb-0 w-full align-items-start justify-content-start">
                                         <i class="fa fa-pen-to-square mx-2"></i>
-                                        Custom
+                                        Custom Data
                                     </h2>
                                     <div class="flex flex-column">
                                         <div v-for="(item,index) in custom_data" :key="index" class="flex align-items-start flex-column gap-1">
@@ -216,17 +228,12 @@
                         </StepPanel>
                         <StepPanel v-slot="{ activateCallback }" v-if="order_details_steps.length == 3" value="2">
                             <div class="flex flex-column">
-                                <h2 class="mt-0">Customer</h2>
-                                <div class="flex flex-wrap gap-2">
-                                    <Button class="px-3" :label="t('existing_customer')" severity="secondary" icon="pi pi-user" iconPos="right" @click="pick_customer_dialog=true" />
-                                    <Button class="px-3" :label="t('add_new')" severity="secondary" icon="pi pi-plus" iconPos="right" @click="add_customer_dialog=true" />
+                                <h2 class="mt-0">Delivery info</h2>
+                                <div class="flex flex-column mt-3 gap-2">
+                                    <InputText v-model="delivery_info.name" placeholder="Name" />
+                                    <InputText v-model="delivery_info.address" placeholder="Address" />
+                                    <InputText v-model="delivery_info.phone" placeholder="Phone" />
                                 </div>
-                                <AddCustomer @update:visible="(x) => add_customer_dialog = x" :visible="add_customer_dialog" @customer-added="add_customer_dialog=false" />
-                                <DataTable showGridlines  class="w-full mt-3 px-3" :value="new_order_delivery_customer">
-                                    <Column field="name" header="Name"></Column>
-                                    <Column field="address" header="Address"></Column>
-                                    <Column field="phone" header="Phone"></Column>
-                                </DataTable>
                                 <div class="flex pt-6 justify-content-end gap-2">
                                     <Button label="Back" icon="pi pi-arrow-left" iconPos="left" @click="activateCallback('1')" severity="secondary" />
                                     <Button label="Next" icon="pi pi-arrow-right" iconPos="right" @click="activateCallback('3')" />
@@ -276,15 +283,15 @@
                                     <div class="flex flex-column">
                                         <div class="flex align-items-start mt-3 gap-1">
                                             <span>Customer:</span>
-                                            <p class="my-0"><strong> {{new_order_delivery_customer[0]?.name}} </strong></p>
+                                            <p class="my-0"><strong> {{delivery_info.name}} </strong></p>
                                         </div>
                                         <div class="flex align-items-start mt-3 gap-1">
                                             <span>Address:</span>
-                                            <p class="my-0"><strong> {{new_order_delivery_customer[0]?.address}} </strong></p>
+                                            <p class="my-0"><strong> {{delivery_info.address}} </strong></p>
                                         </div>
                                         <div class="flex align-items-start mt-3 gap-1">
                                             <span>Phone:</span>
-                                            <p class="my-0"><strong> {{new_order_delivery_customer[0]?.phone}} </strong></p>
+                                            <p class="my-0"><strong> {{delivery_info.phone}} </strong></p>
                                         </div>
                                     </div>
                                 </div>
@@ -580,10 +587,24 @@ const order_details_steps : any = ref([
     {"number": 3, "label": "Confirmation"},
 ])
 
+const delivery_info = ref<any>({name:"",address:"",phone:""})
+
 const toggleDarkMode = () => {
     store.toggleDarkMode()
     document.documentElement.classList.toggle('my-app-dark');
 }
+
+watch(new_order_delivery_customer, (new_val) => {
+    if (new_val.length > 0){
+        delivery_info.value = {
+            name: new_val[0].name,
+            address: new_val[0].address,
+            phone: new_val[0].phone
+        }
+    }else{
+        is_delivery.value = false
+    }
+})
 
 watch(is_delivery, (new_val) => {
 
@@ -1166,7 +1187,12 @@ const submitOrder = () => {
         payment_source: payment_source.value.name,
         custom_data: custom_data_map,
         comment: order_comment.value,
-        customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null
+        customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null,
+        delivery_info: is_delivery.value ? {
+            receiver_name: delivery_info.value.name,
+            address: delivery_info.value.address,
+            phone: delivery_info.value.phone
+        } : null
     }
 
     if (orderItems.value.length > 0){

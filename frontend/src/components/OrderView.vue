@@ -19,8 +19,26 @@
             <div class="col-6">{{ $t('display_id') }}</div>
             <div class="col-6">{{ props.order.display_id }}</div>
 
-            <div class="col-6">{{ $t('status') }}</div>
-            <Badge :value="order_status.title" :severity="order_status.severity" />
+
+            <div class="col-12">
+                <h4 class="mb-0 w-full align-items-start justify-content-start">
+                    <i class="fa fa-user mx-2"></i>
+                    Customer
+                </h4>
+            </div>
+            <div class="flex flex-column col-8 xs:col-12">
+                <DataTable class="mt-2" :value="[props.order.customer]">
+                    <Column field="id" header="Id"></Column>
+                    <Column field="name" header="Name"></Column>
+                    <Column field="address" header="Address"></Column>
+                    <Column field="phone" header="Phone"></Column>
+                </DataTable>
+            </div>
+
+            <div class="col-6 mt-3">{{ $t('status') }}</div>
+            <div class="col-6 mt-3">
+                <Badge :value="order_status.title" :severity="order_status.severity" />
+            </div>
 
             <div class="col-6">{{ $t('submitted_at') }}</div>
             <div class="col-6">{{ props.order.submitted_at }}</div>
@@ -69,6 +87,27 @@
                     </Popover>
                 </ButtonGroup>
             </div>
+
+            <div class="col-12" v-if="props.order.delivery_info != null">
+                <h4>Delivery info</h4>
+                <div class="flex items-center gap-2 flex-column">
+                    <div>{{ props.order.delivery_info.receiver_name }}</div>
+                    <div>{{ props.order.delivery_info.address }}</div>
+                    <div>{{ props.order.delivery_info.phone }}</div>
+                </div>
+            </div>
+
+            <div class="col-12 flex flex-column" v-if="Object.keys(props.order.custom_data).length > 0">
+                <h4>Custom data</h4>
+                <div class="flex flex-column gap-2">
+                    <div v-for="(value, key) in props.order.custom_data" :key="key">
+                        <div class="flex items-center gap-2">
+                            <div>{{ key }}</div>
+                            <div>{{ value }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
 
             <div class="col-12 flex flex-column">
@@ -104,7 +143,7 @@ import {defineProps,getCurrentInstance,computed,defineEmits,ref} from 'vue'
 import Badge from 'primevue/badge';
 import { ButtonGroup } from 'primevue';
 import Button from 'primevue/button';
-import { useConfirm,ConfirmPopup,Popover,InputText,InputGroup } from "primevue";
+import { useConfirm,ConfirmPopup,Popover,InputText,InputGroup,DataTable,Column } from "primevue";
 import axios from 'axios'
 import { useToast } from "primevue/usetoast";
 import OrderItemsInfo from './OrderItemsInfo.vue';

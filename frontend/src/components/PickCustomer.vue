@@ -9,6 +9,7 @@
                         </InputIcon>
                         <InputText v-model="filters['name'].value" placeholder="Search by name" />
                     </IconField>
+                    <Button icon="pi pi-plus" severity="secondary" @click="add_customer_dialog=true" class="ml-2" />
                 </div>
             </template>
             <Column field="name" :header="$t('name')"></Column>
@@ -22,6 +23,7 @@
                 </template>
             </Column>
         </DataTable>
+        <AddCustomer @update:visible="(x) => add_customer_dialog = x" :visible="add_customer_dialog" @customer-added="add_customer_dialog=false ; GetCustomers()" />
     </div>
 </template>
 
@@ -35,9 +37,12 @@ import IconField from 'primevue/iconfield'
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import axios from 'axios'
+import AddCustomer from '@/components/AddCustomer.vue';
+
 const { proxy } = getCurrentInstance();
 
 
+const add_customer_dialog = ref(false)
 const customers = ref([])
 const loading = ref(false)
 
