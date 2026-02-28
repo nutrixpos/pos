@@ -69,9 +69,11 @@
                         <Message v-if="item.comment != ''" severity="warn">{{ item.comment }}</Message>
                         <OrderItemView v-model="items[index]" />
                         <div class="flex pt-6 justify-end" >
-                            <Button v-if="index == 0 && index != items.length-1" label="Next" icon="pi pi-arrow-right" iconPos="right" @click="activateCallback(index+2)" />
-                            <Button v-if="index != items.length-1 && index != 0" label="Back" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback(index)" />
-                            <Button v-if="index == items.length-1" @click="startOrder(); visible=false;" :label="$t('start')" :disabled="!isValid" severity="success" />
+                            <ButtonGroup>
+                                <Button v-if="index != items.length-1 && index != 0" label="Back" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback(index)" />
+                                <Button v-if="index != items.length-1" label="Next" icon="pi pi-arrow-right" iconPos="right" @click="activateCallback(index+2)" />
+                                <Button v-if="index == items.length-1" @click="startOrder(); visible=false;" :label="$t('start')" :disabled="!isValid" severity="success" />
+                            </ButtonGroup>
                         </div>
                     </StepPanel>
                 </StepPanels>
