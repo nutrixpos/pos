@@ -1,56 +1,16 @@
 <template>
     <div v-if="!loading" style="overflow-x: hidden;">
         <div class="grid">
-            <div class="col-8 pt-5 pl-3">
+            <div class="col-12 pt-5 pl-3">
                 <div v-if="orders.length <= 0" style="height:100vh;width:100%;" class="flex justify-content-center align-items-center">
                     <h1 style="color:cadetblue">0 {{$t('order',3)}}</h1>
                 </div>
                 <div class="flex flex-wrap">
-                    <QueueOrder @finished="orderFinished(index)" @openedDialog="openedDialogs++" @closedDialog="openedDialogs--" v-for="(order,index) in orders" :key="index" :order="order" :number="index+1" class="queue-order"/>
-                </div>
-            </div>
-            <div class="col-4" :style="`background-color:${$dt('slate.50').value};height:100vh;position:fixed;${orientation == 'ltr' ? 'right:0' : 'left:0'};top:0`">
-                <div class="p-3">
-                    <!-- <div style="height:100%;width:100%;" class="flex align-items-center justify-content-center">
-                        <i class="pi pi-comments" style="font-size:4rem;color:darkgray"></i>
-                        <span class="ml-5" style="color:darkgray;font-size:2rem">/</span>
-                        <i class="pi pi-bell ml-5" style="font-size:4rem;color:darkgray"></i>
-                    </div> -->
-                    <div style="height:calc(100vh - 5rem);overflow-y:auto;" ref="chat_container">
-                        <div v-for="(chat,index) in chats" :key="index">
-                            <Message severity="success" v-if="chat.type == 'chat_message' && chat.user_sub != user.sub" class="m-1">
-                                <template #container>
-                                    <div class="p-3 flex flex-column">
-                                        <strong>{{ chat.sender_name }}</strong>
-                                        <span class="pt-2 px-2">{{ chat.message }}</span>
-                                    </div>
-                                </template>
-                            </Message>
-
-                            <Message severity="info" v-if="chat.type == 'chat_message' && chat.user_sub == user.sub" class="m-1">
-                                <template #container>
-                                    <div class="p-3 flex flex-column">
-                                        <strong>{{ chat.sender_name }}</strong>
-                                        <span class="pt-2 px-2">{{ chat.message }}</span>
-                                    </div>
-                                </template>
-                            </Message>
-
-                            <Message severity="warn" v-if="chat.type == 'notification'" class="m-1">
-                                <template #container>
-                                    <div class="p-3 flex flex-column">
-                                        <strong>{{ chat.topic_name }}</strong>
-                                        <span class="pt-2 px-2">{{ chat.message }}</span>
-                                    </div>
-                                </template>
-                            </Message>
-
+                    <div v-for="column_orders,index in dynamic_columns" :key="index">
+                        <div class="flex flex-column gap-1">
+                            <QueueOrder @finished="orderFinished(order)" @openedDialog="openedDialogs++" @closedDialog="openedDialogs--" v-for="(order,i) in column_orders" :key="i" :order="order" :number="i+1" class="queue-order"/>
                         </div>
                     </div>
-                    <InputGroup class="mt-2">
-                        <InputText v-model="chat_text" :placeholder="$t('write_message')" @keyup.enter="SendChatMessage(chat_text)" />
-                        <Button icon="pi pi-send" severity="info" @click="SendChatMessage(chat_text)" />
-                    </InputGroup>
                 </div>
             </div>
         </div>
@@ -64,20 +24,12 @@
 <script setup lang="ts">
 import QueueOrder from '@/components/QueueOrder.vue'
 import axios from 'axios';
-import {ref,getCurrentInstance,computed,useTemplateRef, nextTick} from 'vue';
+import {ref,getCurrentInstance,computed,useTemplateRef, nextTick,watch} from 'vue';
 import { useToast } from "primevue/usetoast";
 import { Notification} from '@/classes/Notification';
-import InputGroup from 'primevue/inputgroup';
-import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
-import Message from 'primevue/message';
 import { globalStore } from '@/stores';
 import { useI18n } from 'vue-i18n'
 import ProgressSpinner from "primevue/progressspinner";
-import { $dt } from '@primevue/themes';
-
-
-
 
 const store = globalStore()
 
@@ -108,6 +60,25 @@ const orientation = computed(() => store.currentOrientation)
 
 const loading = ref(true)
 const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
+
+const dynamic_columns = ref<Array<Array<any>>>([])
+const prepareLayout = () => {
+    const screenWidth = window.innerWidth;
+    dynamic_columns.value = []
+    for(var i=0;i<parseInt(`${screenWidth / 16 / 20}rem`);i++){
+        dynamic_columns.value.push([])
+    }
+}
+
+watch(
+    () => orders.value,
+    (newVal) => {
+        displayOrders()
+    },
+    {
+        deep: true,
+    }
+);
 
 const loadLanguage = async () => {
 
@@ -141,16 +112,6 @@ const loadLanguage = async () => {
 }
 
 
-const SendChatMessage = (msg: string) => {
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(`{"type":"chat_message","message":"${msg}","sender_name":"${user.value.name}","user_sub":"${user.value.sub}","to":"*","date": "${new Date().toLocaleString()}"}`)
-    }else {
-        console.log("WS closed")
-    }
-    chat_text.value = ""
-}
-
-
 const startWebsocket = () => {
     socket = new WebSocket(`ws://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/ws`);
     socket.onopen = () => {
@@ -175,10 +136,13 @@ const startWebsocket = () => {
                 notification.topic_name = "Order Finished"
                 notification.type = "topic_message"
                 notifications.value.push(notification);
+
+
+                orders.value = orders.value.filter(o => o.id !== data.order_id)
             } else if (data.topic_name == "order_submitted") {
     
                 orders.value.push(data.order)
-
+                displayOrders()
             }else {
                 const notification = new Notification();
                 notification.description = data.message
@@ -196,24 +160,6 @@ const startWebsocket = () => {
                     topic_name: data.topic_name
                 })
             }
-        }
-
-
-        if (data.type == "chat_message") {
-
-            chats.value.push({
-                message:data.message,
-                sender_name: data.sender_name,
-                user_sub: data.user_sub,
-                date: data.date,
-                type:"chat_message"
-            })
-
-            if (chat_container.value != null){
-                await nextTick()
-                chat_container.value.scrollTop = chat_container.value?.scrollHeight + 100
-            }
-
         }
 
     }
@@ -234,11 +180,8 @@ const startWebsocket = () => {
     }
 }
 
-
-
-const orderFinished = (index) => {
-    if (orders.value.length > 0)
-        orders.value.splice(index,1)
+const orderFinished = (order) => {
+    orders.value = orders.value.filter(o => o.id !== order.id)
 }
 
 
@@ -253,16 +196,26 @@ const loadOrders =  () => {
             orders.value = []
         }else {
             orders.value = result.data.data
+            displayOrders()
         }
     })
 };
 
+const displayOrders = () => {
 
+    for (var i=0;i<dynamic_columns.value.length;i++){
+        dynamic_columns.value[i] = []
+    }
+
+    for(var i=0;i<orders.value.length;i++){
+        dynamic_columns.value[i % dynamic_columns.value.length].push(orders.value[i])
+    }
+}
+
+
+prepareLayout()
 loadOrders()
-
-
 loadLanguage()
-loadOrders()
 startWebsocket()
 
 </script>
