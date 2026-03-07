@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/helpers"
+	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules/core/models"
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/logger"
-	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules"
 	"github.com/spf13/cobra"
 )
@@ -54,6 +55,14 @@ func (root *RootProcess) Execute() error {
 			if root.Config.ServeFrontEnd {
 				go startFrontendServer(root.Logger)
 			}
+
+			go func() {
+				time.Sleep(2 * time.Second)
+				err := helpers.OpenURL("http://localhost:8080")
+				if err != nil {
+					root.Logger.Error(err.Error())
+				}
+			}()
 
 			log.Fatal(srv.Serve(listener))
 		},

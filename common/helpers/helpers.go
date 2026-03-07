@@ -4,10 +4,37 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"time"
 )
+
+func OpenURL(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start", url}
+	case "darwin":
+		cmd = "open"
+		args = []string{url}
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+		args = []string{url}
+	}
+
+	// For Windows, to prevent issues with URLs starting with a quote,
+	// an empty string is added as the first argument to 'start'.
+	if runtime.GOOS == "windows" && len(args) > 1 {
+		args = append(args[:1], append([]string{""}, args[1:]...)...)
+	}
+
+	return exec.Command(cmd, args...).Start()
+}
 
 func RandStringBytesMaskImprSrc(n int) string {
 
