@@ -54,15 +54,15 @@ func (root *RootProcess) Execute() error {
 
 			if root.Config.ServeFrontEnd {
 				go startFrontendServer(root.Logger)
+				go func(config config.Config, logger logger.ILogger) {
+					logger.Info("Opening browser window")
+					time.Sleep(2 * time.Second)
+					err := helpers.OpenURL("http://localhost:8080")
+					if err != nil {
+						logger.Error(err.Error())
+					}
+				}(root.Config, root.Logger)
 			}
-
-			go func() {
-				time.Sleep(2 * time.Second)
-				err := helpers.OpenURL("http://localhost:8080")
-				if err != nil {
-					root.Logger.Error(err.Error())
-				}
-			}()
 
 			log.Fatal(srv.Serve(listener))
 		},
