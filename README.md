@@ -1,4 +1,8 @@
-<img src="https://elmawardy.sirv.com/nutrixpos-docs/nutrixdocs0.png" alt="drawing" height="300" style="display: block; margin: auto;"/>
+<p align="center">
+  <img src="https://elmawardy.sirv.com/nutrixpos-docs/nutrixdocs0.png" alt="drawing" height="300" />
+</p>
+
+
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/nutrixpos/pos.svg)](https://pkg.go.dev/github.com/nutrixpos/pos)
 
