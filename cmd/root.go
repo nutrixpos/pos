@@ -2,15 +2,25 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/helpers"
 	"github.com/nutrixpos/pos/common/userio"
+	"github.com/nutrixpos/pos/modules/core"
+	"github.com/nutrixpos/pos/modules/core/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
+	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/nutrixpos/pos/modules/hubsync"
+	"gopkg.in/yaml.v2"
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/logger"
@@ -39,6 +49,201 @@ func (root *RootProcess) Execute() error {
 		Free forever and distributed under the GPT-2 license. https://github.com/nutrixpos/pos`,
 
 		Run: func(cmd *cobra.Command, args []string) {
+
+			// Create a new HTTP router
+			root.Router = mux.NewRouter()
+
+			root.Router.Handle("/api/setup/status", middlewares.AllowCors(
+				func() http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+
+						if root.Config.Databases[0].Host == "" {
+							w.Write([]byte(`{"setup":false}`))
+							return
+						}
+
+						w.Write([]byte(`{"setup":true}`))
+						return
+					}
+				}(),
+			)).Methods("GET", "OPTIONS")
+
+			// If no database host is configured, serve a setup endpoint so the user
+			// can provide connection details via the browser (Setup.vue). The process
+			// exits with code 0 after writing the config so the process manager can
+			// restart the app with the new configuration.
+			if len(root.Config.Databases) == 0 || root.Config.Databases[0].Host == "" {
+
+				stopChan := make(chan struct{})
+
+				root.Logger.Info("No database host configured — starting setup server on :8000")
+
+				root.Router.Handle("/api/setup/config", middlewares.AllowCors(
+					func() http.HandlerFunc {
+						return func(w http.ResponseWriter, r *http.Request) {
+							// CORS headers for the Vue dev-server proxy
+							w.Header().Set("Content-Type", "application/json")
+							w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+							if r.Method == http.MethodOptions {
+								w.WriteHeader(http.StatusOK)
+								return
+							}
+
+							if r.Method != http.MethodPost {
+								http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+								return
+							}
+
+							var body struct {
+								Host     string `json:"host"`
+								Port     int    `json:"port"`
+								Database string `json:"database"`
+								Username string `json:"username"`
+								Password string `json:"password"`
+							}
+
+							if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+								http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+								return
+							}
+
+							if body.Host == "" || body.Port == 0 || body.Database == "" {
+								http.Error(w, "host, port and database are required", http.StatusBadRequest)
+								return
+							}
+
+							// Patch (or create) the first database entry.
+							databases := root.Config.Databases
+							if len(databases) == 0 {
+								databases = []config.Database{{}}
+							}
+							core_db := &databases[0]
+							if core_db == nil {
+								core_db = &config.Database{}
+							}
+							core_db.Host = body.Host
+							core_db.Port = body.Port
+							core_db.Database = body.Database
+							core_db.Username = body.Username
+							core_db.Password = body.Password
+							core_db.Type = "mongo"
+							databases[0] = *core_db
+
+							// Marshal back to YAML and write.
+							updated, err := yaml.Marshal(root.Config)
+							if err != nil {
+								http.Error(w, "cannot marshal config.yaml: "+err.Error(), http.StatusInternalServerError)
+								return
+							}
+
+							if err := os.WriteFile("config.yaml", updated, 0644); err != nil {
+								http.Error(w, "cannot write config.yaml: "+err.Error(), http.StatusInternalServerError)
+								return
+							}
+
+							root.Logger.Info(fmt.Sprintf("Setup complete — database host set to %s:%d/%s. Awaiting context exit...", body.Host, body.Port, body.Database))
+
+							w.WriteHeader(http.StatusOK)
+							close(stopChan)
+						}
+					}(),
+				)).Methods("POST", "OPTIONS")
+
+				srv := &http.Server{
+					Handler: root.Router,
+					Addr:    "0.0.0.0:8000",
+					// Good practice: enforce timeouts for servers you create!
+					WriteTimeout: 15 * time.Second,
+					ReadTimeout:  15 * time.Second,
+				}
+
+				listener, err := net.Listen("tcp4", srv.Addr)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				go func() {
+					if err := srv.Serve(listener); err != nil {
+						root.Logger.Error("setup server error: " + err.Error())
+
+						if !errors.Is(err, http.ErrServerClosed) {
+							os.Exit(1)
+						}
+					}
+				}()
+
+				<-stopChan // Block until /quit is called
+
+				// Gracefully shut down with a timeout
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := srv.Shutdown(ctx); err != nil {
+					log.Fatalf("Server Shutdown Failed:%+v", err)
+				}
+				fmt.Println("Setup server exited gracefully")
+			}
+
+			root.Router.Handle("/api/config/setup", http.NotFoundHandler())
+
+			seeder_svc := services.Seeder{
+				Config: root.Config,
+			}
+
+			// make sure that settings bootstrapping data exists, it's idempotent
+			err := seeder_svc.SeedSettings()
+			if err != nil {
+				panic(err)
+			}
+
+			settings_svc := services.SettingsService{
+				Config: root.Config,
+			}
+
+			// Load settings from the database
+			settings, err := settings_svc.GetSettings()
+
+			if err != nil {
+				// Log and panic if settings can't be loaded
+				root.Logger.Error(err.Error())
+				panic("Can't load settings from DB")
+			}
+
+			// Log successful database connection
+			root.Logger.Info("Successfully connected to DB")
+
+			// Initialize the app manager with logger
+			appmanager := modules.AppManager{
+				Logger: root.Logger,
+			}
+
+			// Load the core module, register HTTP handlers and background workers, and save the module
+			appmanager.LoadModule(&core.Core{
+				Logger:   root.Logger,
+				Config:   root.Config,
+				Prompter: root.Prompter,
+				Settings: settings,
+			}, "core").RegisterHttpHandlers(root.Router).RegisterBackgroundWorkers().Save()
+
+			appmanager.LoadModule(&hubsync.HubSyncModule{
+				Logger: root.Logger,
+				Config: root.Config,
+			}, "hubsync").RegisterBackgroundWorkers().RegisterHttpHandlers(root.Router).Save()
+
+			// Ignite the app manager to start all modules
+			appmanager.Run()
+
+			// Retrieve all registered modules
+			modules, err := appmanager.GetModules()
+			if err != nil {
+				// Log error and panic if modules can't be retrieved
+				root.Logger.Error(err.Error())
+				panic(err)
+			}
+
+			root.Modules = modules
+
 			srv := &http.Server{
 				Handler: root.Router,
 				Addr:    "0.0.0.0:8000",

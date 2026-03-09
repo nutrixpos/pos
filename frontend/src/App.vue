@@ -1,6 +1,6 @@
 <template>
   <main :style="`height:100%;direction:${orientation}`">
-      <RouterView />
+      <RouterView v-if="!setting_up" />
       <Toast  group="br" position="top-center">
         <template #content="{ message }">
             <section class="flex p-3 gap-3 w-full bg-black-alpha-90">
@@ -21,11 +21,18 @@
 </template>
 
 <script setup>
-import { computed, getCurrentInstance } from 'vue';
+import { computed, getCurrentInstance,ref } from 'vue';
 import Toast from 'primevue/toast';
 import { globalStore } from '@/stores';
 import axios from 'axios';
+import { useRouter } from 'vue-router'
+import { useToast } from "primevue/usetoast";
 
+const toast = useToast();
+
+const router = useRouter()
+
+const setting_up = ref(true)
 
 const { proxy } = getCurrentInstance();
 const store = globalStore()
@@ -46,8 +53,33 @@ const getSettings = () => {
     });
 }
 
+const getConfigStatus = () => {
+    return axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/api/setup/status`, {
+        headers: {
+            Authorization: `bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        },
+    })
+}
 
-getSettings()
+const init = () => {
+    getConfigStatus()
+    .then((response) => {
+        if(response.data.setup) {
+            getSettings()
+            setting_up.value = false
+        }else {
+            router.push({ path: '/setup' }).finally(() => {
+                setting_up.value = false
+            })
+        }
+    })
+    .catch((err) => {
+        toast.add({severity:'error', summary: 'Error', detail: err, life: 3000, group: 'br'});
+    });
+
+}
+
+init()
 
 </script>
 
@@ -57,6 +89,7 @@ getSettings()
 body {
     font-family: sans-serif; /* Replace with your desired font */
     height: 100vh;
+    margin:0px;
     background-color: rgb(247, 247, 247);
 }
 .my-app-dark {

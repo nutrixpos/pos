@@ -3,7 +3,7 @@ module github.com/nutrixpos/pos
 go 1.24.0
 
 require (
-	github.com/cbroglie/mustache v1.4.0
+	github.com/aymerick/raymond v2.0.2+incompatible
 	github.com/charmbracelet/bubbletea v1.1.1
 	github.com/chromedp/cdproto v0.0.0-20250101192427-60a0ca35cb84
 	github.com/chromedp/chromedp v0.11.2
@@ -14,14 +14,15 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
+	github.com/zitadel/oidc/v3 v3.30.0
 	github.com/zitadel/zitadel-go/v3 v3.2.1
 	go.mongodb.org/mongo-driver v1.16.1
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/charmbracelet/lipgloss v0.13.0 // indirect
 	github.com/charmbracelet/x/ansi v0.3.2 // indirect
 	github.com/charmbracelet/x/term v0.2.0 // indirect
@@ -69,7 +70,6 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	github.com/zitadel/logging v0.6.0 // indirect
-	github.com/zitadel/oidc/v3 v3.30.0 // indirect
 	github.com/zitadel/schema v1.3.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect

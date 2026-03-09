@@ -29,6 +29,10 @@ import Ripple from 'primevue/ripple';
 
 const insecureRoutes = [
   {
+    path: '/setup',
+    component: () => import('@/pages/Setup.vue'),
+  },
+  {
     path: '/no-access', 
     component: ()=>{
         return import('@/pages/NoAccessView.vue')
@@ -72,6 +76,10 @@ const insecureRoutes = [
 
 
 const zitadelRoutes = [
+  {
+    path: '/setup',
+    component: () => import('@/pages/Setup.vue'),
+  },
   {
     path: '/no-access', 
     component: ()=>{
@@ -229,24 +237,24 @@ const Noir = definePreset(Aura, {
       colorScheme: {
           light: {
               primary: {
-                  color: '#2e4762',
-                  inverseColor: '#FFDC00',
-                  hoverColor: '#365473',
-                  activeColor: '#263a51'
+                  color: '#14977B',
+                  inverseColor: '#a5c22f',
+                  hoverColor: '#14977B',
+                  activeColor: '#14977B'
               },
               highlight: {
-                  background: '#fff6c7',
-                  focusBackground: '#FFDC00',
+                  background: '#DEDB69',
+                  focusBackground: '#DEDB69',
                   color: '#173350',
                   focusColor: '#173350'
               }
           },
           dark: {
               primary: {
-                  color: '#FFDC00',
-                  inverseColor: '#2e4762',
-                  hoverColor: '#ffec54',
-                  activeColor: '#ffce1e'
+                  color: '#a5c22f',
+                  inverseColor: '#14977B',
+                  hoverColor: '#a5c22f',
+                  activeColor: '#a5c22f'
               },
               highlight: {
                   background: '#fff6c7',
