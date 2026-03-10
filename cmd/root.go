@@ -43,6 +43,7 @@ type RootProcess struct {
 func (root *RootProcess) Execute() error {
 
 	cobra.MousetrapHelpText = ""
+	setupRun := false
 
 	root.cmd = &cobra.Command{
 		Use:   "nutrix",
@@ -51,6 +52,25 @@ func (root *RootProcess) Execute() error {
 		Free forever and distributed under the GPT-2 license. https://github.com/nutrixpos/pos`,
 
 		Run: func(cmd *cobra.Command, args []string) {
+
+			frontendServerStartChan := make(chan bool, 1)
+			frontendOpenBrowserChan := make(chan bool, 1)
+
+			if root.Config.ServeFrontEnd {
+				go startFrontendServer(frontendServerStartChan, root.Logger)
+				go func(config config.Config, logger logger.ILogger, startChan chan bool) {
+
+					<-startChan
+
+					logger.Info("Opening browser window")
+					time.Sleep(2 * time.Second)
+					err := helpers.OpenURL("http://localhost:8080")
+					if err != nil {
+						logger.Error(err.Error())
+					}
+				}(root.Config, root.Logger, frontendOpenBrowserChan)
+			}
+
 			// Create a new HTTP router
 			root.Router = mux.NewRouter()
 
@@ -76,6 +96,7 @@ func (root *RootProcess) Execute() error {
 			// restart the app with the new configuration.
 			if len(root.Config.Databases) == 0 || root.Config.Databases[0].Host == "" {
 
+				setupRun = true
 				stopChan := make(chan struct{})
 
 				root.Logger.Info("No database host configured — starting setup server on :8000")
@@ -159,6 +180,9 @@ func (root *RootProcess) Execute() error {
 					WriteTimeout: 15 * time.Second,
 					ReadTimeout:  15 * time.Second,
 				}
+
+				frontendServerStartChan <- true
+				frontendOpenBrowserChan <- true
 
 				listener, err := net.Listen("tcp4", srv.Addr)
 				if err != nil {
@@ -253,21 +277,14 @@ func (root *RootProcess) Execute() error {
 				ReadTimeout:  15 * time.Second,
 			}
 
+			if !setupRun {
+				frontendServerStartChan <- true
+				frontendOpenBrowserChan <- true
+			}
+
 			listener, err := net.Listen("tcp4", srv.Addr)
 			if err != nil {
 				log.Fatal(err)
-			}
-
-			if root.Config.ServeFrontEnd {
-				go startFrontendServer(root.Logger)
-				go func(config config.Config, logger logger.ILogger) {
-					logger.Info("Opening browser window")
-					time.Sleep(2 * time.Second)
-					err := helpers.OpenURL("http://localhost:8080")
-					if err != nil {
-						logger.Error(err.Error())
-					}
-				}(root.Config, root.Logger)
 			}
 
 			log.Fatal(srv.Serve(listener))
@@ -296,7 +313,10 @@ func (root *RootProcess) Execute() error {
 	return nil
 }
 
-func startFrontendServer(logger logger.ILogger) {
+func startFrontendServer(startChan chan bool, logger logger.ILogger) {
+
+	<-startChan
+
 	// Create a new ServeMux for the static file server to keep its handlers separate
 	// from the main API router.
 	staticMux := http.NewServeMux()
