@@ -26,6 +26,9 @@ import (
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules"
 	"github.com/spf13/cobra"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // RootProcess holds the root process configuration.
@@ -100,6 +103,69 @@ func (root *RootProcess) Execute() error {
 				stopChan := make(chan struct{})
 
 				root.Logger.Info("No database host configured — starting setup server on :8000")
+
+				root.Router.Handle("/api/setup/test-connection", middlewares.AllowCors(
+					func() http.HandlerFunc {
+						return func(w http.ResponseWriter, r *http.Request) {
+							w.Header().Set("Content-Type", "application/json")
+							w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+							if r.Method == http.MethodOptions {
+								w.WriteHeader(http.StatusOK)
+								return
+							}
+
+							if r.Method != http.MethodPost {
+								http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+								return
+							}
+
+							var body struct {
+								Host     string `json:"host"`
+								Port     int    `json:"port"`
+								Database string `json:"database"`
+								Username string `json:"username"`
+								Password string `json:"password"`
+							}
+
+							if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+								http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+								return
+							}
+
+							if body.Host == "" || body.Port == 0 || body.Database == "" {
+								http.Error(w, "host, port and database are required", http.StatusBadRequest)
+								return
+							}
+
+							connStr := fmt.Sprintf("mongodb://%s:%d", body.Host, body.Port)
+							if body.Username != "" {
+								connStr = fmt.Sprintf("mongodb://%s:%s@%s:%d", body.Username, body.Password, body.Host, body.Port)
+							}
+
+							clientOptions := options.Client().ApplyURI(connStr)
+
+							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
+
+							client, err := mongo.Connect(ctx, clientOptions)
+							if err != nil {
+								http.Error(w, "Connection failed: "+err.Error(), http.StatusBadRequest)
+								return
+							}
+							defer client.Disconnect(context.Background())
+
+							err = client.Ping(ctx, nil)
+							if err != nil {
+								http.Error(w, "Ping failed: "+err.Error(), http.StatusBadRequest)
+								return
+							}
+
+							w.WriteHeader(http.StatusOK)
+							w.Write([]byte(`{"success":true}`))
+						}
+					}(),
+				)).Methods("POST", "OPTIONS")
 
 				root.Router.Handle("/api/setup/config", middlewares.AllowCors(
 					func() http.HandlerFunc {
@@ -210,7 +276,8 @@ func (root *RootProcess) Execute() error {
 				fmt.Println("Setup server exited gracefully")
 			}
 
-			root.Router.Handle("/api/config/setup", http.NotFoundHandler())
+			root.Router.Handle("/api/setup/config", http.NotFoundHandler())
+			root.Router.Handle("/api/setup/test-connection", http.NotFoundHandler())
 
 			seeder_svc := services.Seeder{
 				Config: root.Config,

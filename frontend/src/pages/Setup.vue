@@ -100,22 +100,40 @@
           Configuration saved! The server is setup — please restart the application to apply the new settings.
         </div>
 
+        <!-- Connection Test Success banner -->
+        <div v-if="testSuccess && !saved" class="success-banner mb-2 mt-4">
+          <i class="pi pi-check-circle"></i>
+          Connection successful! You can now save the configuration.
+        </div>
+
         <!-- Error banner -->
         <div v-if="serverError" class="error-banner mt-3 mb-2">
           <i class="pi pi-times-circle"></i>
           {{ serverError }}
         </div>
 
-        <Button
-          v-if="!saved"
-          type="submit"
-          label="Save & Continue"
-          icon="pi pi-arrow-right"
-          iconPos="right"
-          class="submit-btn"
-          :loading="loading"
-          :disabled="loading || saved"
-        />
+        <div v-if="!saved" class="flex flex-column gap-1 mt-1">
+          <Button
+            type="button"
+            label="Test Connection"
+            icon="pi pi-bolt"
+            class="submit-btn p-button-outlined"
+            style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.4) !important; color: #1a2a3a;"
+            :loading="testing"
+            :disabled="loading || testing || saved"
+            @click="testConnection"
+          />
+
+          <Button
+            type="submit"
+            label="Save & Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            class="submit-btn"
+            :loading="loading"
+            :disabled="loading || testing || saved || !testSuccess"
+          />
+        </div>
 
         <Button v-if="saved" class="submit-btn mt-2" label="Let's go 🚀" @click="router.push({ path: '/admin' })" />
       </form>
@@ -124,7 +142,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Button from 'primevue/button'
@@ -143,6 +161,8 @@ const form = reactive({
   confirm_password: '',
 })
 
+
+
 const errors = reactive({
   host: '',
   port: '',
@@ -153,8 +173,14 @@ const errors = reactive({
 })
 
 const loading = ref(false)
+const testing = ref(false)
 const saved   = ref(false)
+const testSuccess = ref(false)
 const serverError = ref('')
+
+watch(form, () => {
+  testSuccess.value = false
+})
 
 function validate(): boolean {
   errors.host = form.host.trim() ? '' : 'Host is required'
@@ -163,6 +189,31 @@ function validate(): boolean {
   errors.confirm_password = form.password == form.confirm_password ? '' : 'Passwords do not match'
 
   return !errors.host && !errors.port && !errors.database && !errors.username && !errors.password && !errors.confirm_password
+}
+
+async function testConnection() {
+  if (!validate()) return
+
+  testing.value = true
+  serverError.value = ''
+  testSuccess.value = false
+
+  try {
+    await axios.post(`${backendBase}/api/setup/test-connection`, {
+      host:     form.host.trim(),
+      port:     form.port,
+      database: form.database.trim(),
+      username: form.username.trim(),
+      password: form.password
+    })
+    testSuccess.value = true
+  } catch (err: any) {
+    serverError.value =
+      err?.response?.data || 'Failed to connect to database. Check the credentials.'
+    testSuccess.value = false
+  } finally {
+    testing.value = false
+  }
 }
 
 async function submit() {
@@ -176,8 +227,11 @@ async function submit() {
       host:     form.host.trim(),
       port:     form.port,
       database: form.database.trim(),
+      username: form.username.trim(),
+      password: form.password
     })
     saved.value = true
+    testSuccess.value = false
   } catch (err: any) {
     serverError.value =
       err?.response?.data || 'Failed to save configuration. Check the backend logs.'
