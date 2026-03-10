@@ -26,6 +26,7 @@ jobs:
           cp .env.example .env
           sed -i "s/VITE_APP_APP_VERSION=v0.0.1/VITE_APP_APP_VERSION=${GITHUB_REF_NAME}//g" .env
           npm run build-only
+        working-directory: ./frontend
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
