@@ -13,8 +13,6 @@ RequestExecutionLevel admin
 
 ; Variables
 Var StartMenuFolder
-Var UninstallMongoDBChecked
-Var InstallMongoDBChecked
 
 ; Interface Settings
 !define MUI_ABORTWARNING
@@ -31,16 +29,12 @@ Var InstallMongoDBChecked
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 
-; Add custom options page with MongoDB checkbox
-Page custom InstallOptionsPage InstallOptionsPageLeave
-
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller pages
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
-UninstPage custom un.UninstallOptionsPage un.UninstallOptionsPageLeave
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
@@ -57,6 +51,7 @@ Section "Main Application" SecMain
     File "nutrixpos64.exe"
     File "config.yaml"
     File /r "assets"
+    File "icon.ico"
     
     CreateDirectory "$INSTDIR\mnt"
     CreateDirectory "$INSTDIR\mnt\public"
@@ -72,7 +67,7 @@ Section "Main Application" SecMain
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "DisplayName" "Nutrix POS"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "DisplayIcon" "$INSTDIR\icon.ico"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "Publisher" "Elmawardy"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "Publisher" "Amr Elmawardy"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "NoRepair" 1
 
@@ -80,114 +75,15 @@ Section "Main Application" SecMain
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
         CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "http://localhost:8080" "" "$INSTDIR\icon.ico" 0
+        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe" "" "$INSTDIR\icon.ico" 0
         CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninstall.exe"
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
-Section "Install nutrixpos windows service"
-    SetOutPath "$INSTDIR"
-    File "nutrixpos64.exe"
-    File "nssm.exe"
-    File "icon.ico"
-
-    ;nsExec::ExecToLog 'sc create NutrixPosService binPath= "$INSTDIR\nutrixpos64.exe" DisplayName= "Nutrix POS" start= auto obj= "NT AUTHORITY\NetworkService"'
-    ;nsExec::ExecToLog 'sc start NutrixPosService'
-    ; Install your app as a service via NSSM under NetworkService
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install NutrixPosService "$INSTDIR\nutrixpos64.exe"'
-    
-    ; Set display name
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" set NutrixPosService DisplayName "NutrixPOS Service"'
-
-
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" set NutrixPosService ObjectName "NT AUTHORITY\NetworkService"'
-    nsExec::ExecToLog 'sc start NutrixPosService'
-
-    WriteUninstaller "$INSTDIR\uninstall.exe"
-
-
-SectionEnd
-
-Section "-Conditional MongoDB Install"
-    ${If} $InstallMongoDBChecked == ${BST_CHECKED}
-        Call InstallMongoDB
-    ${EndIf}
-SectionEnd
-
-Function InstallMongoDB
-    ; Extract MongoDB MSI to temp folder
-    SetOutPath "$TEMP\MongoDB"
-    File "mongodb-windows-x86_64-8.2.1-signed.msi"
-
-    ; Install MongoDB silently from temp
-    ExecWait 'msiexec /i "$TEMP\MongoDB\mongodb-windows-x86_64-8.2.1-signed.msi" INSTALLLOCATION="C:\MongoDB" ADDLOCAL=All'
-
-    ; Clean up extracted MSI
-    Delete "$TEMP\MongoDB\mongodb-windows-x86_64-8.2.1-signed.msi"
-    RMDir "$TEMP\MongoDB"
-FunctionEnd
-
-; ---------------------------
-; Install Options Page (with MongoDB checkbox)
-; ---------------------------
-
-Function InstallOptionsPage
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
-
-    ${NSD_CreateCheckbox} 20u 20u 200u 12u "Install MongoDB"
-    Pop $InstallMongoDBChecked
-    ${NSD_SetState} $InstallMongoDBChecked ${BST_CHECKED}
-
-    nsDialogs::Show
-FunctionEnd
-
-Function InstallOptionsPageLeave
-    ${NSD_GetState} $InstallMongoDBChecked $0
-    StrCpy $InstallMongoDBChecked $0
-FunctionEnd
-
-; ---------------------------
-; Uninstall Custom Page
-; ---------------------------
-
-Function un.UninstallOptionsPage
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
-
-    ${NSD_CreateCheckbox} 20u 20u 200u 12u "Uninstall MongoDB"
-    Pop $UninstallMongoDBChecked
-    ${NSD_SetState} $UninstallMongoDBChecked ${BST_CHECKED}
-
-    nsDialogs::Show
-FunctionEnd
-
-Function un.UninstallOptionsPageLeave
-    ${NSD_GetState} $UninstallMongoDBChecked $0
-    StrCpy $UninstallMongoDBChecked $0
-FunctionEnd
-
-; ---------------------------
-; Uninstaller Section
-; ---------------------------
-
-Section "Open frontend in browser"
-  ; 🔥 Open browser after install
-  ExecShell "open" "http://localhost:8080"
-SectionEnd
 
 Section "Uninstall"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos"
     DeleteRegKey HKLM "Software\Nutrixpos"
-
-    nsExec::ExecToLog 'sc stop NutrixPosService'
-    nsExec::ExecToLog 'sc delete NutrixPosService'
 
     Delete "$INSTDIR\license.txt"
     Delete "$INSTDIR\nutrixpos64.exe"
@@ -207,19 +103,10 @@ Section "Uninstall"
     RMDir "$LocalAppData\NutrixPOS"
     RMDir "$LocalAppData"
 
-
     ; Remove start menu shortcuts
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
     Delete "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk"
     Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
     RMDir "$SMPROGRAMS\$StartMenuFolder"
 
-    ; MongoDB uninstall step
-    ${If} $UninstallMongoDBChecked == ${BST_CHECKED}
-        nsExec::ExecToLog 'sc stop MongoDB'
-        nsExec::ExecToLog 'msiexec /x {DA66F0D9-2B0F-4DCB-BBA8-E540E020B162} /qn'
-
-        RMDir /r "C:\MongoDB\data\db"
-        RMDir /r "C:\MongoDB"
-    ${EndIf}
 SectionEnd

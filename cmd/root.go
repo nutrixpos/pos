@@ -42,6 +42,8 @@ type RootProcess struct {
 // Execute starts the root process.
 func (root *RootProcess) Execute() error {
 
+	cobra.MousetrapHelpText = ""
+
 	root.cmd = &cobra.Command{
 		Use:   "nutrix",
 		Short: "The next level restaurant management system",
@@ -49,7 +51,6 @@ func (root *RootProcess) Execute() error {
 		Free forever and distributed under the GPT-2 license. https://github.com/nutrixpos/pos`,
 
 		Run: func(cmd *cobra.Command, args []string) {
-
 			// Create a new HTTP router
 			root.Router = mux.NewRouter()
 

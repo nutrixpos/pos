@@ -87,13 +87,6 @@ jobs:
           # Download files using PowerShell
           Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
           Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.2.1-signed.msi" -OutFile "./nsis-runtime/mongodb-windows-x86_64-8.2.1-signed.msi"
-          Invoke-WebRequest -Uri "https://nssm.cc/ci/nssm-2.24-101-g897c7ad.zip" -OutFile "./nsis-runtime/nssm-2.24-101-g897c7ad.zip"
-          
-          # Extract zip file
-          Expand-Archive -Path "./nsis-runtime/nssm-2.24-101-g897c7ad.zip" -DestinationPath "./nsis-runtime/nssm-temp" -Force
-          
-          # Copy nssm.exe
-          Copy-Item -Path "./nsis-runtime/nssm-temp/nssm-2.24-101-g897c7ad/win64/nssm.exe" -Destination "./nsis-runtime/nssm.exe" -Force
 
           Copy-Item -Path "./package.nsi" -Destination "./nsis-runtime/package.nsi" -Force
           Copy-Item -Path "./LICENSE" -Destination "./nsis-runtime/license.txt" -Force

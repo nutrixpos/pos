@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://elmawardy.sirv.com/nutrixpos-docs/nutrixdocs0.png" alt="drawing" height="300" />
+  <img src="https://elmawardy.sirv.com/nutrixpos-docs/nutrixdocs0.png" alt="drawing" height="350" />
 </p>
 
 
