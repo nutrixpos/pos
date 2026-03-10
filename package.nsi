@@ -22,6 +22,7 @@ Var StartMenuFolder
 ; Installer pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "license.txt"
+!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKLM"
@@ -80,6 +81,10 @@ Section "Main Application" SecMain
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
+Section "Desktop Shortcut"
+    CreateShortcut "$DESKTOP\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe" "" "$INSTDIR\icon.ico" 0
+SectionEnd
+
 
 Section "Uninstall"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos"
@@ -108,5 +113,8 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk"
     Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
     RMDir "$SMPROGRAMS\$StartMenuFolder"
+
+    ; Remove desktop shortcut
+    Delete "$DESKTOP\Nutrixpos.lnk"
 
 SectionEnd
