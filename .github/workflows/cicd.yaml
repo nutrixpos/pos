@@ -91,7 +91,7 @@ jobs:
 
           Copy-Item -Path "./package.nsi" -Destination "./nsis-runtime/package.nsi" -Force
           Copy-Item -Path "./LICENSE" -Destination "./nsis-runtime/license.txt" -Force
-          (Get-Content ./config.example.yaml) -replace 'host: "127.0.0.1"', 'host: ""' | Set-Content ./config.example.yaml
+          (Get-Content ./config.example.yaml) -replace 'host: 127.0.0.1', 'host: ""' | Set-Content ./config.example.yaml
           Copy-Item -Path "./config.example.yaml" -Destination "./nsis-runtime/config.yaml" -Force
           Copy-Item -Path "./assets/*" -Destination "./nsis-runtime/assets" -Force -Recurse
           (Get-Content ./nsis-runtime/package.nsi) -replace 'nutrixpos-installer\.exe', "nutrixpos-${{github.ref_name}}-windows64.exe" | Set-Content ./nsis-runtime/package.nsi
