@@ -7,7 +7,7 @@ OutFile "nutrixpos-installer.exe"
 Unicode True
 
 ; Default installation folder
-InstallDir "$PROGRAMFILES\Nutrixpos"
+InstallDir "$LocalAppData\NutrixPOS"
 InstallDirRegKey HKLM "Software\Nutrixpos" "Install_Dir"
 RequestExecutionLevel admin
 
@@ -48,41 +48,41 @@ Var StartMenuFolder
 
 Section "Main Application" SecMain
     SectionIn RO
-    SetOutPath "$INSTDIR"
+    SetOutPath "$LocalAppData\NutrixPOS"
     File "nutrixpos64.exe"
     File "config.yaml"
     File /r "assets"
     File "icon.ico"
     
-    CreateDirectory "$INSTDIR\mnt"
-    CreateDirectory "$INSTDIR\mnt\public"
-    CreateDirectory "$INSTDIR\mnt\frontend"
     CreateDirectory "$LocalAppData\NutrixPOS"
+    CreateDirectory "$LocalAppData\NutrixPOS\mnt"
+    CreateDirectory "$LocalAppData\NutrixPOS\mnt\public"
+    CreateDirectory "$LocalAppData\NutrixPOS\mnt\frontend"
 
-    SetOutPath "$INSTDIR\mnt\frontend"
+    SetOutPath "$LocalAppData\NutrixPOS\mnt\frontend"
     File /r "frontend\*.*"
     
-    SetOutPath "$INSTDIR"
+    SetOutPath "$LocalAppData\NutrixPOS"
 
-    WriteRegStr HKLM "Software\Nutrixpos" "Install_Dir" "$INSTDIR"
+    WriteRegStr HKLM "Software\Nutrixpos" "Install_Dir" "$LocalAppData\NutrixPOS"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "DisplayName" "Nutrix POS"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "DisplayIcon" "$INSTDIR\icon.ico"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "UninstallString" '"$LocalAppData\NutrixPOS\uninstall.exe"'
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "DisplayIcon" "$LocalAppData\NutrixPOS\icon.ico"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "Publisher" "Amr Elmawardy"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos" "NoRepair" 1
 
-    WriteUninstaller "$INSTDIR\uninstall.exe"
+    WriteUninstaller "$LocalAppData\NutrixPOS\uninstall.exe"
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
         CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe" "" "$INSTDIR\icon.ico" 0
-        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Nutrixpos.lnk" "$LocalAppData\NutrixPOS\nutrixpos64.exe" "" "$LocalAppData\NutrixPOS\icon.ico" 0
+        CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$LocalAppData\NutrixPOS\uninstall.exe"
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
 Section "Desktop Shortcut"
-    CreateShortcut "$DESKTOP\Nutrixpos.lnk" "$INSTDIR\nutrixpos64.exe" "" "$INSTDIR\icon.ico" 0
+    CreateShortcut "$DESKTOP\Nutrixpos.lnk" "$LocalAppData\NutrixPOS\nutrixpos64.exe" "" "$LocalAppData\NutrixPOS\icon.ico" 0
 SectionEnd
 
 
@@ -90,23 +90,20 @@ Section "Uninstall"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Nutrixpos"
     DeleteRegKey HKLM "Software\Nutrixpos"
 
-    Delete "$INSTDIR\license.txt"
-    Delete "$INSTDIR\nutrixpos64.exe"
-    Delete "$INSTDIR\nssm.exe"
-    Delete "$INSTDIR\config.yaml"
-    Delete "$INSTDIR\uninstall.exe"
-    Delete "$INSTDIR\icon.ico"
+    Delete "$LocalAppData\NutrixPOS\license.txt"
+    Delete "$LocalAppData\NutrixPOS\nutrixpos64.exe"
+    Delete "$LocalAppData\NutrixPOS\nssm.exe"
+    Delete "$LocalAppData\NutrixPOS\uninstall.exe"
+    Delete "$LocalAppData\NutrixPOS\icon.ico"
 
-    Delete "$INSTDIR\mnt\frontend\*.*"
-    RMDir "$INSTDIR\mnt\frontend"
-    RMDir "$INSTDIR\mnt\public"
-    RMDir "$INSTDIR\mnt"
-    RMDir /r "$INSTDIR\assets"
-    RMDir "$INSTDIR"
-
-    RMDir /r "$LocalAppData\NutrixPOS\uploads"
+    Delete "$LocalAppData\NutrixPOS\mnt\frontend\*.*"
+    RMDir "$LocalAppData\NutrixPOS\mnt\frontend"
+    RMDir "$LocalAppData\NutrixPOS\mnt\public"
+    RMDir "$LocalAppData\NutrixPOS\mnt"
+    RMDir /r "$LocalAppData\NutrixPOS\assets"
     RMDir "$LocalAppData\NutrixPOS"
-    RMDir "$LocalAppData"
+    Delete "$LocalAppData\NutrixPOS\config.yaml"
+    RMDir "$LocalAppData\NutrixPOS"
 
     ; Remove start menu shortcuts
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder

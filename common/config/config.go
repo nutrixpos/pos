@@ -31,30 +31,30 @@ type IConfig interface {
 
 // ZitadelConfig holds the configuration for Zitadel
 type ZitadelConfig struct {
-	Domain  string `mapstructure:"domain"`
-	Port    int    `mapstructure:"port"`
-	KeyPath string `mapstructure:"key_path"`
-	Enabled bool   `mapstructure:"enabled"`
+	Domain  string `mapstructure:"domain" yaml:"domain"`
+	Port    int    `mapstructure:"port" yaml:"port"`
+	KeyPath string `mapstructure:"key_path" yaml:"key_path"`
+	Enabled bool   `mapstructure:"enabled" yaml:"enabled"`
 }
 
 // Config represents the overall configuration structure
 type Config struct {
-	Databases     []Database    `mapstructure:"databases"`
-	Zitadel       ZitadelConfig `mapstructure:"zitadel"`
-	Env           string        `mapstructure:"env"`
-	TimeZone      string        `mapstructure:"timezone"`
-	UploadsPath   string        `mapstructure:"uploads_path"`
-	ServeFrontEnd bool          `mapstructure:"serve_frontend"`
+	Databases     []Database    `mapstructure:"databases" yaml:"databases"`
+	Zitadel       ZitadelConfig `mapstructure:"zitadel" yaml:"zitadel"`
+	Env           string        `mapstructure:"env" yaml:"env"`
+	TimeZone      string        `mapstructure:"timezone" yaml:"timezone"`
+	UploadsPath   string        `mapstructure:"uploads_path" yaml:"uploads_path"`
+	ServeFrontEnd bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
 }
 
 // Database holds the configuration for database connections
 type Database struct {
-	Host     string            `mapstructure:"host"`
-	Port     int               `mapstructure:"port"`
-	Username string            `mapstructure:"username"`
-	Password string            `mapstructure:"password"`
-	Type     string            `mapstructure:"type"`
-	Name     string            `mapstructure:"name"`
-	Database string            `mapstructure:"database"`
-	Tables   map[string]string `mapstructure:"tables"`
+	Host     string            `mapstructure:"host" yaml:"host"`
+	Port     int               `mapstructure:"port" yaml:"port"`
+	Username string            `mapstructure:"username" yaml:"username"`
+	Password string            `mapstructure:"password" yaml:"password"`
+	Type     string            `mapstructure:"type" yaml:"type"`
+	Name     string            `mapstructure:"name" yaml:"name"`
+	Database string            `mapstructure:"database" yaml:"database"`
+	Tables   map[string]string `mapstructure:"tables" yaml:"tables"`
 }
