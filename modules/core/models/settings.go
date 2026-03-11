@@ -32,7 +32,8 @@ type Settings struct {
 	Inventory      MaterialSettings `bson:"inventory" json:"inventory" mapstructure:"inventory"`
 	Orders         OrderSettings    `bson:"orders" json:"orders" mapstructure:"orders"`
 	Language       LanguageSettings `bson:"language" json:"language" mapstructure:"language"`
-	ReceiptPrinter PrinterSettings  `bson:"receipt_printer" json:"receipt_printer" mapstructure:"receipt_printer"`
+	ClientReceiptPrinter PrinterSettings  `bson:"client_receipt_printer" json:"client_receipt_printer" mapstructure:"client_receipt_printer"`
+	KitchenReceiptPrinter PrinterSettings  `bson:"kitchen_receipt_printer" json:"kitchen_receipt_printer" mapstructure:"kitchen_receipt_printer"`
 	PaymentSources []PaymentSource  `bson:"payment_sources" json:"payment_sources" mapstructure:"payment_sources"`
 }
 

@@ -92,7 +92,10 @@ func (s *Seeder) SeedSettings() error {
 				Code:     "en",
 				Language: "English",
 			},
-			ReceiptPrinter: models.PrinterSettings{
+			ClientReceiptPrinter: models.PrinterSettings{
+				Host: "192.168.123.123",
+			},
+			KitchenReceiptPrinter: models.PrinterSettings{
 				Host: "192.168.123.123",
 			},
 			PaymentSources: []models.PaymentSource{

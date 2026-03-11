@@ -51,10 +51,16 @@
 
                         <Divider />
                         <div class="flex flex-column">
-                            <h3><span class="pi pi-print"></span> {{ t('printer',1) }}</h3>
+                            <h3><span class="pi pi-print"></span> {{ t('printer',2) }}</h3>
+                            <span class="mt-2 font-bold">Client Receipt Printer</span>
                             <div class="flex align-items-center mt-3">
                                     <span>{{t("host",1)}}:</span>
-                                    <InputText v-model="receipt_printer_host"  class="mx-2" />
+                                    <InputText v-model="client_receipt_printer_host"  class="mx-2" />
+                            </div>
+                            <span class="mt-5 font-bold">Kitchen Receipt Printer</span>
+                            <div class="flex align-items-center mt-3">
+                                    <span>{{t("host",1)}}:</span>
+                                    <InputText v-model="kitchen_receipt_printer_host"  class="mx-2" />
                             </div>
                         </div>
 
@@ -112,7 +118,8 @@ const order_queues = ref<any>({})
 
 const new_queue_prefix = ref("")
 const new_queue_next = ref(1)
-const receipt_printer_host = ref()
+const client_receipt_printer_host = ref()
+const kitchen_receipt_printer_host = ref()
 
 const default_cost_calculation_method = ref("average")
 
@@ -160,8 +167,11 @@ const saveSettings = () => {
                     code: selectedLang.value.code,
                     language: selectedLang.value.language
                 },
-                receipt_printer: {
-                    host: receipt_printer_host.value
+                client_receipt_printer: {
+                    host: client_receipt_printer_host.value
+                },
+                kitchen_receipt_printer: {
+                    host: kitchen_receipt_printer_host.value
                 },
                 payment_sources: payment_sources.value == null ? [] : payment_sources.value
             }
@@ -193,7 +203,8 @@ const getSettings = () => {
         order_queues.value = response.data.data.orders.queues
         default_cost_calculation_method.value = response.data.data.orders.default_cost_calculation_method
         selectedLang.value = response.data.data.language
-        receipt_printer_host.value = response.data.data.receipt_printer.host
+        client_receipt_printer_host.value = response.data.data.client_receipt_printer?.host || ''
+        kitchen_receipt_printer_host.value = response.data.data.kitchen_receipt_printer?.host || ''
         payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
     })
     .catch((err) => {
