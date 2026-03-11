@@ -1,6 +1,11 @@
 <template>
   <div class="setup-wrapper">
     <div class="setup-card">
+      <div class="flex justify-content-end">
+        <a href="https://nutrixpos.com/userguide/installation.html" target="_blank">
+            <Button icon="pi pi-info-circle" class="p-button-text" />
+        </a>
+      </div>
       <!-- Logo / Icon -->
       <div class="setup-icon">
         <i class="pi pi-database"></i>
@@ -135,7 +140,7 @@
           />
         </div>
 
-        <Button v-if="saved" class="submit-btn mt-2" label="Let's go 🚀" @click="router.push({ path: '/admin' })" />
+        <Button v-if="saved" class="submit-btn mt-2" label="Let's go 🚀" @click="router.push({ path: '/home' })" />
       </form>
     </div>
   </div>
