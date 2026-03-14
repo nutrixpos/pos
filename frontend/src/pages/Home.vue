@@ -49,7 +49,7 @@
                     <div class="py-3 mx-3" :style="`color:${category == selectedCategory? store.getColorMode == 'light' ? '#2E4762': '#FDDB00' : store.getColorMode == 'light' ? 'black' : 'white'};font-weight:${category == selectedCategory? 'bold' : '200'}`">{{ category.name }}</div>
                 </div>
             </div>
-            <div class="xl:col-7 col-5 flex px-0 xl:px-2 overflow-auto">
+            <div class="xl:col-5 col-5 flex px-0 xl:px-2 overflow-auto">
                 <Card style="width:100%;">
                     <template #content>
                         <IconField iconPosition="left" class="mb-3">
@@ -65,7 +65,7 @@
                     </template>
                 </Card>
             </div>
-            <div class="col-5 xl:col-3 flex">
+            <div class="col-5 xl:col-5 flex">
                 <Card class="w-12" :style="`border-color: ${is_order_valid ?  '' : 'red'};`">
                     <template #content>
                         <div class="flex flex-column" style="height:calc(94vh - 1.5rem - 36px - var(--p-card-body-padding)); flex-shrink: 0">
@@ -76,10 +76,14 @@
                                             &nbsp;
                                         </div>
                                         <p class="w-6" style="text-overflow:ellipsis"><strong>{{ item.product.name }}</strong></p>
+                                        <P>x{{ item.quantity }}</P>
                                         <p>{{ item.price }} {{t('egp')}}</p>
                                         <div>
                                             <Button icon="pi pi-pencil" size="small" style="width:2rem;height: 2rem;" aria-label="Edit" severity="secondary" @click="itemToEditIndex = index; edit_item_dialog=true" class="mr-1"/>
-                                            <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="orderItems.splice(index,1)" />
+                                            <ButtonGroup>
+                                                <Button icon="pi pi-minus" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="decreaseOrderItemQty(index)" />
+                                                <Button icon="pi pi-plus" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="increaseOrderItemQty(index)" />
+                                            </ButtonGroup>
                                         </div>
                                     </div>
                                     <p class="m-0">{{ item.comment }}</p>
@@ -592,6 +596,32 @@ const delivery_info = ref<any>({name:"",address:"",phone:""})
 const toggleDarkMode = () => {
     store.toggleDarkMode()
     document.documentElement.classList.toggle('my-app-dark');
+}
+
+const increaseOrderItemQty = (index:number) => {
+
+    const currentQuantity = orderItems.value.reduce((total, current) => {
+        return current.product.id == orderItems.value[index].product.id ? total + current.quantity : total
+    }, 0)
+
+
+    const product = products.value.find(p => p.id == orderItems.value[index].product.id)
+    if (product && product.availability < ( currentQuantity + 1)) {
+        toast.add({severity:'warn', summary: 'Insufficient availability', detail: `${orderItems.value[index].product.name} has only ${product?.availability} left`,group: 'br'})
+        return
+    }
+
+    orderItems.value[index].quantity++
+    orderItems.value[index].price = orderItems.value[index].quantity * orderItems.value[index].product.price
+}
+
+const decreaseOrderItemQty = (index:number) => {
+    if (orderItems.value[index].quantity > 1){
+        orderItems.value[index].quantity--
+        orderItems.value[index].price = orderItems.value[index].quantity * orderItems.value[index].product.price
+    }else {
+        orderItems.value.splice(index,1)
+    }
 }
 
 watch(new_order_delivery_customer, (new_val) => {
@@ -1126,15 +1156,40 @@ const orderItems = ref<OrderItem[]>([])
 
 const addItem = async (item) => {
 
-    const new_item = new OrderItem()
-    new_item.product.name = item.name
-    new_item.product.id = item.id
-    await new_item.ReloadDefaults()
-    new_item.ValidateAllMaterials()
-    new_item.ValidateItem()
+    var exists = false
 
 
-    orderItems.value.push(new_item)
+    const currentQuantity = orderItems.value.reduce((total, current) => {
+        return current.product.id == item.id ? total + current.quantity : total
+    }, 0)
+
+
+    const product = products.value.find(p => p.id == item.id)
+    if (product && product.availability < ( currentQuantity + 1)) {
+        toast.add({severity:'warn', summary: 'Insufficient availability', detail: `${item.name} has only ${product?.availability} left`,group: 'br'})
+        return
+    }
+    
+
+    orderItems.value.forEach(order_item => {
+        if (order_item.product.id == item.id && order_item.comment == ""){ // if same product with no comment, increase qty instead of adding new line
+            order_item.quantity++
+            order_item.price = order_item.quantity * order_item.product.price
+            exists = true
+            return
+        }
+    })
+
+    if (!exists) {
+        const new_item = new OrderItem()
+        new_item.product.name = item.name
+        new_item.product.id = item.id
+        await new_item.ReloadDefaults()
+        new_item.ValidateAllMaterials()
+        new_item.ValidateItem()
+        orderItems.value.push(new_item)
+    }
+
 }
 
 const addWithComment = async () => {
