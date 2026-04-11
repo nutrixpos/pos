@@ -93,12 +93,12 @@
                                 <div>
                                     <Divider />
                                     <ButtonGroup class="flex justify-content-start flex-wrap gap-1">
-                                        <Button icon="pi pi-bookmark" label="Draft" @click="stashOrder" size="small" severity="secondary" v-tooltip.top="'Draft order for later interactions'" aria-label="Stash order" />
-                                        <Button label="Add Discount" severity="secondary" icon="fa fa-percent" size="small"  @click="toggle_discount_popover" />
+                                        <Button icon="pi pi-bookmark" :label="$t('draft')" @click="stashOrder" size="small" severity="secondary" v-tooltip.top="'Draft order for later interactions'" aria-label="Stash order" />
+                                        <Button :label="$t('add_discount')" severity="secondary" icon="fa fa-percent" size="small"  @click="toggle_discount_popover" />
                                     </ButtonGroup>
                                     <Popover ref="discount_op">
                                         <div class="flex flex-column gap-2" style="width:25vw">
-                                            <p class="mb-0">Add discount</p>
+                                            <p class="mb-0">{{ $t('add_discount') }}</p>
                                             <div class="flex w-full">
                                                 <Slider v-model="discount_percent" class="w-9 m-1 mx-2" style="height:0.6rem;" />
                                                 <p class="ml-2" style="font-size:0.8rem">{{ discount_percent.toFixed(2) }} %</p>
@@ -124,32 +124,32 @@
                                 </div>
                                 <div class="flex flex-column align-items-start mb-3">
                                     <div class="flex justify-content-center align-items-center mt-2 flex-wrap gap-2">
-                                        <ToggleButton size="small" v-model="is_print_receipt_kitchen" onLabel="Kitchen" offLabel="Kitchen" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36" aria-label="Do you confirm" />
-                                        <ToggleButton size="small" v-model="is_print_receipt_client" onLabel="Client" offLabel="Client" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36 mx-1" aria-label="Do you confirm" />
+                                        <ToggleButton size="small" v-model="is_print_receipt_kitchen" :onLabel="$t('kitchen')" :offLabel="$t('kitchen')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36" aria-label="Do you confirm" />
+                                        <ToggleButton size="small" v-model="is_print_receipt_client" :onLabel="$t('client')" :offLabel="$t('client')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36 mx-1" aria-label="Do you confirm" />
                                         <!-- <ToggleButton size="small" v-tooltip.top="'Auto start order and consume components from inventory'" v-model="is_auto_start_order" onLabel="Autostarting" offLabel="Autostart" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" /> -->
-                                        <ToggleButton size="small" v-tooltip.top="'Auto finish order and consume components from inventory'" v-model="is_auto_finish_order" onLabel="Autofinishing" offLabel="Autofinish" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" />
+                                        <ToggleButton size="small" v-tooltip.top="'Auto finish order and consume components from inventory'" v-model="is_auto_finish_order" :onLabel="$t('auto_finishing')" :offLabel="$t('auto_finish')" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" />
                                     </div>
                                 </div>
-                                <Button label="Next" icon="pi pi-arrow-right" iconPos="right" :disabled="!is_order_valid || orderItems.length == 0" @click="order_additional_details_dialog=true" />
+                                <Button :label="$t('next')" :icon="`pi pi-arrow-${store.orientation == 'rtl' ? 'left' : 'right'}`" iconPos="right" :disabled="!is_order_valid || orderItems.length == 0" @click="order_additional_details_dialog=true" />
                             </div>
                         </div>
                     </template>
                 </Card>
             </div>
-            <Dialog v-model:visible="edit_item_dialog" modal header="Edit item" class="xs:w-12 md:w-10 lg:w-8">
+            <Dialog v-model:visible="edit_item_dialog" modal :header="$t('edit_order_item')" class="xs:w-12 md:w-10 lg:w-8">
                 <OrderItemView v-model="orderItems[itemToEditIndex]"  />
             </Dialog>
-            <Dialog v-model:visible="order_details_dialog" modal header="Order details" class="w-11 xl:w-8">
+            <Dialog v-model:visible="order_details_dialog" modal :header="$t('order_details')" class="w-11 xl:w-8">
                 <OrderView @updated="order_details_dialog=false" @finished="finishOrderDisplayed()" @cancelled="cancelOrderDisplayed()" @amount_collected="orderToShowAmountCollected()" :order="order_to_show" />
             </Dialog>
-            <Dialog v-model:visible="visible" modal header="Add Comment" :style="{ width: '25rem' }">
+            <Dialog v-model:visible="visible" modal :header="$t('add_comment')" :style="{ width: '25rem' }">
                 <InputText v-model="comment" placeholder="Comment" class="mb-4" />
                 <div class="flex justify-content-end gap-2">
-                    <Button type="button" label="Close" severity="secondary"></Button>
-                    <Button type="button" label="Add" @click="addWithComment()"></Button>
+                    <Button type="button" :label="$t('close')" severity="secondary"></Button>
+                    <Button type="button" :label="$t('add')" @click="addWithComment()"></Button>
                 </div>
             </Dialog>
-            <Dialog v-model:visible="order_additional_details_dialog" modal header="Order details" class="xs:w-12 md:w-11 lg:w-11">
+            <Dialog v-model:visible="order_additional_details_dialog" modal :header="$t('order_details')" class="xs:w-12 md:w-11 lg:w-11" :dir="store.orientation == 'rtl' ? 'rtl' : 'ltr'">
                 <Stepper linear value="1">
                     <StepList>
                         <Step v-for="(step,index) in order_details_steps" :key="index" :value="`${index+1}`" >{{ step.label }}</Step>
@@ -160,74 +160,74 @@
                                 <div class="flex flex-column align-items-center">
                                     <h2 class="mt-0">
                                         <i class="fa-regular fa-credit-card mx-2"></i>
-                                         Payment
+                                         {{$t('payment')}}
                                     </h2>
-                                    <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`Collecting (${(total+ ( current_order_tip || 0 )).toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                    <ToggleButton v-model="is_pay_later" onIcon="pi pi-hourglass" offIcon="fa fa-hourglass" offLabel="Pay later" onLabel="Paying later" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`${$t('collecting')} (${(total+ ( current_order_tip || 0 )).toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_pay_later" onIcon="pi pi-hourglass" offIcon="fa fa-hourglass" :offLabel="$t('pay_later')" :onLabel="$t('paying_later')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <div class="flex flex-column align-items-start justify-content-start mt-4 w-full">
-                                        <h4 class="mt-0">Payment source</h4>
-                                        <Select v-model="payment_source" :options="payment_sources" optionLabel="name" placeholder="Payment source" />
+                                        <h4 class="mt-0">{{$t('payment_source')}}</h4>
+                                        <Select v-model="payment_source" :options="payment_sources" optionLabel="name" :placeholder="$t('payment_source')" />
                                     </div>
 
                                     <div class="flex m-0 p-0 flex-column mt-4 align-items-start justify-content-start w-full">
-                                        <h4>Tips</h4>
-                                        <InputText placeholder="Tip" v-model.number="current_order_tip" />
+                                        <h4>{{$t('tips')}}</h4>
+                                        <InputText :placeholder="$t('tips')" v-model.number="current_order_tip" />
                                     </div>
                                 </div>
                                 <Divider layout="vertical" />
                                 <div class="flex flex-column align-items-center">
                                     <h2 class="mt-0">
                                         <i class="fa fa-box-open mx-2"></i>
-                                        Service Type
+                                        {{$t('service_type')}}
                                     </h2>
-                                    <ToggleButton v-model="is_serve_inside" onIcon="fa fa-bowl-food" offIcon="fa fa-bowl-food" offLabel="Dine in" onLabel="Dine in" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                    <ToggleButton v-model="is_take_away" onIcon="pi pi-box" offIcon="pi pi-box" offLabel="Takeaway" onLabel="Takeaway" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                    <ToggleButton v-model="is_delivery" onIcon="pi pi-truck" offIcon="pi pi-truck" offLabel="Delivery" onLabel="Delivery" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_serve_inside" onIcon="fa fa-bowl-food" offIcon="fa fa-bowl-food" :offLabel="$t('dine_in')" :onLabel="$t('dine_in')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_take_away" onIcon="pi pi-box" offIcon="pi pi-box" :offLabel="$t('takeaway')" :onLabel="$t('takeaway')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    <ToggleButton v-model="is_delivery" onIcon="pi pi-truck" offIcon="pi pi-truck" :offLabel="$t('delivery')" :onLabel="$t('delivery')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                 </div>
                                 <Divider layout="vertical" />
                                 <div class="flex flex-column align-items-start">
                                     <h2 class="mt-0">
                                         <i class="fa-regular fa-comment mx-2"></i>
-                                        Comment
+                                        {{$t('comment')}}
                                     </h2>
-                                    <Textarea v-model="order_comment" size="small" placeholder="Comment" rows="3" />
+                                    <Textarea v-model="order_comment" size="small" :placeholder="$t('comment')" rows="3" />
                                     <h2 class="mt-6 mb-0 w-full align-items-start justify-content-start">
                                         <i class="fa fa-user mx-2"></i>
-                                        Customer
+                                        {{$t('customer')}}
                                         <Button icon="pi pi-pencil" severity="primary" @click="pick_customer_dialog=true" />
                                     </h2>
                                     <div class="flex flex-column">
                                         <DataTable class="mt-2" :value="new_order_delivery_customer">
-                                            <Column field="name" header="Name"></Column>
-                                            <Column field="address" header="Address"></Column>
-                                            <Column field="phone" header="Phone"></Column>
+                                            <Column field="name" :header="$t('name')"></Column>
+                                            <Column field="address" :header="$t('address')"></Column>
+                                            <Column field="phone" :header="$t('phone')"></Column>
                                         </DataTable>
                                     </div>
                                     <h2 class="mt-6 mb-0 w-full align-items-start justify-content-start">
                                         <i class="fa fa-pen-to-square mx-2"></i>
-                                        Custom Data
+                                        {{$t('custom_data')}}
                                     </h2>
                                     <div class="flex flex-column">
                                         <div v-for="(item,index) in custom_data" :key="index" class="flex align-items-start flex-column gap-1">
-                                            <span>Key:</span>
+                                            <span>{{$t('key')}}:</span>
                                             <InputText v-model="custom_data[index].key" />
-                                            <span>Value:</span>
+                                            <span>{{$t('value')}}:</span>
                                             <InputText v-model.number="custom_data[index].value"/>
-                                            <Button severity="secondary" aria-label="Remove" icon="pi pi-times" @click="custom_data.splice(index,1)" />
+                                            <Button severity="secondary" :aria-label="$t('remove')" icon="pi pi-times" @click="custom_data.splice(index,1)" />
                                         </div>
                                         <div class="flex flex-column align-items-start mt-3 gap-1">
-                                            <span>Key:</span>
+                                            <span>{{$t('key')}}:</span>
                                             <InputText v-model="new_custom_data_key" />
-                                            <span>Value:</span>
+                                            <span>{{$t('value')}}:</span>
                                             <InputText v-model="new_custom_data_value"/>
 
-                                            <Button class="mt-2" label="Add" @click="custom_data.push({key:new_custom_data_key,value:new_custom_data_value}); new_custom_data_key = ''; new_custom_data_value = ''" />
+                                            <Button class="mt-2" :label="$t('add')" @click="custom_data.push({key:new_custom_data_key,value:new_custom_data_value}); new_custom_data_key = ''; new_custom_data_value = ''" />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex pt-6 justify-content-end">
-                                <Button label="Next" icon="pi pi-arrow-right" iconPos="right" @click="activateCallback('2')" />
+                                <Button :label="$t('next')" :icon="`pi pi-arrow-${store.orientation == 'rtl' ? 'left' : 'right'}`" :iconPos="`${store.orientation == 'rtl' ? 'left' : 'right'}`" @click="activateCallback('2')" />
                             </div>
                         </StepPanel>
                         <StepPanel v-slot="{ activateCallback }" v-if="order_details_steps.length == 3" value="2">
@@ -248,34 +248,34 @@
                             <div class="flex flex-column">
                                 <h2 class="mt-0">
                                     <i class="pi pi-comment mx-2"></i>
-                                    Recap
+                                    {{$t('recap')}}
                                 </h2>
                                 <Divider />
-                                <h3>Main details</h3>
+                                <h3>{{$t('main_details')}}</h3>
                                 <div class="flex align-items-start mt-3 gap-1">
-                                    <span>{{t('autostarting')}}:</span>
+                                    <span>{{$t('autostarting')}}:</span>
                                     <p class="my-0"><strong> {{is_auto_start_order}} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
-                                    <span>Payment:</span>
-                                    <p class="my-0"><strong> {{ is_pay_later ? t('pay_later') : t('now') }} </strong></p>
+                                    <span>{{$t('payment')}}:</span>
+                                    <p class="my-0"><strong> {{ is_pay_later ? $t('pay_later') : $t('now') }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
-                                    <span>Payment Source:</span>
+                                    <span>{{$t('payment_source')}}:</span>
                                     <p class="my-0"><strong> {{ payment_source?.name }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
-                                    <span>{{t('location')}}:</span>
-                                    <p  class="my-0" v-if="is_serve_inside"><strong> {{t('dine_in')}} </strong></p>
-                                    <p  class="my-0" v-if="is_delivery"><strong> {{t('delivery')}} </strong></p>
-                                    <p  class="my-0" v-if="is_take_away"><strong> {{t('takeaway')}} </strong></p>
+                                    <span>{{$t('location')}}:</span>
+                                    <p  class="my-0" v-if="is_serve_inside"><strong> {{$t('dine_in')}} </strong></p>
+                                    <p  class="my-0" v-if="is_delivery"><strong> {{$t('delivery')}} </strong></p>
+                                    <p  class="my-0" v-if="is_take_away"><strong> {{$t('take_away')}} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{t('comment')}}:</span>
                                     <p class="my-0"><strong> {{order_comment}} </strong></p>
                                 </div>
                                 <div class="flex flex-column align-items-start mt-3 gap-1">
-                                    <span>{{t('other')}}:</span>
+                                    <span>{{$t('other')}}:</span>
                                     <div class="flex align-items-start mt-3 gap-1" v-for="(item,index) in custom_data" :key="index">
                                         <span>{{item.key}}:</span>
                                         <p class="my-0"><strong> {{item.value}} </strong></p>
@@ -300,8 +300,8 @@
                                     </div>
                                 </div>
                                 <div class="flex pt-6 justify-content-end gap-2">
-                                    <Button label="Back" icon="pi pi-arrow-left" iconPos="left" @click="order_details_steps.length == 3 ? activateCallback('2') : activateCallback('1')" severity="secondary" />
-                                    <Button :label="`${is_auto_start_order ? t('start') : t('submit')} ${is_collecting_money ? '( '+t('collect')+ ' '+ total.toFixed(2) + ' EGP )' : '( '+t('pay_later') + ' )'} `" :disabled="!is_order_valid" @click="submitOrder()" />
+                                    <Button :label="$t('back')" :icon="`pi pi-arrow-${store.orientation == 'rtl' ? 'right' : 'left'}`" :iconPos="`${store.orientation == 'rtl' ? 'right' : 'left'}`" @click="order_details_steps.length == 3 ? activateCallback('2') : activateCallback('1')" severity="secondary" />
+                                    <Button :label="`${is_auto_start_order ? $t('start') : $t('submit')} ${is_collecting_money ? '( '+$t('collect')+ ' '+ total.toFixed(2) + ` ${$t('egp')} )` : '( '+$t('pay_later') + ' )'} `" :disabled="!is_order_valid" @click="submitOrder()" />
                                 </div>
                             </div>
                         </StepPanel>
@@ -587,8 +587,8 @@ const mainSearchResult = ref<any[]>([])
 const discount_op = ref();
 
 const order_details_steps : any = ref([
-    {"number": 1, "label": "Main details"},
-    {"number": 3, "label": "Confirmation"},
+    {"number": 1, "label": t('main_details')},
+    {"number": 3, "label": t('confirmation')},
 ])
 
 const delivery_info = ref<any>({name:"",address:"",phone:""})
@@ -1080,6 +1080,10 @@ const loadSettings = async () => {
             locale.value = response2.data.data.code
             store.setOrientation(response2.data.data.orientation)
             loading.value = false
+            order_details_steps.value = [
+                {"number": 1, "label": t('main_details')},
+                {"number": 3, "label": t('confirmation')},
+            ]
         })
         .catch((err) => {
             console.log(err)

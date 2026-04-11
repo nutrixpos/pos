@@ -5,8 +5,8 @@
                 <Tag v-if="props.order_item_index == index" icon="pi pi-arrow-right" style="background-color:#FFDC00" />
             </template>
         </Column>
-        <Column field="product.name" header="Name"></Column>
-        <Column header="Materials">
+        <Column field="product.name" :header="$t('name')"></Column>
+        <Column :header="$t('materials')">
             <template #body="slotProps">
                 <ul>
                     <li v-for="(material,index) in slotProps.data.materials" :key="index">

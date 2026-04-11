@@ -32,7 +32,7 @@
                                     </template>
                                 </Column>
                             </DataTable>
-                            <Dialog v-model:visible="order_details_dialog" modal :header="`Order:  (${orderToDisplay?.display_id}) details`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
+                            <Dialog v-model:visible="order_details_dialog" modal :header="`${$t('order')}:  (${orderToDisplay?.display_id})`" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
                                 <OrderView @updated="loadOrders(); order_details_dialog=false" @cancelled="cancelOrderDisplayed()" @finished="finishOrderDisplayed()" @amount_collected="orderToShowAmountCollected()" :order="orderToDisplay" @order-cancelled="order_details_dialog=false" />
                             </Dialog>
                         </div>
@@ -59,6 +59,9 @@ import { useConfirm } from "primevue/useconfirm";
 import Dialog from 'primevue/dialog';
 import { useToast } from "primevue/usetoast";
 import OrderView from '@/components/OrderView.vue';
+import { globalStore } from '@/stores';
+
+const store = globalStore();
 
 
 const { proxy } = getCurrentInstance();

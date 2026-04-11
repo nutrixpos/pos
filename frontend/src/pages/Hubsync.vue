@@ -8,7 +8,7 @@
                     </div>
                     <div class="col-12">
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
-                            <label for="binary" class="font-bold">Enabled</label>
+                            <label for="binary" class="font-bold">{{$t('enabled')}}</label>
                             <ToggleSwitch v-model="hubSync.settings.enabled" class="mb-2" />
                         </div>
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
@@ -28,24 +28,24 @@
                             <InputNumber v-model.nunber="hubSync.settings.buffer_size" mode="decimal" class="w-full mb-2" />
                         </div>
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
-                            <label for="binary" class="font-bold">Last Synced</label>
+                            <label for="binary" class="font-bold">{{$t('last_synced')}}</label>
                             <span>{{ hubSync.last_synced || "-" }}</span>
                         </div>
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
-                            <label for="binary" class="font-bold">Sync Progress</label>
+                            <label for="binary" class="font-bold">{{$t('sync_progress')}}</label>
                             <span>{{ hubSync.sync_progress || "-" }}</span>
                         </div>
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
-                            <label for="binary" class="font-bold">SyncSales</label>
+                            <label for="binary" class="font-bold">{{$t('sync_sales')}}</label>
                             <ToggleSwitch v-model="hubSync.settings.sync_sales" class="mb-2" />
                         </div>
                         <div class="col-12 lg:col-4 flex flex-column gap-2">
-                            <label for="binary" class="font-bold">SyncInventory</label>
+                            <label for="binary" class="font-bold">{{$t('sync_inventory')}}</label>
                             <ToggleSwitch v-model="hubSync.settings.sync_inventory" class="mb-2" />
                         </div>
                         
                         <div class="col-12">
-                            <Button label="Save" class="w-5rem" @click="save" />                            
+                            <Button :label="$t('save')" class="w-5rem" @click="save" />                            
                         </div>
                     </div>
                 </div>

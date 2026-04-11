@@ -5,15 +5,15 @@
             x <InputText :disabled="!model.is_consume_from_ready" type="number" v-model.number="model.quantity"  size="small"/>
         </div>
         <div class="flex align-items-center justify-content-center">
-            <span class="mx-2">{{$t('from_ready')}}</span>
+            <span class="mx-2">{{$t('consume_from')}}</span>
             <ToggleSwitch @change="model.ValidateItem()" v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
             <span class="mx-2">
-                <p style="font-size: 0.9rem;">{{model.ready}} {{$t('ready')}}</p>
+                <p style="font-size: 0.9rem;">{{model.ready}} {{$t('ready_to_serve')}}</p>
             </span>
         </div>
     </div>
     <div v-if="!model.is_consume_from_ready">
-        <Button :label="$t('add_material')" @click="new_component_dialog = true" />
+        <Button :label="$t('add_inventory_item')" @click="new_component_dialog = true" />
         <div class="flex my-3 py-2 gap-4 align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
 
             <Button icon="pi pi-times" size="small" style="width:2rem;height: 2rem;" aria-label="Remove" severity="secondary" @click="removeMaterialByIndex(index)" />
@@ -27,7 +27,7 @@
                     <span class="ml-2 mt-2">{{ material.material.unit }}</span>
                 </div>
                 <Dropdown @change="EntryDropDownChanged(index)"  v-model="model.materials[index].entry"  :options="model.materials[index].material.entries" optionLabel="label" placeholder="Select option" class="w-6" />
-                <span>{{$t('cost')}} (Exact): {{ material.entry?.cost * model.quantity }}</span>
+                <span>{{$t('cost')}} ({{$t('exact')}}): {{ material.entry?.cost * model.quantity }}</span>
             </div>
 
             <div v-if="settings?.orders.default_cost_calculation_method == 'average'" class="flex align-items-center gap-8 w-full">
@@ -35,7 +35,7 @@
                     <InputText type="number" @change="MaterialInputChanged(index)" :invalid="!material.isQuantityValid" v-model.number="model.materials[index].quantity" size="small"/>
                     <span class="ml-2 mt-2">{{ material.material.unit }}</span>
                 </div>
-                <span>{{$t('cost')}} (Average): {{ material?.avgcost * model.quantity }}</span>
+                <span>{{$t('cost')}} ({{$t('average')}}): {{ material?.avgcost * model.quantity }}</span>
             </div>
             
         </div>
@@ -45,7 +45,7 @@
             <OrderItemView @changed="validateItem()" v-model="model.sub_items[index]" />
         </div>
     </div>
-    <Dialog v-model:visible="new_component_dialog" modal header="Add material">
+    <Dialog v-model:visible="new_component_dialog" modal :header="$t('add_inventory_item')">
         <PickMaterial @returnMaterial="(material) => addMaterial(material)" />
     </Dialog>
 </template>

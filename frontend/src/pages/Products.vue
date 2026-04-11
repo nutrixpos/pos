@@ -14,8 +14,8 @@
                                 </div>
                             </template>
                             <Column sortable field="name" :header="$t('name')"></Column>
-                            <Column field="ready" :header="$t('ready')"></Column>
-                            <Column field="materials.length" :header="$t('material',3)"></Column>
+                            <Column field="ready" :header="$t('ready_to_serve')"></Column>
+                            <Column field="materials.length" :header="$t('inventory_item',3)"></Column>
                             <Column field="sub_products.length" :header="$t('subproduct',3)">
                                 <template #body="slotProps">
                                     {{ slotProps.data.sub_products != null ? slotProps.data.sub_products.length : 0 }}
@@ -51,12 +51,12 @@
                                     </FileUpload>
                                 </div>
                                 <div class="flex flex-column gap-2 w-5 mt-2">
-                                    <label for="name">{{$t('ready')}}</label>
+                                    <label for="name">{{$t('ready_to_serve')}}</label>
                                     <InputText name="ready" type="number" aria-describedby="ready" />
                                     <Message v-if="$form.ready?.invalid" severity="error" size="small" variant="simple">{{ $form.ready.error?.message }}</Message>
                                 </div>
                                 <div class="flex flex-column gap-2 w-10 mt-3">
-                                    <label for="name">{{$t('material',3)}}</label>
+                                    <label for="name">{{$t('inventory_item',3)}}</label>
                                     <DataTable :value="materials" stripedRows class="w-full pr-2">
                                         <Column field="name" :header="$t('name')"></Column>
                                         <Column field="quantity" :header="$t('quantity')">
@@ -74,7 +74,7 @@
                                         </Column>
                                         <template #header>
                                             <div class="flex justify-start">
-                                                <Button icon="pi pi-plus" :label="$t('add_material')"  rounded raised @click="add_material_dialog=true" />
+                                                <Button icon="pi pi-plus" :label="$t('add_inventory_item',1)"  rounded raised @click="add_material_dialog=true" />
                                             </div>
                                         </template>
                                     </DataTable>
@@ -119,7 +119,7 @@
                                 </ButtonGroup>
                             </template>
                         </Dialog>
-                        <Dialog v-model:visible="productEditDialog" modal :header="`${$t('edit_product')} ${productToEdit.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
+                        <Dialog v-model:visible="productEditDialog" modal :header="`${$t('edit_product')} ${productToEdit.name}`" :style="{ width: '75rem',direction:store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
                             <div class="flex flex-column gap-2 w-5">
                                 <label for="name">{{$t('name')}}</label>
                                 <InputText id="name" v-model="productToEdit.name" aria-describedby="name" />
@@ -129,7 +129,7 @@
                                 <InputText id="price" v-model.number="productToEdit.price" aria-describedby="price" />
                             </div>
                             <div class="flex flex-column gap-2 w-5 mt-2">
-                                <label for="name">{{$t('ready')}}</label>
+                                <label for="name">{{$t('ready_to_serve')}}</label>
                                 <InputText v-model.number="productToEdit.ready" type="number" aria-describedby="ready" />
                             </div>
                             <div class="flex flex-column gap-2 w-10 mt-3">
@@ -143,7 +143,7 @@
                                 </FileUpload>
                             </div>
                             <div class="flex flex-column gap-2 w-10 mt-3">
-                                <label for="name">{{$t('material',3)}}</label>
+                                <label for="name">{{$t('inventory_item',3)}}</label>
                                 <DataTable :value="productToEdit.materials" stripedRows class="w-full pr-2">
                                     <Column field="name" :header="$t('name')"></Column>
                                     <Column field="quantity" :header="$t('quantity')">
@@ -151,7 +151,7 @@
                                             <InputText type="number" v-model.number="productToEdit.materials[slotProps.data.index].quantity" aria-describedby="quantity" />
                                         </template>
                                     </Column>
-                                    <Column field="unit" :header="$t('unit')"></Column>
+                                    <Column field="unit" :header="$t('measuring_unit')"></Column>
                                     <Column :header="$t('actions')">
                                         <template #body="slotProps">
                                             <ButtonGroup>
@@ -161,7 +161,7 @@
                                     </Column>
                                     <template #header>
                                         <div class="flex justify-start">
-                                            <Button icon="pi pi-plus" label="Add Material"  rounded raised @click="edit_material_dialog=true" />
+                                            <Button icon="pi pi-plus" :label="$t('add_inventory_item')"  rounded raised @click="edit_material_dialog=true" />
                                         </div>
                                     </template>
                                 </DataTable>
@@ -239,6 +239,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { Image, Message, ToggleSwitch } from 'primevue';
 import { Form } from '@primevue/forms';
 // import { Material } from '@/classes/OrderItem';
+import { globalStore } from '@/stores';
 
 const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
@@ -249,8 +250,9 @@ const edit_material_dialog = ref(false)
 const edit_subproduct_dialog = ref(false)
 
 
-const add_product_form = ref({})
 
+const add_product_form = ref({})
+const store = globalStore()
 const productAddDialog = ref(false)
 
 

@@ -26,7 +26,7 @@
                                </template>
                            </Column>
                        </DataTable>
-                       <Dialog v-model:visible="customerAddDialog" modal :header="$t('add_customer')" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+                       <Dialog v-model:visible="customerAddDialog" modal :header="$t('add_customer')" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
                            <div class="flex flex-column gap-2 w-5">
                                <label for="name">{{$t('name')}}</label>
                                <InputText id="name" v-model="new_customer_name" aria-describedby="name" />
@@ -46,7 +46,7 @@
                                </ButtonGroup>
                            </template>
                        </Dialog>
-                       <Dialog v-model:visible="customerEditDialog" modal :header="`${$t('edit_customer')} ${customerToEdit.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+                       <Dialog v-model:visible="customerEditDialog" modal :header="`${$t('edit_customer')} ${customerToEdit.name}`" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
                            <div class="flex flex-column gap-2 w-5">
                                <label for="name">{{$t('name')}}</label>
                                <InputText id="name" v-model="customerToEdit.name" aria-describedby="name" />
@@ -86,7 +86,10 @@ import { ref,getCurrentInstance } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 // import { Material } from '@/classes/OrderItem';
+import { globalStore } from '../stores';
 
+
+const store = globalStore()
 const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
 

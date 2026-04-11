@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :style="`direction: ${store.orientation == 'rtl' ? 'rtl' : 'ltr'}`" class="p-3">
         <div class="grid w-12">
 
             <div class="col-12">
@@ -23,15 +23,15 @@
             <div class="col-12">
                 <h4 class="mb-0 w-full align-items-start justify-content-start">
                     <i class="fa fa-user mx-2"></i>
-                    Customer
+                    {{$t('customer')}}
                 </h4>
             </div>
             <div class="flex flex-column col-8 xs:col-12">
                 <DataTable class="mt-2" :value="[props.order.customer]">
                     <Column field="id" header="Id"></Column>
-                    <Column field="name" header="Name"></Column>
-                    <Column field="address" header="Address"></Column>
-                    <Column field="phone" header="Phone"></Column>
+                    <Column field="name" :header="$t('name')"></Column>
+                    <Column field="address" :header="$t('address')"></Column>
+                    <Column field="phone" :header="$t('phone')"></Column>
                 </DataTable>
             </div>
 
@@ -111,7 +111,7 @@
             
 
             <div class="col-12 flex flex-column">
-                <h4>Actions</h4>
+                <h4>{{$t('actions')}}</h4>
                 <div class="flex gap-3">
                     <ButtonGroup class="flex">
                         <Button icon="fa fa-print" severity="secondary" :label="$t('client_receipt')" @click="PrintClientReceipt()" />
@@ -149,6 +149,9 @@ import { useToast } from "primevue/usetoast";
 import OrderItemsInfo from './OrderItemsInfo.vue';
 import Order from '@/classes/Order';
 import Dialog from 'primevue/dialog'
+import { globalStore } from '@/stores';
+
+const store = globalStore();
 
 const toast = useToast()
 

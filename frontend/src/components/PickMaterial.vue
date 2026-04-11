@@ -7,7 +7,7 @@
                         <InputIcon>
                             <i class="pi pi-search" />
                         </InputIcon>
-                        <InputText v-model="filters['name'].value" placeholder="Search by name" />
+                        <InputText v-model="filters['name'].value" :placeholder="$t('search_by_name')" />
                     </IconField>
                 </div>
             </template>

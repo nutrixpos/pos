@@ -1,16 +1,16 @@
 <template>
 <div class="grid">
     <div class="flex col-12 flex-column gap-2">
-        <label for="name">Name</label>
+        <label for="name">{{$t('name')}}</label>
         <InputText id="name" v-model="edited_material.name" aria-describedby="name" />
     </div>
     <div class="flex col-12 flex-column gap-2">
-        <label for="name">Name</label>
-        <InputText id="name" v-model="edited_material.unit" aria-describedby="name" />
+        <label for="unit">{{$t('unit')}}</label>
+        <InputText id="unit" v-model="edited_material.unit" aria-describedby="unit" />
     </div>
     <div class="col-12 flex">
-        <Button label="Cancel"  severity="secondary" aria-label="Cancel"  />
-        <Button class="ml-2" severity="primary" @click="returnMaterial" label="Done" aria-label="Done" />
+        <Button :label="$t('cancel')"  severity="secondary" aria-label="Cancel"  />
+        <Button class="ml-2" severity="primary" @click="returnMaterial" :label="$t('done')" aria-label="Done" />
     </div>
 </div>
 </template>
@@ -20,6 +20,8 @@ import { defineProps,ref,defineEmits } from 'vue';
 import { Material } from '@/classes/OrderItem';
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext';
+
+
 
 const emit = defineEmits(['returnMaterial']);
 

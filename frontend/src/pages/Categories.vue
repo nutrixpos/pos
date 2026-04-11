@@ -29,16 +29,16 @@
                                 </template>
                             </Column>
                         </DataTable>
-                        <Dialog v-model:visible="categoryAddDialog" modal :header="`Add new category`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
+                        <Dialog v-model:visible="categoryAddDialog" modal :header="$t('add_new_category')" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
                             <div class="flex flex-column gap-2 w-5">
-                                <label for="name">Name</label>
+                                <label for="name">{{ $t('name') }}</label>
                                 <InputText id="name" v-model="new_category.name" aria-describedby="name" />
                             </div>
                             <div class="flex flex-column gap-2 w-10 mt-3">
-                                <label for="name">Products</label>
+                                <label for="name">{{ $t('product', 3) }}</label>
                                 <DataTable :value="new_category.products" stripedRows class="w-full pr-2">
-                                    <Column field="name" header="Name"></Column>
-                                    <Column header="Actions">
+                                    <Column field="name" :header="$t('name')"></Column>
+                                    <Column :header="$t('actions')">
                                         <template #body="slotProps">
                                             <ButtonGroup>
                                                 <Button icon="pi pi-times" severity="secondary" aria-label="Remove" @click="new_category.products.splice(slotProps.data.index,1)" />
@@ -54,21 +54,21 @@
                             </div>
                             <template #footer>
                                 <ButtonGroup>
-                                    <Button label="Cancel"  severity="secondary" aria-label="Cancel"  />
-                                    <Button class="ml-2" severity="primary" @click="submitCategory" label="Save" aria-label="Save" />
+                                    <Button :label="$t('cancel')"  severity="secondary" aria-label="Cancel"  />
+                                    <Button class="ml-2" severity="primary" @click="submitCategory" :label="$t('save')" aria-label="Save" />
                                 </ButtonGroup>
                             </template>
                         </Dialog>
-                        <Dialog v-model:visible="categoryEditDialog" modal :header="`Edit category ${categoryToEdit.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
+                        <Dialog v-model:visible="categoryEditDialog" modal :header="`${$t('edit')} ${categoryToEdit.name}`" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '90vw', '575px': '90vw' }">
                             <div class="flex flex-column gap-2 w-5">
-                                <label for="name">Name</label>
+                                <label for="name">{{ $t('name') }}</label>
                                 <InputText id="name" v-model="categoryToEdit.name" aria-describedby="name" />
                             </div>
                             <div class="flex flex-column gap-2 w-10 mt-3">
-                                <label for="name">Products</label>
+                                <label for="name">{{ $t('product', 3) }}</label>
                                 <DataTable :value="categoryToEdit.products" stripedRows class="w-full pr-2">
-                                    <Column field="name" header="Name"></Column>
-                                    <Column header="Actions">
+                                    <Column field="name" :header="$t('name')"></Column>
+                                    <Column :header="$t('actions')">
                                         <template #body="slotProps">
                                             <ButtonGroup>
                                                 <Button icon="pi pi-times" severity="secondary" aria-label="Remove" @click="categoryToEdit.products.splice(slotProps.data.index,1)" />
@@ -77,15 +77,15 @@
                                     </Column>
                                     <template #header>
                                         <div class="flex justify-start">
-                                            <Button icon="pi pi-plus" label="Add Product"  rounded raised @click="add_editted_product_dialog=true" />
+                                            <Button icon="pi pi-plus" :label="$t('add_product')"  rounded raised @click="add_editted_product_dialog=true" />
                                         </div>
                                     </template>
                                 </DataTable>
                             </div>
                             <template #footer>
                                 <ButtonGroup>
-                                    <Button label="Cancel"  severity="secondary" aria-label="Cancel"  />
-                                    <Button class="ml-2" severity="primary" @click="updateCategory" label="Save" aria-label="Save" />
+                                    <Button :label="$t('cancel')"  severity="secondary" aria-label="Cancel"  />
+                                    <Button class="ml-2" severity="primary" @click="updateCategory" :label="$t('save')" aria-label="Save" />
                                 </ButtonGroup>
                             </template>
                         </Dialog>
@@ -115,6 +115,9 @@ import axios from 'axios'
 import { ref,getCurrentInstance } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
+import { globalStore } from '@/stores';
+
+const store = globalStore()
 
 const { proxy } = getCurrentInstance();
 const confirm = useConfirm();

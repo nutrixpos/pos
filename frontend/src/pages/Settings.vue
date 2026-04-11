@@ -7,44 +7,44 @@
                         <h3>{{$t('settings')}}</h3>
                     </div>
                     <div class="col-12 flex-column flex">
-                        <h4><i class="fa fa-carrot"></i> {{$t('material',3)}}</h4>
-                        <div class="flex align-items-center">
-                            <span>stock_alert_treshold</span>
+                        <h4><i class="fa fa-boxes-stacked"></i> {{$t('inventory_item',3)}}</h4>
+                        <div class="flex align-items-center gap-2">
+                            <span>{{ $t('stock_alert_threshold') }}</span>
                             <InputText class="ml-3" v-model.number="stock_alert_treshold" type="number" />
                         </div>
                         
                         <Divider />
                         <h4 class="mb-2"><i class="pi pi-box"></i> {{$t('order',3)}}</h4>
-                        <span class="mt-1">Queues:</span>
+                        <span class="mt-1">{{$t('queues')}} :</span>
                         <div class="flex align-items-center">
                             <div class="flex flex-column">
                                 <div v-for="(queue,index) in order_queues" :key="index" class="flex align-items-center mt-2">
-                                    <span>Prefix:</span>
+                                    <span>{{$t('prefix')}} :</span>
                                     <InputText v-model="order_queues[index].prefix" class="mx-2" />
-                                    <span>Next:</span>
+                                    <span>{{ $t('next') }} :</span>
                                     <InputText v-model.number="order_queues[index].next"  class="mx-2 "/>
                                     <Button severity="secondary" aria-label="Remove" icon="pi pi-times" @click="order_queues.splice(index,1)" />
                                 </div>
                                 <div class="flex align-items-center mt-3">
-                                    <span>Prefix:</span>
+                                    <span>{{$t('prefix')}} :</span>
                                     <InputText v-model="new_queue_prefix" class="mx-2" />
-                                    <span>Next:</span>
+                                    <span>{{$t('next')}} :</span>
                                     <InputText v-model.number="new_queue_next"  class="mx-2 "/>
 
-                                    <Button label="Add" @click="order_queues.push({prefix:new_queue_prefix,next:new_queue_next}); new_queue_prefix = ''; new_queue_next = 1" />
+                                    <Button :label="$t('add')" @click="order_queues.push({prefix:new_queue_prefix,next:new_queue_next}); new_queue_prefix = ''; new_queue_next = 1" />
                                 </div>
                             </div>
                         </div>
-                        <span class="mt-5">Default cost calculation method:</span>
+                        <span class="mt-5">{{$t('default_cost_calculation_method')}} :</span>
                         <div class="flex flex-wrap flex-column gap-4 my-3">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="default_cost_calculation_method" inputId="exact" name="exact" value="exact" />
-                                <label for="exact">Exact</label>
+                                <label for="exact">{{$t('exact')}}</label>
                                 <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Exact cost of materials will be used for each product during order creation chosen from specific material entry'"></Badge>
                             </div>
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="default_cost_calculation_method" inputId="average" name="average" value="average" />
-                                <label for="average">Average</label>
+                                <label for="average">{{$t('average')}}</label>
                                 <Badge value="ℹ" size="small" severity="info" v-tooltip.top="'Average cost of materials available in the inventory will be used for each product during order creation, material/s with earliest expiration will be consumed first'"></Badge>
                             </div>
                         </div>
@@ -52,12 +52,12 @@
                         <Divider />
                         <div class="flex flex-column">
                             <h3><span class="pi pi-print"></span> {{ t('printer',2) }}</h3>
-                            <span class="mt-2 font-bold">Client Receipt Printer</span>
+                            <span class="mt-2 font-bold">{{$t('client_receipt_printer')}}</span>
                             <div class="flex align-items-center mt-3">
                                     <span>{{t("host",1)}}:</span>
                                     <InputText v-model="client_receipt_printer_host"  class="mx-2" />
                             </div>
-                            <span class="mt-5 font-bold">Kitchen Receipt Printer</span>
+                            <span class="mt-5 font-bold">{{ $t('kitchen_receipt_printer') }}</span>
                             <div class="flex align-items-center mt-3">
                                     <span>{{t("host",1)}}:</span>
                                     <InputText v-model="kitchen_receipt_printer_host"  class="mx-2" />
@@ -65,9 +65,9 @@
                         </div>
 
                         <Divider />
-                        <h4 class="mb-2"><i class="pi pi-wallet"></i> {{$t('Payment',1)}}</h4>
+                        <h4 class="mb-2"><i class="pi pi-wallet"></i> {{$t('payment',1)}}</h4>
                         <div class="mt-3">
-                            Sources:
+                            {{$t('payment_source',3)}} :
                         </div>
                         <div class="flex align-items-center">
                             <div class="flex flex-column">
@@ -77,7 +77,7 @@
                                 </div>
                                 <div class="flex align-items-center mt-3">
                                     <InputText v-model="new_payment_source" class="mx-2" />
-                                    <Button label="Add" @click="payment_sources.push({name:new_payment_source}); new_payment_source = ''" />
+                                    <Button :label="$t('add')" @click="payment_sources.push({name:new_payment_source}); new_payment_source = ''" />
                                 </div>
                             </div>
                         </div>
@@ -90,7 +90,7 @@
                         </div>
 
                         <div class="mt-6">
-                            <Button label="Save" @click="saveSettings()" />
+                            <Button :label="$t('save')" @click="saveSettings()" />
                         </div>
                     </div>
                 </div>

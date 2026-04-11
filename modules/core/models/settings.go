@@ -28,13 +28,13 @@ type PrinterSettings struct {
 
 // Settings represents the configuration settings structure
 type Settings struct {
-	Id             string           `bson:"id,omitempty" json:"id" mapstructure:"id"`
-	Inventory      MaterialSettings `bson:"inventory" json:"inventory" mapstructure:"inventory"`
-	Orders         OrderSettings    `bson:"orders" json:"orders" mapstructure:"orders"`
-	Language       LanguageSettings `bson:"language" json:"language" mapstructure:"language"`
-	ClientReceiptPrinter PrinterSettings  `bson:"client_receipt_printer" json:"client_receipt_printer" mapstructure:"client_receipt_printer"`
+	Id                    string           `bson:"id,omitempty" json:"id" mapstructure:"id"`
+	Inventory             MaterialSettings `bson:"inventory" json:"inventory" mapstructure:"inventory"`
+	Orders                OrderSettings    `bson:"orders" json:"orders" mapstructure:"orders"`
+	Language              LanguageSettings `bson:"language" json:"language" mapstructure:"language"`
+	ClientReceiptPrinter  PrinterSettings  `bson:"client_receipt_printer" json:"client_receipt_printer" mapstructure:"client_receipt_printer"`
 	KitchenReceiptPrinter PrinterSettings  `bson:"kitchen_receipt_printer" json:"kitchen_receipt_printer" mapstructure:"kitchen_receipt_printer"`
-	PaymentSources []PaymentSource  `bson:"payment_sources" json:"payment_sources" mapstructure:"payment_sources"`
+	PaymentSources        []PaymentSource  `bson:"payment_sources" json:"payment_sources" mapstructure:"payment_sources"`
 }
 
 type PaymentSource struct {

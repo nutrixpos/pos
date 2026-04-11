@@ -1,5 +1,5 @@
 <template>
-    <Dialog v-model:visible="isVisible" modal :header="$t('add_customer')" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+    <Dialog v-model:visible="isVisible" modal :header="$t('add_customer')" :style="{ width: '75rem',direction: store.orientation == 'rtl' ? 'rtl' : 'ltr' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
         <div class="flex flex-column gap-2 w-5">
             <label for="name">{{$t('name')}}</label>
             <InputText id="name" v-model="new_customer_name" aria-describedby="name" />
@@ -29,6 +29,9 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import ButtonGroup from 'primevue/buttongroup'
 import Button from 'primevue/button'
+import { globalStore } from '../stores';
+
+const store = globalStore()
 
 const emit = defineEmits(['customer-added','update:visible'])
 

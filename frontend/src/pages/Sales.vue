@@ -27,7 +27,7 @@
                             <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="salesTableTotalRecords" :loading="isSalesTableLoading" v-model:expandedRows="expandedSalesLogRows" paginatorPosition="both"  paginator :rows="salesTableRowsPerPage" :rowsPerPageOptions="[7, 14, 30, 90]" :value="sales_log" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
                                 <template #header>
                                     <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <Button label="Export csv" icon="pi pi-file-export" raised @click="export_sales()"/>
+                                        <Button :label="`${$t('export')} csv`" icon="pi pi-file-export" raised @click="export_sales()"/>
                                     </div>
                                 </template>
                                 <Column expander style="width: 5rem" />
@@ -68,8 +68,8 @@
                                                 {{ slotProps.data.order.display_id }}
                                             </template>
                                         </Column>
-                                        <Column sortable field="order.submitted_at" header="Submitted At"></Column>
-                                        <Column sortable field="order.cost" header="Cost">
+                                        <Column sortable field="order.submitted_at" :header="$t('date')"></Column>
+                                        <Column sortable field="order.cost" :header="$t('cost')">
                                             <template #body="slotProps">
                                                 <div class="flex gap-2 align-items-center">
                                                     <div>{{ slotProps.data.order.cost }} </div>
@@ -77,7 +77,7 @@
                                                 </div>
                                             </template>
                                         </Column>
-                                        <Column sortable field="order.sale_price" header="Sales">
+                                        <Column sortable field="order.sale_price" :header="$t('sales')">
                                             <template #body="slotProps">
                                                 <div class="flex gap-2 align-items-center">
                                                     <div>{{ slotProps.data.order.sale_price }} </div>
@@ -85,12 +85,12 @@
                                                 </div>
                                             </template>
                                         </Column>
-                                        <Column sortable field="order.refunds" header="Refunds">
+                                        <Column sortable field="order.refunds" :header="$t('refunds')">
                                             <template #body="slotProps">
                                                 {{ orders_refunds[slotProps.data.id]?.total_refunds }}
                                             </template>
                                         </Column>
-                                        <Column sortable field="profit" header="Profit">
+                                        <Column sortable field="profit" :header="$t('profit')">
                                             <template #body="slotProps">
                                                 <div :style="`${ (slotProps.data.order.sale_price - slotProps.data.order.cost - ( orders_refunds[slotProps.data.id]?.total_refunds || 0 ) + (orders_refunds[slotProps.data.id]?.inventory_refunds || 0 )) > 0 ? 'color:green' : 'color:red' }`">
                                                     {{ slotProps.data.order.sale_price - slotProps.data.order.cost - (orders_refunds[slotProps.data.id]?.total_refunds || 0) + (orders_refunds[slotProps.data.id]?.inventory_refunds || 0 ) }} 
@@ -123,11 +123,11 @@ import axios from 'axios'
 import SalesLogTableItems from '@/components/SalesLogTableItems.vue'
 import { $dt } from '@primevue/themes';
 import {Badge, Button} from 'primevue';
-
+import { useI18n } from 'vue-i18n'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,PointElement,LineElement,ArcElement, Filler)
 
-
+const { t } = useI18n() 
 const {proxy} = getCurrentInstance()
 
 const sales_log = ref([])
@@ -203,15 +203,13 @@ const setProductPieChartOptions = () => {
     };
 };
 
-
-
         
 const setChartData = () => {
     return {
         labels: chartLabels.value,
         datasets: [
             {
-                label: 'Sales',
+                label: t('sales'),
                 data: chartSales.value,
                 fill: false,
                 tension: 0.4,
@@ -219,7 +217,7 @@ const setChartData = () => {
                 borderColor: '#4069ce',
             },
             {
-                label: 'Cost',
+                label: t('cost'),
                 data: chartCost.value,
                 fill: false,
                 tension: 0.4,
@@ -227,7 +225,7 @@ const setChartData = () => {
                 borderColor: '#8E44AD',
             },
             {
-                label: 'Refunds',
+                label: t('refunds'),
                 data: chartRefunds.value,
                 fill: false,
                 tension: 0.4,
@@ -235,7 +233,7 @@ const setChartData = () => {
                 borderColor: '#C70039',
             },
             {
-                label: 'Returns',
+                label: t('returns_to_inventory'),
                 borderWidth:2,
                 data: chartInventoryReturns.value,
                 fill: true,
@@ -243,7 +241,7 @@ const setChartData = () => {
                 borderColor: '#FFBF00',
             },
             {
-                label: 'Profit',
+                label: t('profit'),
                 data: chartProfit.value,
                 fill: true,
                 tension: 0.5,

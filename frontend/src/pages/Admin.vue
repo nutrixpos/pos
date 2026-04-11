@@ -144,11 +144,11 @@ const menu_tree =ref([
     {
         key: '0',
         label: {
-            title:'material',
+            title:'inventory',
             plural: true,
         },
-        data: 'Materials',
-        icon: 'fa fa-carrot',
+        data: 'Inventory',
+        icon: 'fa fa-boxes-stacked',
         link:'/admin/inventory',
     },
     {
