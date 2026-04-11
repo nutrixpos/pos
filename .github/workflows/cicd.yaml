@@ -84,6 +84,7 @@ jobs:
           cd .\nsis-runtime
           dir
           cd ..\
+          tree /f assets
           
           # Download files using PowerShell
           Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
