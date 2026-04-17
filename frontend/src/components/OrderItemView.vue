@@ -4,7 +4,7 @@
         <div>
             x <InputText :disabled="!model.is_consume_from_ready" type="number" v-model.number="model.quantity"  size="small"/>
         </div>
-        <div class="flex align-items-center justify-content-center">
+        <div class="flex align-items-center justify-content-center" v-if="store.getShopMode === 'kitchen'">
             <span class="mx-2">{{$t('consume_from')}}</span>
             <ToggleSwitch @change="model.ValidateItem()" v-model="model.is_consume_from_ready" :disabled="!model.can_change_ready_toggle" />
             <span class="mx-2">
@@ -12,7 +12,7 @@
             </span>
         </div>
     </div>
-    <div v-if="!model.is_consume_from_ready">
+    <div v-if="!model.is_consume_from_ready && store.getShopMode === 'kitchen'">
         <Button :label="$t('add_inventory_item')" @click="new_component_dialog = true" />
         <div class="flex my-3 py-2 gap-4 align-items-center" style="border-bottom:1px solid gray" v-for="(material,index) in model.materials" :key="index">
 
@@ -40,7 +40,7 @@
             
         </div>
     </div>
-    <div v-if="model.sub_items != null && !model.is_consume_from_ready">
+    <div v-if="model.sub_items != null && !model.is_consume_from_ready && store.getShopMode === 'kitchen'">
         <div v-for="(subitem,index) in model.sub_items" :key="index" class="m-0">
             <OrderItemView @changed="validateItem()" v-model="model.sub_items[index]" />
         </div>

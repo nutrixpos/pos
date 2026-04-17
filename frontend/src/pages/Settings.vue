@@ -89,6 +89,28 @@
                             <Button @click="applyLang" v-if="changedLang" class="mt-2 md:w-3" type="button" label="Apply" severity="secondary"></Button>
                         </div>
 
+                        <Divider />
+                        <div class="flex flex-column">
+                            <h3><i class="pi pi-shop"></i> Shop Mode</h3>
+                            <p class="mt-0 mb-3" style="color:#94a3b8;font-size:0.9rem;">Controls which features are available. Restart the app after changing.</p>
+                            <div class="flex flex-wrap gap-4">
+                                <div class="flex align-items-center gap-2">
+                                    <RadioButton v-model="shop_mode" inputId="mode_kitchen" name="shop_mode" value="kitchen" />
+                                    <label for="mode_kitchen" class="flex align-items-center gap-2" style="cursor:pointer">
+                                        <i class="fa fa-kitchen-set" style="color:#f97316"></i>
+                                        <span>Kitchen</span>
+                                    </label>
+                                </div>
+                                <div class="flex align-items-center gap-2">
+                                    <RadioButton v-model="shop_mode" inputId="mode_retail" name="shop_mode" value="retail" />
+                                    <label for="mode_retail" class="flex align-items-center gap-2" style="cursor:pointer">
+                                        <i class="pi pi-shopping-cart" style="color:#06b6d4"></i>
+                                        <span>Retail</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mt-6">
                             <Button :label="$t('save')" @click="saveSettings()" />
                         </div>
@@ -122,6 +144,7 @@ const client_receipt_printer_host = ref()
 const kitchen_receipt_printer_host = ref()
 
 const default_cost_calculation_method = ref("average")
+const shop_mode = ref('')
 
 const toast = useToast();
 
@@ -173,7 +196,8 @@ const saveSettings = () => {
                 kitchen_receipt_printer: {
                     host: kitchen_receipt_printer_host.value
                 },
-                payment_sources: payment_sources.value == null ? [] : payment_sources.value
+                payment_sources: payment_sources.value == null ? [] : payment_sources.value,
+                shop_mode: shop_mode.value
             }
         },
         {
@@ -183,6 +207,7 @@ const saveSettings = () => {
         }
     )
     .then(()=>{
+        store.setShopMode(shop_mode.value)
         toast.add({ severity: 'success', summary: 'Settings updated successfully!', detail: 'Done! ', life: 3000,group:'br' });
     })
     .catch((err) => {
@@ -206,6 +231,7 @@ const getSettings = () => {
         client_receipt_printer_host.value = response.data.data.client_receipt_printer?.host || ''
         kitchen_receipt_printer_host.value = response.data.data.kitchen_receipt_printer?.host || ''
         payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
+        shop_mode.value = response.data.data.shop_mode || ''
     })
     .catch((err) => {
         console.log(err)

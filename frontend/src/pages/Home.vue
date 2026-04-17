@@ -174,16 +174,18 @@
                                         <InputText :placeholder="$t('tips')" v-model.number="current_order_tip" />
                                     </div>
                                 </div>
-                                <Divider layout="vertical" />
-                                <div class="flex flex-column align-items-center">
-                                    <h2 class="mt-0">
-                                        <i class="fa fa-box-open mx-2"></i>
-                                        {{$t('service_type')}}
-                                    </h2>
-                                    <ToggleButton v-model="is_serve_inside" onIcon="fa fa-bowl-food" offIcon="fa fa-bowl-food" :offLabel="$t('dine_in')" :onLabel="$t('dine_in')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                    <ToggleButton v-model="is_take_away" onIcon="pi pi-box" offIcon="pi pi-box" :offLabel="$t('takeaway')" :onLabel="$t('takeaway')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                    <ToggleButton v-model="is_delivery" onIcon="pi pi-truck" offIcon="pi pi-truck" :offLabel="$t('delivery')" :onLabel="$t('delivery')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
-                                </div>
+                                <template v-if="store.getShopMode === 'kitchen'">
+                                    <Divider layout="vertical" />
+                                    <div class="flex flex-column align-items-center">
+                                        <h2 class="mt-0">
+                                            <i class="fa fa-box-open mx-2"></i>
+                                            {{$t('service_type')}}
+                                        </h2>
+                                        <ToggleButton v-model="is_serve_inside" onIcon="fa fa-bowl-food" offIcon="fa fa-bowl-food" :offLabel="$t('dine_in')" :onLabel="$t('dine_in')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                        <ToggleButton v-model="is_take_away" onIcon="pi pi-box" offIcon="pi pi-box" :offLabel="$t('takeaway')" :onLabel="$t('takeaway')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                        <ToggleButton v-model="is_delivery" onIcon="pi pi-truck" offIcon="pi pi-truck" :offLabel="$t('delivery')" :onLabel="$t('delivery')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
+                                    </div>
+                                </template>
                                 <Divider layout="vertical" />
                                 <div class="flex flex-column align-items-start">
                                     <h2 class="mt-0">
@@ -1408,38 +1410,38 @@ watch(selectedCategory, (category) => {
 })
 
 
-  const navbar_links = ref([
-    {
-          label: {
-              title:'cashier',
-              plural:false
-          },
-          icon: 'pi pi-desktop',
-          link: '/home',
-          focused: true,
-          authority: ['cashier','admin']
-      },
+  const navbar_links = computed(() => {
+    const links: any[] = [
       {
-          label: {
-              title:'kitchen',
-              plural:false
-          },
-          focused: false,
-          icon: 'fa fa-kitchen-set',
-          link:'/kitchen',
-          authority: ['chef','admin']
+        label: { title:'cashier', plural:false },
+        icon: 'pi pi-desktop',
+        link: '/home',
+        focused: true,
+        authority: ['cashier','admin']
       },
-      {
-          label: {
-              title:'admin',
-              plural:false
-          },
-          focused: false,
-          icon: 'pi pi-cog',
-          link: '/admin',
-          authority: ['admin']
-      }
-  ]);
+    ];
+
+    // Show Kitchen nav link only in kitchen mode
+    if (store.getShopMode === 'kitchen') {
+      links.push({
+        label: { title:'kitchen', plural:false },
+        focused: false,
+        icon: 'fa fa-kitchen-set',
+        link: '/kitchen',
+        authority: ['chef','admin']
+      });
+    }
+
+    links.push({
+      label: { title:'admin', plural:false },
+      focused: false,
+      icon: 'pi pi-cog',
+      link: '/admin',
+      authority: ['admin']
+    });
+
+    return links;
+  });
   
   
   </script>

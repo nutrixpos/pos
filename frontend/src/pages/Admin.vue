@@ -299,6 +299,30 @@ const loadLanguage = async () => {
             locale.value = response2.data.data.code
             store.setOrientation(response2.data.data.orientation)
             loading.value = false
+
+            if (store.getShopMode != 'kitchen') {
+                items.value = [
+                    {
+                        label: {
+                            title:'cashier',
+                            plural:false
+                        },
+                        focused: false,
+                        icon: 'pi pi-desktop',
+                        link: '/home',
+                    },
+                    {
+                        label: {
+                            title:'admin',
+                            plural:false
+                        },
+                        focused: true,
+                        icon: 'pi pi-cog',
+                        link: '/admin',
+                    }
+                ];
+            }
+
         })
         .catch((err) => {
             console.log(err)

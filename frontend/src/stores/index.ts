@@ -6,6 +6,8 @@ export const globalStore = defineStore('global', {
     orientation:'ltr',
     settings: null,
     colorMode: 'light',
+    // shopMode: '' = unset (first-run), 'kitchen', or 'retail'
+    shopMode: '' as string,
   }),
   getters: {
     double: state => state.count * 2,
@@ -17,6 +19,9 @@ export const globalStore = defineStore('global', {
     },
     getColorMode(state) {
       return state.colorMode;
+    },
+    getShopMode(state) {
+      return state.shopMode;
     }
   },
   actions: {
@@ -31,6 +36,9 @@ export const globalStore = defineStore('global', {
     },
     toggleDarkMode(){
         this.colorMode = this.colorMode === 'light' ? 'dark' : 'light';
+    },
+    setShopMode(mode: string){
+        this.shopMode = mode;
     }
   },
 })
