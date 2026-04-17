@@ -124,10 +124,10 @@
                                 </div>
                                 <div class="flex flex-column align-items-start mb-3">
                                     <div class="flex justify-content-center align-items-center mt-2 flex-wrap gap-2">
-                                        <ToggleButton size="small" v-model="is_print_receipt_kitchen" :onLabel="$t('kitchen')" :offLabel="$t('kitchen')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36" aria-label="Do you confirm" />
-                                        <ToggleButton size="small" v-model="is_print_receipt_client" :onLabel="$t('client')" :offLabel="$t('client')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36 mx-1" aria-label="Do you confirm" />
+                                        <ToggleButton size="small" v-if="store.getShopMode === 'kitchen'" v-model="is_print_receipt_kitchen" :onLabel="$t('kitchen')" :offLabel="$t('kitchen')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36" aria-label="Do you confirm" />
+                                        <ToggleButton size="small" v-model="is_print_receipt_client" :onLabel="store.getShopMode === 'kitchen' ? $t('client') : $t('print_receipt_enabled')" :offLabel="store.getShopMode === 'kitchen' ? $t('client') : $t('print_receipt_disabled')" onIcon="fa fa-print" offIcon="fa fa-print" class="w-36 mx-1" aria-label="Do you confirm" />
                                         <!-- <ToggleButton size="small" v-tooltip.top="'Auto start order and consume components from inventory'" v-model="is_auto_start_order" onLabel="Autostarting" offLabel="Autostart" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" /> -->
-                                        <ToggleButton size="small" v-tooltip.top="'Auto finish order and consume components from inventory'" v-model="is_auto_finish_order" :onLabel="$t('auto_finishing')" :offLabel="$t('auto_finish')" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" />
+                                        <ToggleButton v-if="store.getShopMode === 'kitchen'" size="small" v-tooltip.top="'Auto finish order and consume components from inventory'" v-model="is_auto_finish_order" :onLabel="$t('auto_finishing')" :offLabel="$t('auto_finish')" onIcon="pi pi-check" offIcon="pi pi-play-circle" class="w-36 mx-1" aria-label="Do you confirm" />
                                     </div>
                                 </div>
                                 <Button :label="$t('next')" :icon="`pi pi-arrow-${store.orientation == 'rtl' ? 'left' : 'right'}`" iconPos="right" :disabled="!is_order_valid || orderItems.length == 0" @click="order_additional_details_dialog=true" />
@@ -254,7 +254,7 @@
                                 </h2>
                                 <Divider />
                                 <h3>{{$t('main_details')}}</h3>
-                                <div class="flex align-items-start mt-3 gap-1">
+                                <div class="flex align-items-start mt-3 gap-1" v-if="store.getShopMode === 'kitchen'">
                                     <span>{{$t('autostarting')}}:</span>
                                     <p class="my-0"><strong> {{is_auto_start_order}} </strong></p>
                                 </div>
@@ -1262,7 +1262,7 @@ const submitOrder = () => {
             {
                 meta: {
                     is_print_client_receipt: is_print_receipt_client.value,
-                    is_print_kitchen_receipt: is_print_receipt_kitchen.value
+                    is_print_kitchen_receipt: is_print_receipt_kitchen.value && store.getShopMode === 'kitchen'
                 },
                 data:order
             },

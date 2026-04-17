@@ -173,6 +173,8 @@
     "select_a_mode_to_continue": "Select a mode to continue",
     "kitchen_display_screen": "Kitchen display screen",
     "product_ready_to_service_tracking": "Product ready to service tracking",
-    "order_workflow_management": "Order workflow management"
+    "order_workflow_management": "Order workflow management",
+    "print_receipt_enabled": "Print receipt enabled",
+    "print_receipt_disabled": "Print receipt disabled"
   }
 }

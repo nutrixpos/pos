@@ -27,7 +27,7 @@ type ReceiptService struct {
 }
 
 // Print is used to print a 80mm receipt
-func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template_path string, printer_host string) error {
+func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template_path string, printer_host string, shop_mode string) error {
 
 	socket, err := net.Dial("tcp", fmt.Sprintf("%s:9100", printer_host))
 
@@ -95,6 +95,7 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		"subtotal":        subtotal,
 		"custom_data":     custom_data,
 		"has_custom_data": len(custom_data) > 0,
+		"is_kitchen_mode": shop_mode == "kitchen",
 	}
 
 	if order.IsDelivery {

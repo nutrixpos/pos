@@ -378,7 +378,7 @@ func (os *OrderService) PrintReceipt(order models.Order, template string, lang_c
 		Settings: os.Settings,
 	}
 
-	err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang_code, template, printer_host)
+	err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang_code, template, printer_host, os.Settings.ShopMode)
 	if err != nil {
 		return err
 	}

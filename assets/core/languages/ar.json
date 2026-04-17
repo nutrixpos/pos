@@ -173,6 +173,8 @@
     "select_a_mode_to_continue": "اختر وضعاً للمتابعة",
     "kitchen_display_screen": "شاشة عرض المطبخ",
     "product_ready_to_service_tracking": "تتبع جاهزية المنتج للخدمة",
-    "order_workflow_management": "إدارة سير عمل الطلبات"
+    "order_workflow_management": "إدارة سير عمل الطلبات",
+    "print_receipt_enabled": "طباعة الايصال مفعل",
+    "print_receipt_disabled": "طباعة الايصال معطل"
   }
 }

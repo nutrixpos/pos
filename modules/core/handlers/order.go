@@ -651,7 +651,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if !order.IsPayLater && request.Meta.IsPrintClientReceipt {
-				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/order_receipt_0.handlebars", settings.ClientReceiptPrinter.Host)
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/order_receipt_0.handlebars", settings.ClientReceiptPrinter.Host, settings.ShopMode)
 				if err != nil {
 					logger.Error(err.Error())
 
@@ -662,7 +662,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			}
 
 			if request.Meta.IsPrintKitchenReceipt {
-				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", settings.KitchenReceiptPrinter.Host)
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", settings.KitchenReceiptPrinter.Host, settings.ShopMode)
 				if err != nil {
 					logger.Error(err.Error())
 					return
