@@ -430,6 +430,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 			Cost:      0.0,
 			ProductId: items[itemIndex].Product.Id,
 			ItemId:    items[itemIndex].Id,
+			Quantity:  items[itemIndex].Quantity,
 		}
 
 		for _, component := range item.Materials {
@@ -444,7 +445,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 				ComponentName: component.Material.Name,
 				ComponentId:   component.Material.Id,
 				EntryId:       component.Entry.Id,
-				Quantity:      component.Quantity,
+				Quantity:      component.Quantity * items[itemIndex].Quantity,
 			}
 
 			var component_with_specific_entry models.Material
@@ -473,8 +474,8 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 					total_cost_per_unit = 0.0
 					itemComponent.Cost = 0.0
 				} else {
-					itemComponent.Cost = total_cost_per_unit / float64(count_entries_over_0) * component.Quantity
-					itemCost.Cost += total_cost_per_unit / float64(count_entries_over_0) * component.Quantity
+					itemComponent.Cost = (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
+					itemCost.Cost += (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
 				}
 
 			} else {
@@ -482,7 +483,7 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 					context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
 
 				if err == nil {
-					quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity)
+					quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity) * items[itemIndex].Quantity
 
 					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
 					if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
@@ -514,13 +515,13 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 			}
 
 			for _, subrecipe_cost := range total_cost {
-				itemCost.Cost += subrecipe_cost.Cost * float64(subrecipe.Quantity)
-				subrecipe_cost.Quantity = subrecipe.Quantity
+				itemCost.Cost += subrecipe_cost.Cost * float64(subrecipe.Quantity) * items[itemIndex].Quantity
+				subrecipe_cost.Quantity = subrecipe.Quantity * items[itemIndex].Quantity
 				itemCost.DownstreamCost = append(itemCost.DownstreamCost, subrecipe_cost)
 			}
 		}
 
-		itemCost.SalePrice = recipe.Price
+		itemCost.SalePrice = recipe.Price * items[itemIndex].Quantity
 		cost = append(cost, itemCost)
 	}
 
