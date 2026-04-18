@@ -12,8 +12,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/helpers"
+	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules/core"
 	"github.com/nutrixpos/pos/modules/core/middlewares"
@@ -23,12 +25,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/gorilla/mux"
-	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules"
 	"github.com/spf13/cobra"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // RootProcess holds the root process configuration.
@@ -138,22 +136,26 @@ func (root *RootProcess) Execute() error {
 								return
 							}
 
-							connStr := fmt.Sprintf("mongodb://%s:%d", body.Host, body.Port)
-							if body.Username != "" {
-								connStr = fmt.Sprintf("mongodb://%s:%s@%s:%d", body.Username, body.Password, body.Host, body.Port)
+							testCfg := &config.Config{
+								Databases: []config.Database{
+									{
+										Host:     body.Host,
+										Port:     body.Port,
+										Database: body.Database,
+										Username: body.Username,
+										Password: body.Password,
+									},
+								},
 							}
 
-							clientOptions := options.Client().ApplyURI(connStr)
-
-							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-							defer cancel()
-
-							client, err := mongo.Connect(ctx, clientOptions)
+							client, err := common.GetDatabaseClient(root.Logger, testCfg)
 							if err != nil {
 								http.Error(w, "Connection failed: "+err.Error(), http.StatusBadRequest)
 								return
 							}
-							defer client.Disconnect(context.Background())
+
+							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
 
 							err = client.Ping(ctx, nil)
 							if err != nil {
@@ -281,6 +283,7 @@ func (root *RootProcess) Execute() error {
 
 			seeder_svc := services.Seeder{
 				Config: root.Config,
+				Logger: root.Logger,
 			}
 
 			// make sure that settings bootstrapping data exists, it's idempotent

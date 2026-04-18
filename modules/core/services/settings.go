@@ -2,47 +2,26 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SettingsService struct {
 	Config config.Config
+	Logger logger.ILogger
 }
 
-// UpdateSettings updates the settings in the database
 func (ss *SettingsService) UpdateSettings(settings models.Settings) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
-
-	db_connection_deadline := 5 * time.Second
-	if ss.Config.Env == "dev" {
-		db_connection_deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), db_connection_deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ss.Logger, &ss.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	collection := client.Database(ss.Config.Databases[0].Database).Collection("settings")
 	_, err = collection.UpdateOne(ctx, bson.M{}, bson.M{"$set": settings})
@@ -50,31 +29,13 @@ func (ss *SettingsService) UpdateSettings(settings models.Settings) (err error) 
 	return
 }
 
-// GetSettings returns the settings from the database
 func (os *SettingsService) GetSettings() (ordersettings models.Settings, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	db_connection_deadline := 5 * time.Second
-	if os.Config.Env == "dev" {
-		db_connection_deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), db_connection_deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
+	ctx := context.Background()
 
 	var settings models.Settings
 	err = client.Database(os.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)

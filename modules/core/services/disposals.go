@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -21,21 +21,13 @@ type DisposalService struct {
 }
 
 func (rs *DisposalService) GetDisposal(disposal_id string) (disposal interface{}, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return disposal, err
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("disposals")
 	err = collection.FindOne(ctx, bson.M{"id": disposal_id}).Decode(&disposal)
@@ -47,29 +39,16 @@ func (rs *DisposalService) GetDisposal(disposal_id string) (disposal interface{}
 }
 
 func (ds *DisposalService) GetDisposals(params GetDisposalsParameters) (disposals []interface{}, totalRecords int64, err error) {
-
 	disposals = make([]interface{}, 0)
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
+	client, err := common.GetDatabaseClient(ds.Logger, &ds.Config)
+	if err != nil {
+		return disposals, 0, err
+	}
 
-	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return disposals, 0, err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return disposals, 0, err
-	}
-
-	// Connected successfully
-	ds.Logger.Info("Connected to MongoDB!")
 	filter := bson.M{}
 
 	findOptions := options.Find()
@@ -139,26 +118,13 @@ func (ds *DisposalService) GetDisposals(params GetDisposalsParameters) (disposal
 
 // UpdateDisposal updates a disposal in the database.
 func (cs *DisposalService) UpdateDisposal(id string, disposal interface{}) (updatedDisposal interface{}, err error) {
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
+	if err != nil {
+		return updatedDisposal, err
+	}
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return updatedDisposal, err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return updatedDisposal, err
-	}
-
-	// Connected successfully
 
 	data := bson.M{}
 
@@ -205,26 +171,13 @@ func (cs *DisposalService) UpdateDisposal(id string, disposal interface{}) (upda
 
 // DeleteDisposal deletes a category from the database.
 func (cs *DisposalService) DeleteDisposal(disposal_id string) (err error) {
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
+	if err != nil {
+		return err
+	}
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return err
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("disposals")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": disposal_id})
@@ -233,7 +186,10 @@ func (cs *DisposalService) DeleteDisposal(disposal_id string) (err error) {
 }
 
 func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal, user_id string) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
+	client, err := common.GetDatabaseClient(ds.Logger, &ds.Config)
+	if err != nil {
+		return
+	}
 
 	timeout := 1000 * time.Second
 
@@ -241,27 +197,11 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal,
 		timeout = 5 * time.Minute
 	}
 
-	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
-
 	disposal.Id = primitive.NewObjectID().Hex()
 
-	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database(ds.Config.Databases[0].Database).Collection("disposals")
 	_, err = collection.InsertOne(ctx, disposal)
 	if err != nil {
@@ -289,7 +229,10 @@ func (ds *DisposalService) AddMaterialDisposal(disposal models.MaterialDisposal,
 }
 
 func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal, user_id string) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ds.Config.Databases[0].Host, ds.Config.Databases[0].Port))
+	client, err := common.GetDatabaseClient(ds.Logger, &ds.Config)
+	if err != nil {
+		return
+	}
 
 	timeout := 1000 * time.Second
 
@@ -297,27 +240,11 @@ func (ds *DisposalService) AddProductDisposal(disposal models.ProductDisposal, u
 		timeout = 5 * time.Minute
 	}
 
-	// Create a context with a timeout (optional)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		return
-	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
-
 	disposal.Id = primitive.NewObjectID().Hex()
 
-	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database(ds.Config.Databases[0].Database).Collection("disposals")
 	_, err = collection.InsertOne(ctx, disposal)
 	if err != nil {

@@ -11,12 +11,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // CheckExpirationDates is a background job that checks all materials if they are expired
@@ -26,30 +25,22 @@ func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_s
 
 	log.Info("core:background: Checking expiration dates")
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", conf.Databases[0].Host, conf.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(log, &conf)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
-	// Ping the database to check connectivity
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	defer cancel()
+
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
-	// Connected successfully
-
-	// Get the "test" collection from the database
-	collection := client.Database(conf.Databases[0].Host).Collection("materials")
+	collection := client.Database(conf.Databases[0].Name).Collection("materials")
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		log.Error(err.Error())

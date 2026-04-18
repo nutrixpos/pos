@@ -9,14 +9,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	core_models "github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/hubsync/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SyncerService struct {
@@ -26,21 +25,12 @@ type SyncerService struct {
 }
 
 func (s *SyncerService) SyncInventory(host string) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(s.Config.Databases[0].Database).Collection("materials")
 	cursor, err := collection.Find(ctx, bson.D{})
@@ -104,21 +94,12 @@ func (s *SyncerService) SyncInventory(host string) error {
 }
 
 func (s *SyncerService) CopyToBuffer() error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	db := client.Database(s.Config.Databases[0].Database)
 	collection := db.Collection("hubsync")
@@ -335,21 +316,12 @@ func (s *SyncerService) CopyToBuffer() error {
 }
 
 func (s *SyncerService) UploadSalesToServer(host string) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(s.Config.Databases[0].Database).Collection("hubsync_buffer")
 

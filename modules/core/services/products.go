@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
@@ -20,7 +21,6 @@ import (
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -31,22 +31,12 @@ type RecipeService struct {
 }
 
 func (rs *RecipeService) Waste(product_id string, quantity float64, order_id string, reason string, is_consume bool, orderItem models.OrderItem, user_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	if is_consume {
 		filter := bson.M{"id": product_id}
@@ -89,21 +79,12 @@ func (rs *RecipeService) Waste(product_id string, quantity float64, order_id str
 }
 
 func (rs *RecipeService) Increase(product_id string, quantity float64, source string, order_id string, user_id string) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	filter := bson.M{"id": product_id}
 	// Define the update operation
@@ -141,21 +122,12 @@ func (rs *RecipeService) Increase(product_id string, quantity float64, source st
 }
 
 func (rs *RecipeService) GetProduct(product_id string) (product models.Product, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return product, err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	err = collection.FindOne(ctx, bson.M{"id": product_id}).Decode(&product)
@@ -172,21 +144,12 @@ func (rs *RecipeService) GetProduct(product_id string) (product models.Product, 
 //
 // If the product is not found, it will return an error.
 func (rs *RecipeService) UpdateProduct(product_id string, product models.Product) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 
@@ -214,22 +177,12 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 //
 // It takes a product_id and deletes it from the database.
 func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": product_id})
@@ -246,22 +199,12 @@ func (rs *RecipeService) DeleteProduct(product_id string) (err error) {
 // It takes a product and inserts it into the database.
 // It returns an error if the product could not be inserted.
 func (rs *RecipeService) InsertNew(product models.Product) (afterInsert models.Product, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return afterInsert, err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 
@@ -290,27 +233,14 @@ type GetProductsParams struct {
 }
 
 // GetProducts retrieves a list of products from the database.
-//
-// It takes a first_index and rows and returns a slice of products.
-// It also returns the total number of records in the database.
-// It returns an error if the products could not be retrieved.
 func (rs *RecipeService) GetProducts(params GetProductsParams) (products []models.Product, totalRecords int64, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		rs.Logger.Error(err.Error())
 		return products, totalRecords, err
 	}
+
+	ctx := context.Background()
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 	findOptions := options.Find()
@@ -360,28 +290,14 @@ func (rs *RecipeService) GetProducts(params GetProductsParams) (products []model
 
 // ConsumeFromReady consumes a quantity from the ready stock of a product.
 func (rs *RecipeService) ConsumeFromReady(product_id string, quantity float64) error {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	ctx := context.Background()
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
 	var product models.Product
-	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": product_id}).Decode(&product)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"id": product_id}).Decode(&product)
 	if err != nil {
 		return err
 	}
@@ -433,31 +349,15 @@ func (rs *RecipeService) FillRecipeDesign(item models.OrderItem) (models.OrderIt
 
 // GetRecipeMaterials returns all materials for a given recipe.
 func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []models.Material, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	ctx := context.Background()
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	rs.Logger.Info("Connected to MongoDB!")
 
 	var recipe models.Product
 
-	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe}).Decode(&recipe)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"id": recipe}).Decode(&recipe)
 	if err != nil {
 		return materials, err
 	}
@@ -467,33 +367,17 @@ func (rs *RecipeService) GetRecipeMaterials(recipe_id string) (materials []model
 
 // GetRecipeTree returns the recipe tree for a given recipe_id.
 func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, err error) {
-
+	ctx := context.Background()
 	self_materials := []models.Material{}
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	rs.Logger.Info("Connected to MongoDB!")
 
 	var recipe models.Product
 
-	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&recipe)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"id": recipe_id}).Decode(&recipe)
 	if err != nil {
 		rs.Logger.Error("GetRecipeTree@getting recipe" + err.Error())
 		return tree, err
@@ -546,30 +430,14 @@ func (rs *RecipeService) GetRecipeTree(recipe_id string) (tree models.Product, e
 
 // GetReadyNumber returns the ready number of a given recipe
 func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	ctx := context.Background()
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	rs.Logger.Info("Connected to MongoDB!")
 
 	var product models.Product
-	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(context.Background(), bson.M{"id": recipe_id}).Decode(&product)
+	err = client.Database(rs.Config.Databases[0].Database).Collection("recipes").FindOne(ctx, bson.M{"id": recipe_id}).Decode(&product)
 	if err != nil {
 		return ready, err
 	}
@@ -580,29 +448,13 @@ func (rs *RecipeService) GetReadyNumber(recipe_id string) (ready float64, err er
 }
 
 // CheckRecipesAvailability checks the availability of a list of recipes.
-// It returns a slice of RecipeAvailability with the available and ready number for each recipe.
 func (rs *RecipeService) CheckRecipesAvailability(recipe_ids []string) (availabilities []dto.RecipeAvailability, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	rs.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	coll := client.Database(rs.Config.Databases[0].Database).Collection("recipes")
 

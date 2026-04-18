@@ -2,16 +2,14 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules/hubsync/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SeederService struct {
@@ -40,23 +38,13 @@ func (s *SeederService) Seed() error {
 }
 
 func (s *SeederService) seedHubsyncCollection() error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
 
-	// Check if the "hubsync" collection exists
+	ctx := context.Background()
+
 	db := client.Database(s.Config.Databases[0].Database)
 	collectionNames, err := db.ListCollectionNames(ctx, bson.M{"name": "hubsync"})
 	if err != nil {

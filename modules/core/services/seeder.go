@@ -8,10 +8,9 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
@@ -19,7 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Seeder struct {
@@ -36,30 +34,13 @@ type Seeder struct {
 }
 
 func (s *Seeder) SeedSettings() error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
-	// Check if the settings collection exists
 	db := client.Database(s.Config.Databases[0].Database)
 	collectionNames, err := db.ListCollectionNames(ctx, bson.M{"name": "settings"})
 	if err != nil {
@@ -118,28 +99,12 @@ func (s *Seeder) SeedSettings() error {
 
 // SeedProducts seeds products into the database, optionally creating new products if they don't exist.
 func (s *Seeder) SeedProducts() error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
 	// Check if the product with name "ProductSeeded" exists in the db
 	var product models.Product
@@ -249,29 +214,13 @@ func (s *Seeder) SeedCategories() error {
 		},
 	}
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
-	// Set the database and collection
 	db := client.Database(s.Config.Databases[0].Database)
 	collection := db.Collection("categories")
 
@@ -473,30 +422,13 @@ func (s *Seeder) SeedMaterials(seedEntries bool) error {
 		materials[0].Entries = entries
 	}
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", s.Config.Databases[0].Host, s.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if s.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(s.Logger, &s.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := context.Background()
 
-	// Get the "materials" collection from the database
 	collection := client.Database(s.Config.Databases[0].Database).Collection("materials")
 
 	// Find one document in the collection

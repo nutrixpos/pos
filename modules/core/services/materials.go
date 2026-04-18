@@ -8,15 +8,14 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -41,23 +40,14 @@ type GetMaterialEntriesParams struct {
 
 func (rs *MaterialService) GetMaterialEntries(material_id string, params GetMaterialEntriesParams) (entries []models.MaterialEntry, totalRecords int64, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", rs.Config.Databases[0].Host, rs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if rs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	entries = make([]models.MaterialEntry, 0)
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(rs.Logger, &rs.Config)
 	if err != nil {
 		rs.Logger.Error(err.Error())
 		return entries, totalRecords, err
 	}
+
+	ctx := context.Background()
+	entries = make([]models.MaterialEntry, 0)
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("materials")
 	// findOptions.SetSort(bson.M{"name": 1})
@@ -119,31 +109,12 @@ func (rs *MaterialService) GetMaterialEntries(material_id string, params GetMate
 
 func (ms *MaterialService) GetMaterial(material_id string) (material models.Material, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
-
-	timeout := 1000 * time.Second
-
-	if ms.Config.Env == "dev" {
-		timeout = 5 * time.Minute
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ms.Logger, &ms.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
 	err = collection.FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
@@ -155,31 +126,12 @@ func (ms *MaterialService) GetMaterial(material_id string) (material models.Mate
 }
 
 func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64, order_id string, reason string, is_consume bool, user_id string) (err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
-
-	timeout := 1000 * time.Second
-
-	if ms.Config.Env == "dev" {
-		timeout = 5 * time.Minute
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ms.Logger, &ms.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	if is_consume {
 		var material models.Material
@@ -234,31 +186,12 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 
 func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantity float64, order_id string, reason string, is_refunded bool, user_id string) (err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
-
-	timeout := 1000 * time.Second
-
-	if ms.Config.Env == "dev" {
-		timeout = 5 * time.Minute
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ms.Logger, &ms.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	filter := bson.M{"id": material_id, "entries.id": entry_id}
 	// Define the update operation
@@ -334,29 +267,12 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 
 func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_id string, quantity float64, reason string, order_id string, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return notifications, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return notifications, err
-	}
-
-	// Connected successfully
-
-	if err != nil {
-		return notifications, err
-	}
+	ctx := context.Background()
 
 	material_available_amount, err := cs.GetMaterialEntryAvailability(material.Id, entry_id)
 	if err != nil {
@@ -421,26 +337,12 @@ func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_
 }
 
 func (cs *MaterialService) CalculateMaterialAverageCost(material_id string, quantity float64) (cost float64, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return 0, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-
-	// Connected successfully
-	cs.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	var material models.Material
 	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
@@ -461,29 +363,15 @@ func (cs *MaterialService) CalculateMaterialAverageCost(material_id string, quan
 // It connects to the MongoDB database, retrieves the specific material entry, and calculates the cost
 // using the purchase price and purchase quantity.
 func (cs *MaterialService) CalculateMaterialExactCost(entry_id, material_id string, quantity float64) (cost float64, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return 0, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-
-	// Connected successfully
-	cs.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	var material models.Material
-	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -508,26 +396,15 @@ func (cs *MaterialService) CalculateMaterialExactCost(entry_id, material_id stri
 // quantity of the specified entry in the material. If the entry is not found in
 // the material, the function returns an error.
 func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entry_id string) (amount float64, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return amount, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return amount, err
-	}
+	ctx := context.Background()
 
 	var material models.Material
-	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{
 		"id":         material_id,
 		"entries.id": entry_id,
 	},
@@ -550,26 +427,12 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 // It returns an error if something goes wrong.
 func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, order models.Order, order_item_index int, user_id string) (notifications []models.WebsocketTopicServerMessage, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ms.Config.Databases[0].Host, ms.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ms.Logger, &ms.Config)
 	if err != nil {
 		return notifications, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return notifications, err
-	}
-
-	// Connected successfully
-	ms.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	productService := RecipeService{
 		Logger: ms.Logger,
@@ -783,28 +646,13 @@ func (cs *MaterialService) GetComponentAvailability(componentid string) (amount 
 
 	amount = 0.0
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return 0.0, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return 0.0, err
-	}
+	ctx := context.Background()
 
-	// Connected successfully
-	cs.Logger.Info("Connected to MongoDB!")
-
-	// Get the "test" collection from the database
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 
 	filter := bson.M{"id": componentid}
@@ -828,28 +676,12 @@ func (cs *MaterialService) GetComponentAvailability(componentid string) (amount 
 //
 // The function returns a slice of Material structs.
 func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materials []models.Material, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		cs.Logger.Error(err.Error())
 		return materials, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		cs.Logger.Error(err.Error())
-		return materials, err
-	}
-
-	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
+	ctx := context.Background()
 
 	materials = make([]models.Material, 0)
 	// findOptions := options.Find().SetProjection(bson.M{"entries": 0})
@@ -894,29 +726,13 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 
 func (cs *MaterialService) DeleteMaterial(material_id string) error {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		cs.Logger.Error(err.Error())
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		cs.Logger.Error(err.Error())
-		return err
-	}
+	ctx := context.Background()
 
-	// Connected successfully
-
-	// Delete the material with the given ID
 	filter := bson.M{"id": material_id}
 	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").DeleteOne(ctx, filter)
 	if err != nil {
@@ -935,31 +751,15 @@ func (cs *MaterialService) DeleteMaterial(material_id string) error {
 // The function is used to edit an existing material in the database.
 func (cs *MaterialService) EditMaterial(material_id string, material_to_edit models.Material) error {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		cs.Logger.Error(err.Error())
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		cs.Logger.Error(err.Error())
-		return err
-	}
+	ctx := context.Background()
 
-	// Connected successfully
-
-	// Find material in db
 	var existingMaterial models.Material
-	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{"id": material_id}).Decode(&existingMaterial)
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"id": material_id}).Decode(&existingMaterial)
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
@@ -985,26 +785,12 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 // If there is any error during the database operations, it returns the error.
 func (cs *MaterialService) AddComponent(material models.Material, user_id string) error {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
+	ctx := context.Background()
 
 	material.Id = primitive.NewObjectID().Hex()
 
@@ -1050,26 +836,12 @@ func (cs *MaterialService) AddComponent(material models.Material, user_id string
 // entries array. If the material is not found, the function will return an error.
 func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry, user_id string) error {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
+	ctx := context.Background()
 
 	filter := bson.M{"id": componentId}
 
@@ -1124,28 +896,13 @@ func (cs *MaterialService) PushMaterialEntry(componentId string, entries []model
 // entry ID from the material's entries array. If the material or the entry is not
 // found, the function will return an error.
 func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := context.Background()
 
-	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
-
-	// Connect to the database
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 
 	// Find the component document and update the entries array

@@ -2,15 +2,14 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -29,21 +28,13 @@ type GetCustomersParams struct {
 
 func (cs CustomersService) GetCustomers(params GetCustomersParams) (customers []models.Customer, customers_count int, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if cs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return customers, customers_count, err
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	customers = make([]models.Customer, 0)
 
@@ -79,21 +70,13 @@ func (cs CustomersService) GetCustomers(params GetCustomersParams) (customers []
 
 func (cs CustomersService) GetCustomer(customer_id string) (customer models.Customer, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if cs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
@@ -107,21 +90,13 @@ func (cs CustomersService) GetCustomer(customer_id string) (customer models.Cust
 
 func (cs CustomersService) InsertNew(customer models.Customer) (afterInsert models.Customer, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if cs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
@@ -142,21 +117,13 @@ func (cs CustomersService) InsertNew(customer models.Customer) (afterInsert mode
 
 func (cs CustomersService) UpdateCustomer(customer models.Customer, customer_id string) (afterUpdate models.Customer, err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if cs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 
@@ -188,21 +155,13 @@ func (cs CustomersService) UpdateCustomer(customer models.Customer, customer_id 
 
 func (cs CustomersService) DeleteCustomer(customer_id string) (err error) {
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", cs.Config.Databases[0].Host, cs.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if cs.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
 		return
 	}
-	// connected to db
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("customers")
 

@@ -14,13 +14,13 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -32,21 +32,12 @@ type OrderService struct {
 }
 
 func (os OrderService) RemoveTip(order_id string, tip_amount float64) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if os.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	filter := bson.M{"id": order_id}
@@ -81,21 +72,12 @@ func (os OrderService) RemoveTip(order_id string, tip_amount float64) error {
 }
 
 func (os OrderService) AddTip(order_id string, tip_amount float64) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if os.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	filter := bson.M{"id": order_id}
@@ -130,22 +112,12 @@ func (os OrderService) AddTip(order_id string, tip_amount float64) error {
 }
 
 func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if os.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return logs, err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	filter := bson.M{
 		"order_id": order_id,
@@ -168,22 +140,12 @@ func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
 }
 
 func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id string, quantity float64, reason string, other map[string]interface{}, user_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if os.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return err
 	}
-	// connected to db
+
+	ctx := context.Background()
 
 	log_waste_order_item := models.LogWasteOrderItem{
 		Log: models.Log{
@@ -212,32 +174,12 @@ func (os *OrderService) WasteOrderItem(OrderItem models.OrderItem, order_id stri
 // and the return_to_products which can be used to return parts of the order to specific products (like pizza slice from pizza)
 // disposals are used to return the specified products or materials which can not be added to a normal product, to be uniquely processed later on.
 func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	timeout := 1000 * time.Second
-
-	if os.Config.Env == "dev" {
-		timeout = 5 * time.Minute
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
 		for _, material_refund := range request.MaterialRefunds {
@@ -387,25 +329,12 @@ func (os *OrderService) PrintReceipt(order models.Order, template string, lang_c
 }
 
 func (os *OrderService) DeleteOrder(order_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	_, err = collection.DeleteOne(ctx, bson.M{"id": order_id})
@@ -415,25 +344,12 @@ func (os *OrderService) DeleteOrder(order_id string) (err error) {
 
 // PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
 func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
@@ -450,27 +366,14 @@ func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 
 // GetUnpaidOrders returns all orders that are not paid and their state is not cancelled.
 func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
-
 	orders = make([]models.Order, 0)
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
@@ -493,33 +396,18 @@ func (os *OrderService) GetUnpaidOrders() (orders []models.Order, err error) {
 
 // CancelOrder sets the state of the order with the given order_id to "cancelled".
 func (os *OrderService) CancelOrder(order_id string) (err error) {
-	// Set MongoDB client options
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
-	// Connected successfully
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
-	// Define filter and update for setting order state to "cancelled"
 	filter := bson.M{"id": order_id}
 	update := bson.M{"$set": bson.M{"state": "cancelled"}}
 
-	// Update the order in the database
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
@@ -530,26 +418,10 @@ func (os *OrderService) CancelOrder(order_id string) (err error) {
 
 // CalculateCost calculates the cost of each item in the provided list of order items.
 func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.ItemCost, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return cost, err
 	}
-
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return cost, err
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
 
 	for itemIndex, item := range items {
 
@@ -657,27 +529,12 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 
 // FinishOrder sets the state of the order with the given order_id to "finished".
 func (os *OrderService) FinishOrder(order_id string, user_id string) (err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
@@ -779,24 +636,12 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 
 // GetOrderDisplayId returns a new order display id and increments the current value in the database.
 func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return order_display_id, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return order_display_id, err
-	}
+	ctx := context.Background()
 
 	var settings models.Settings
 	err = client.Database(os.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
@@ -833,27 +678,12 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 
 // SubmitOrder adds an order to the database and creates a display id.
 func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	order.DisplayId, err = os.GetOrderDisplayId()
 	if err != nil {
@@ -932,29 +762,14 @@ type GetDisposalsParameters struct {
 // the function will check if display_id is not ""
 // then it will filter for all order that contains the specified string
 func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.Order, totalRecords int64, err error) {
-
 	orders = make([]models.Order, 0)
 
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return orders, 0, err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return orders, 0, err
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 	filter := bson.M{}
 
 	findOptions := options.Find()
@@ -1039,24 +854,11 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 }
 
 func (os *OrderService) ConsumeOrderComponents(order models.Order, user_id string) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	_, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Connected to Mongo
 	materialService := MaterialService{
 		Config:   os.Config,
 		Logger:   os.Logger,
@@ -1108,26 +910,12 @@ func (os *OrderService) ConsumeOrderComponents(order models.Order, user_id strin
 // and updates the "started_at" field with the current time.
 // It also consumes the item components from the inventory and sends a notification to the websockets.
 func (os *OrderService) StartOrder(order_id string, order_items []models.OrderItem, user_id string) error {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	os.Logger.Info("Connected to MongoDB!")
+	ctx := context.Background()
 
 	var order models.Order
 
@@ -1169,26 +957,12 @@ func (os *OrderService) StartOrder(order_id string, order_items []models.OrderIt
 
 // GetOrder retrieves an order from the database with the given order_id.
 func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", os.Config.Databases[0].Host, os.Config.Databases[0].Port))
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Connected successfully
-	fmt.Println("Connected to MongoDB!")
+	ctx := context.Background()
 
 	coll := client.Database(os.Config.Databases[0].Database).Collection("orders")
 	var order models.Order

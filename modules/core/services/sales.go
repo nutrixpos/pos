@@ -6,16 +6,15 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -32,23 +31,15 @@ type SalesService struct {
 // It takes two parameters, first and rows, which determine the offset and limit of the query.
 // It returns an error if the query fails.
 func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
-
 	salesPerDay = make([]models.SalesPerDay, 0)
 
-	deadline := 5 * time.Second
-	if ss.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ss.Logger, &ss.Config)
 	if err != nil {
 		ss.Logger.Error(err.Error())
 		return salesPerDay, totalRecords, err
 	}
+
+	ctx := context.Background()
 
 	collection := client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"])
 	findOptions := options.Find()
@@ -90,31 +81,12 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 }
 
 func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefundRequest, user_id string) error {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if ss.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ss.Logger, &ss.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	// Connected successfully
+	ctx := context.Background()
 
 	order_svc := OrderService{
 		Logger: ss.Logger,
@@ -238,29 +210,12 @@ func (ss *SalesService) AddOrderItemToDayRefund(refund_request dto.OrderItemRefu
 }
 
 func (ss *SalesService) SetOrderToSalesDay(order models.Order) error {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if ss.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ss.Logger, &ss.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
 	// Connected successfully
 
@@ -282,29 +237,12 @@ func (ss *SalesService) SetOrderToSalesDay(order models.Order) error {
 // It takes two parameters, order and items_cost, which are the order and its associated item costs.
 // It returns an error if the query fails.
 func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []models.ItemCost, user_id string) error {
-
-	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
-
-	deadline := 5 * time.Second
-	if ss.Config.Env == "dev" {
-		deadline = 1000 * time.Second
-	}
-
-	// Create a context with a timeout (optional)
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := common.GetDatabaseClient(ss.Logger, &ss.Config)
 	if err != nil {
 		return err
 	}
 
-	// Ping the database to check connectivity
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
 	// Connected successfully
 

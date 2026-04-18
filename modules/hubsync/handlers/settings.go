@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/hubsync/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func PatchSettings(config config.Config, logger logger.ILogger) http.HandlerFunc {
@@ -27,22 +25,14 @@ func PatchSettings(config config.Config, logger logger.ILogger) http.HandlerFunc
 			return
 		}
 
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
-
-		deadline := 5 * time.Second
-		if config.Env == "dev" {
-			deadline = 1000 * time.Second
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), deadline)
-		defer cancel()
-
-		client, err := mongo.Connect(ctx, clientOptions)
+		client, err := common.GetDatabaseClient(logger, &config)
 		if err != nil {
 			logger.Error(fmt.Sprintf("error in updating settings: %v", err))
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
-		// connected to db
+
+		ctx := context.Background()
 
 		collection := client.Database(config.Databases[0].Database).Collection("hubsync")
 		_, err = collection.UpdateOne(ctx, bson.D{{"settings", bson.D{{"$exists", true}}}}, bson.D{{"$set", bson.D{{"settings", data.Data.Settings}}}})
@@ -55,22 +45,14 @@ func PatchSettings(config config.Config, logger logger.ILogger) http.HandlerFunc
 
 func GetSettings(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
-
-		deadline := 5 * time.Second
-		if config.Env == "dev" {
-			deadline = 1000 * time.Second
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), deadline)
-		defer cancel()
-
-		client, err := mongo.Connect(ctx, clientOptions)
+		client, err := common.GetDatabaseClient(logger, &config)
 		if err != nil {
 			logger.Error(fmt.Sprintf("error in getting settings: %v", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		ctx := context.Background()
 
 		collection := client.Database(config.Databases[0].Database).Collection("hubsync")
 		var hubsync models.Hubsync
