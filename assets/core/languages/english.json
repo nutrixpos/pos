@@ -175,6 +175,8 @@
     "product_ready_to_service_tracking": "Product ready to service tracking",
     "order_workflow_management": "Order workflow management",
     "print_receipt_enabled": "Print receipt enabled",
-    "print_receipt_disabled": "Print receipt disabled"
+    "print_receipt_disabled": "Print receipt disabled",
+    "cost_method": "Cost method",
+    "fixed": "Fixed"
   }
 }

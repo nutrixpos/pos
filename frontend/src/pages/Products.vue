@@ -106,6 +106,14 @@
                                     <label for="name">{{$t('enable_inventory_consumption',1)}}</label>
                                     <ToggleSwitch v-model="newproduct_enable_inventory_consumption" />
                                 </div>
+                                <div class="flex flex-column gap-2 w-10 mt-3">
+                                    <label for="name">Enable Fixed Cost</label>
+                                    <ToggleSwitch v-model="newproduct_enable_fixed_cost" />
+                                </div>
+                                <div v-if="newproduct_enable_fixed_cost" class="flex flex-column gap-2 w-5 mt-2">
+                                    <label for="fixed_cost">Fixed Cost</label>
+                                    <InputText id="fixed_cost" name="fixed_cost" type="number" v-model.number="newproduct_fixed_cost" aria-describedby="fixed_cost" />
+                                </div>
 
                                 <div style="opacity: 0;">
                                     {{ add_product_form=$form }}
@@ -193,6 +201,14 @@
                                 <label for="name">{{$t('enable_inventory_consumption',1)}}</label>
                                 <ToggleSwitch v-model="productToEdit.enable_inventory_consumption" />
                             </div>
+                            <div class="flex flex-column gap-2 w-10 mt-3">
+                                <label for="name">Enable Fixed Cost</label>
+                                <ToggleSwitch v-model="productToEdit.enable_fixed_cost" />
+                            </div>
+                            <div v-if="productToEdit.enable_fixed_cost" class="flex flex-column gap-2 w-5 mt-2">
+                                <label for="fixed_cost">Fixed Cost</label>
+                                <InputText id="fixed_cost" name="fixed_cost" type="number" v-model.number="productToEdit.fixed_cost" aria-describedby="fixed_cost" />
+                            </div>
                             <template #footer>
                                 <ButtonGroup>
                                     <Button :label="$t('cancel')"  severity="secondary" aria-label="Cancel"  />
@@ -257,12 +273,15 @@ const productAddDialog = ref(false)
 
 
 const newproduct_enable_inventory_consumption = ref(true)
+const newproduct_enable_fixed_cost = ref(false)
+const newproduct_fixed_cost = ref(0)
 
 const addproduct_initials = reactive({
     name: '',
     ready: 0,
     id: '',
-    price: 0
+    price: 0,
+    fixed_cost: 0
 });
 
 const add_product_resolver = ({ values }) => {
@@ -437,6 +456,8 @@ const submitProduct = () => {
         materials: materials.value,
         sub_products: sub_products.value,
         enable_inventory_consumption: newproduct_enable_inventory_consumption.value,
+        enable_fixed_cost: newproduct_enable_fixed_cost.value,
+        fixed_cost: Number(newproduct_fixed_cost.value),
     };
 
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/products`,{

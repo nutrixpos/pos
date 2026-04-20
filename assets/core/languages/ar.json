@@ -175,6 +175,8 @@
     "product_ready_to_service_tracking": "تتبع جاهزية المنتج للخدمة",
     "order_workflow_management": "إدارة سير عمل الطلبات",
     "print_receipt_enabled": "طباعة الايصال مفعل",
-    "print_receipt_disabled": "طباعة الايصال معطل"
+    "print_receipt_disabled": "طباعة الايصال معطل",
+    "cost_method": "طريقة الحساب",
+    "fixed": "ثابت"
   }
 }

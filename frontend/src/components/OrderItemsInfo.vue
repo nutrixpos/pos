@@ -5,6 +5,13 @@
             <Column field="product.name" :header="$t('name')"></Column>
             <Column field="price" :header="$t('price')"></Column>
             <Column field="quantity" :header="$t('quantity')"></Column>
+            <Column field="cost_method" :header="$t('cost_method')">
+                <template #body="slotProps">
+                    <span v-if="slotProps.data.cost_method" class="text-sm">
+                        <Badge :value="slotProps.data.cost_method " severity="secondary" />
+                    </span>
+                </template>
+            </Column>
             <Column field="status" :header="$t('status')">
                 <template #body="slotProps">
                     <Badge :value="order_items_status[slotProps.data.id].title" :severity="order_items_status[slotProps.data.id].severity" />

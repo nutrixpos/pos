@@ -426,79 +426,12 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 	for itemIndex, item := range items {
 
 		itemCost := models.ItemCost{
-			ItemName:  items[itemIndex].Product.Name,
-			Cost:      0.0,
-			ProductId: items[itemIndex].Product.Id,
-			ItemId:    items[itemIndex].Id,
-			Quantity:  items[itemIndex].Quantity,
-		}
-
-		for _, component := range item.Materials {
-
-			itemComponent := struct {
-				ComponentName string  `json:"component_name" bson:"component_name" mapstructure:"component_name"`
-				ComponentId   string  `json:"component_id" bson:"component_id" mapstructure:"component_id"`
-				EntryId       string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
-				Quantity      float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
-				Cost          float64 `json:"cost" bson:"cost" mapstructure:"cost"`
-			}{
-				ComponentName: component.Material.Name,
-				ComponentId:   component.Material.Id,
-				EntryId:       component.Entry.Id,
-				Quantity:      component.Quantity * items[itemIndex].Quantity,
-			}
-
-			var component_with_specific_entry models.Material
-
-			if os.Settings.Orders.DefaultCostCalculationMethod == "average" {
-				var material models.Material
-				err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
-					context.Background(), bson.M{"id": component.Material.Id}, options.FindOne().SetProjection(bson.M{"_id": 0})).Decode(&material)
-
-				if err != nil {
-					return cost, err
-				}
-
-				total_cost_per_unit := 0.0
-				count_entries_over_0 := 0
-
-				for _, entry := range material.Entries {
-					if entry.Quantity > 0 {
-						total_cost_per_unit += entry.PurchasePrice / float64(entry.PurchaseQuantity)
-						count_entries_over_0 += 1
-					}
-				}
-
-				// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
-				if math.IsInf(total_cost_per_unit, 0) || math.IsInf(total_cost_per_unit, -1) {
-					total_cost_per_unit = 0.0
-					itemComponent.Cost = 0.0
-				} else {
-					itemComponent.Cost = (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
-					itemCost.Cost += (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
-				}
-
-			} else {
-				err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
-					context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
-
-				if err == nil {
-					quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity) * items[itemIndex].Quantity
-
-					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
-					if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
-						quantity_cost = 0
-					}
-
-					itemCost.Cost += quantity_cost
-					itemComponent.Cost = quantity_cost
-
-				} else {
-					return cost, err
-				}
-			}
-
-			itemCost.Components = append(itemCost.Components, itemComponent)
+			ItemName:   items[itemIndex].Product.Name,
+			Cost:       0.0,
+			CostMethod: os.Settings.Orders.DefaultCostCalculationMethod,
+			ProductId:  items[itemIndex].Product.Id,
+			ItemId:     items[itemIndex].Id,
+			Quantity:   items[itemIndex].Quantity,
 		}
 
 		var recipe models.Product
@@ -506,6 +439,98 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 
 		if err != nil {
 			panic(err)
+		}
+
+		enableFixedCost := recipe.EnableFixedCost
+
+		if enableFixedCost {
+			itemCost.Cost = recipe.FixedCost * items[itemIndex].Quantity
+			itemCost.CostMethod = "fixed"
+
+			for _, component := range item.Materials {
+				itemComponent := struct {
+					ComponentName string  `json:"component_name" bson:"component_name" mapstructure:"component_name"`
+					ComponentId   string  `json:"component_id" bson:"component_id" mapstructure:"component_id"`
+					EntryId       string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
+					Quantity      float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
+					Cost          float64 `json:"cost" bson:"cost" mapstructure:"cost"`
+				}{
+					ComponentName: component.Material.Name,
+					ComponentId:   component.Material.Id,
+					EntryId:       component.Entry.Id,
+					Quantity:      component.Quantity * items[itemIndex].Quantity,
+					Cost:          0.0,
+				}
+				itemCost.Components = append(itemCost.Components, itemComponent)
+			}
+		} else {
+			for _, component := range item.Materials {
+
+				itemComponent := struct {
+					ComponentName string  `json:"component_name" bson:"component_name" mapstructure:"component_name"`
+					ComponentId   string  `json:"component_id" bson:"component_id" mapstructure:"component_id"`
+					EntryId       string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
+					Quantity      float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
+					Cost          float64 `json:"cost" bson:"cost" mapstructure:"cost"`
+				}{
+					ComponentName: component.Material.Name,
+					ComponentId:   component.Material.Id,
+					EntryId:       component.Entry.Id,
+					Quantity:      component.Quantity * items[itemIndex].Quantity,
+				}
+
+				var component_with_specific_entry models.Material
+
+				if os.Settings.Orders.DefaultCostCalculationMethod == "average" {
+					var material models.Material
+					err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
+						context.Background(), bson.M{"id": component.Material.Id}, options.FindOne().SetProjection(bson.M{"_id": 0})).Decode(&material)
+
+					if err != nil {
+						return cost, err
+					}
+
+					total_cost_per_unit := 0.0
+					count_entries_over_0 := 0
+
+					for _, entry := range material.Entries {
+						if entry.Quantity > 0 {
+							total_cost_per_unit += entry.PurchasePrice / float64(entry.PurchaseQuantity)
+							count_entries_over_0 += 1
+						}
+					}
+
+					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+					if math.IsInf(total_cost_per_unit, 0) || math.IsInf(total_cost_per_unit, -1) {
+						total_cost_per_unit = 0.0
+						itemComponent.Cost = 0.0
+					} else {
+						itemComponent.Cost = (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
+						itemCost.Cost += (total_cost_per_unit / float64(count_entries_over_0) * component.Quantity) * items[itemIndex].Quantity
+					}
+
+				} else {
+					err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
+						context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+
+					if err == nil {
+						quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity) * items[itemIndex].Quantity
+
+						// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+						if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
+							quantity_cost = 0
+						}
+
+						itemCost.Cost += quantity_cost
+						itemComponent.Cost = quantity_cost
+
+					} else {
+						return cost, err
+					}
+				}
+
+				itemCost.Components = append(itemCost.Components, itemComponent)
+			}
 		}
 
 		for _, subrecipe := range item.SubItems {
@@ -561,8 +586,8 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 	}
 
 	for index, recipe_cost := range items_cost {
-
 		order.Items[index].Cost = recipe_cost.Cost
+		order.Items[index].CostMethod = recipe_cost.CostMethod
 		order.Items[index].SalePrice = recipe_cost.SalePrice
 
 		totalCost += recipe_cost.Cost
@@ -596,6 +621,11 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 
 	order.Cost = totalCost
 	order.SalePrice = totalSalePrice
+
+	_, err = collection.UpdateOne(ctx, bson.M{"id": order_id}, bson.M{"$set": bson.M{"items": order.Items, "cost": totalCost, "sale_price": totalSalePrice}})
+	if err != nil {
+		return err
+	}
 
 	salesSvc := SalesService{Config: os.Config, Logger: os.Logger}
 	err = salesSvc.AddOrderToSalesDay(order, items_cost, user_id)
@@ -702,6 +732,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 	for index, recipe_cost := range items_cost {
 
 		order.Items[index].Cost = recipe_cost.Cost
+		order.Items[index].CostMethod = recipe_cost.CostMethod
 		order.Items[index].SalePrice = recipe_cost.SalePrice
 
 		totalCost += recipe_cost.Cost
@@ -840,6 +871,17 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		var order models.Order
 		if err := cursor.Decode(&order); err != nil {
 			return orders, 0, err
+		}
+
+		for index, item := range order.Items {
+			if item.CostMethod == "" {
+				if item.Product.EnableFixedCost {
+					item.CostMethod = "fixed"
+				} else {
+					item.CostMethod = os.Settings.Orders.DefaultCostCalculationMethod
+				}
+				order.Items[index] = item
+			}
 		}
 
 		orders = append(orders, order)

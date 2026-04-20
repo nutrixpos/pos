@@ -65,13 +65,15 @@ type Category struct {
 // ItemCost represents the cost of an item, including the recipe cost, sale price, quantity,
 // and the costs of the components.
 type ItemCost struct {
-	ProductId  string  `json:"product_id" bson:"product_id" mapstructure:"product_id"`
-	ItemId     string  `json:"item_id" bson:"item_id" mapstructure:"item_id"`
-	ItemName   string  `json:"item_name" bson:"item_name" mapstructure:"item_name"`
-	Cost       float64 `json:"cost" bson:"cost" mapstructure:"cost"`
-	SalePrice  float64 `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
-	Quantity   float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
-	Components []struct {
+	ProductId    string  `json:"product_id" bson:"product_id" mapstructure:"product_id"`
+	ItemId       string  `json:"item_id" bson:"item_id" mapstructure:"item_id"`
+	ItemName     string  `json:"item_name" bson:"item_name" mapstructure:"item_name"`
+	Cost         float64 `json:"cost" bson:"cost" mapstructure:"cost"`
+	UseFixedCost bool    `json:"use_fixed_cost" bson:"use_fixed_cost" mapstructure:"use_fixed_cost"`
+	CostMethod   string  `json:"cost_method" bson:"cost_method" mapstructure:"cost_method"`
+	SalePrice    float64 `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
+	Quantity     float64 `json:"quantity" bson:"quantity" mapstructure:"quantity"`
+	Components   []struct {
 		ComponentName string  `json:"component_name" bson:"component_name" mapstructure:"component_name"`
 		ComponentId   string  `json:"component_id" bson:"component_id" mapstructure:"component_id"`
 		EntryId       string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
@@ -103,6 +105,7 @@ type OrderItem struct {
 	Comment            string              `json:"comment" bson:"comment" mapstructure:"comment"`
 	SalePrice          float64             `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
 	Cost               float64             `json:"cost" bson:"cost" mapstructure:"cost"`
+	CostMethod         string              `json:"cost_method" bson:"cost_method" mapstructure:"cost_method"`
 	Status             string              `json:"status" bson:"status" mapstructure:"status"`
 }
 
@@ -190,6 +193,8 @@ type Product struct {
 	Quantity                   float64        `bson:"quantity" json:"quantity" mapstructure:"quantity"`
 	Ready                      float64        `bson:"ready" json:"ready" mapstructure:"ready"`
 	EnableInventoryConsumption bool           `bson:"enable_inventory_consumption" json:"enable_inventory_consumption" mapstructure:"enable_inventory_consumption"`
+	EnableFixedCost            bool           `bson:"enable_fixed_cost" json:"enable_fixed_cost" mapstructure:"enable_fixed_cost"`
+	FixedCost                  float64        `bson:"fixed_cost" json:"fixed_cost" mapstructure:"fixed_cost"`
 }
 
 // SalesLogs represents logs of sales, capturing sale price, items, and consumption details.

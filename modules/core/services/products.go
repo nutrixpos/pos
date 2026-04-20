@@ -166,6 +166,8 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 				"price":                        product.Price,
 				"image_url":                    product.ImageURL,
 				"enable_inventory_consumption": product.EnableInventoryConsumption,
+				"enable_fixed_cost":           product.EnableFixedCost,
+				"fixed_cost":                 product.FixedCost,
 			},
 		},
 	)
