@@ -597,7 +597,6 @@ const delivery_info = ref<any>({name:"",address:"",phone:""})
 
 const toggleDarkMode = () => {
     store.toggleDarkMode()
-    document.documentElement.classList.toggle('my-app-dark');
 }
 
 const increaseOrderItemQty = (index:number) => {

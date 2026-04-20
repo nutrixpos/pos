@@ -104,7 +104,6 @@ const user : any = computed(() => {
 
 const toggleDarkMode = () => {
     store.toggleDarkMode()
-    document.documentElement.classList.toggle('my-app-dark');
 }
 
 const sidemenuNodeSelect = (node) => {

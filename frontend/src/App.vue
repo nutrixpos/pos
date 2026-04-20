@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { computed, getCurrentInstance, ref } from 'vue';
+import { computed, getCurrentInstance, ref, onMounted } from 'vue';
 import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -100,6 +100,11 @@ import axios from 'axios';
 import { useRouter } from 'vue-router'
 import { useToast } from "primevue/usetoast";
 import { useI18n } from 'vue-i18n'
+
+
+onMounted(() => {
+    store.applyDarkModeClass();
+})
 
 
 const { t } = useI18n() 
