@@ -59,7 +59,7 @@ import {ref,getCurrentInstance} from 'vue'
 import {InputText,ToggleSwitch,Button, InputNumber} from 'primevue'
 import axios from 'axios'
 import { useToast } from "primevue/usetoast";
-const { proxy } = getCurrentInstance();
+import auth from '../services/auth';
 
 const toast = useToast()
 
@@ -84,7 +84,7 @@ const save = () => {
         data: hubSync.value
     },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {
@@ -98,7 +98,7 @@ const save = () => {
 const getHubsyncInfo = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/hubsync/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

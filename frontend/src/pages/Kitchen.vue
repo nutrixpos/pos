@@ -30,10 +30,10 @@ import { Notification} from '@/classes/Notification';
 import { globalStore } from '@/stores';
 import { useI18n } from 'vue-i18n'
 import ProgressSpinner from "primevue/progressspinner";
+import auth from '../services/auth';
 
 const store = globalStore()
 
-const { proxy } = getCurrentInstance();
 const toast = useToast();
 
 
@@ -49,7 +49,7 @@ const chat_container = useTemplateRef("chat_container")
 
 const user : any = computed(() => {
 
-return proxy.$zitadel?.oidcAuth.userProfile
+return auth.currentUser.value
 
 })
 
@@ -84,13 +84,13 @@ const loadLanguage = async () => {
 
     await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         },
     })
     .then(async (response)=>{
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${response.data.data.language.code}`, {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         })
         .then(response2 => {
@@ -188,7 +188,7 @@ const orderFinished = (order) => {
 const loadOrders =  () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders?filter[state]=!finished&filter[state]=!stashed`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((result)=>{

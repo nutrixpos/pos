@@ -24,6 +24,7 @@ import Badge from 'primevue/badge';
 import Order from '@/classes/Order'
 import axios from 'axios';
 import { useToast } from "primevue/usetoast";
+import auth from '../services/auth';
 
 const { proxy } = getCurrentInstance();
 const toast = useToast();
@@ -34,7 +35,7 @@ const emit = defineEmits(['order_paid'])
 const payUnpaidOrder = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/pay`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(() => {

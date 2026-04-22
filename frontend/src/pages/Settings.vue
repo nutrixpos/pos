@@ -132,6 +132,7 @@ import Dropdown from 'primevue/dropdown';
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '../stores';
 import {RadioButton,Avatar,Badge, Select} from 'primevue';
+import auth from '../services/auth';
 
 const { proxy } = getCurrentInstance();
 
@@ -202,7 +203,7 @@ const saveSettings = () => {
         },
         {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         }
     )
@@ -219,7 +220,7 @@ const saveSettings = () => {
 const getSettings = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         },
     })
     .then((response)=>{
@@ -241,7 +242,7 @@ const getSettings = () => {
 const applyLang = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${selectedLang.value.code}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {
@@ -259,7 +260,7 @@ const applyLang = () => {
 const getAvailableLanguages = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

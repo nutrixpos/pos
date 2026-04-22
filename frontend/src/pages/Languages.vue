@@ -13,9 +13,9 @@ import axios from 'axios';
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button';
 import { globalStore } from '../store';
+import auth from '../services/auth';
 
 const store = globalStore()
-const { proxy } = getCurrentInstance();
 
 
 const changedLang = ref(false)
@@ -38,7 +38,7 @@ const changedLanguage = () => {
 const applyLang = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${selectedLang.value.code}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {
@@ -56,7 +56,7 @@ const applyLang = () => {
 const getAvailableLanguages = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

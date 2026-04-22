@@ -47,8 +47,8 @@ func (c *HubSyncModule) RegisterHttpHandlers(router *mux.Router, prefix string) 
 
 	c.Logger.Info("Successfully conntected to Zitadel")
 
-	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PatchSettings(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSettings(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PatchSettings(c.Config, c.Logger), "superuser"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSettings(c.Config, c.Logger), "superuser"))).Methods("GET", "OPTIONS")
 }
 
 // RegisterBackgroundWorkers registers background workers.

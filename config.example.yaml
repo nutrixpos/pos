@@ -10,7 +10,12 @@ databases:
       sales: sales
 
 uploads_path: "./mnt/public"
-  
+
+auth:
+  jwt_secret: "your-super-secret-jwt-key-change-in-production"
+  jwt_expire_hrs: 24
+  enabled: true
+
 zitadel:
   domain: "zitadel"
   port: 8080

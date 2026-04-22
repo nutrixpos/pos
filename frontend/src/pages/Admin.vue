@@ -18,16 +18,16 @@
                     <template #end>
                         <Button outlined :icon="`pi pi-${store.getColorMode == 'light' ? 'sun' : 'moon'}`" @click="toggleDarkMode()" />
                         <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click.stop="user_profile_toggle">
-                            <span style="font-size:0.9rem;" class="mr-2">{{ user?.name }}</span>
+                            <span style="font-size:0.9rem;" class="mr-2">{{ user?.username }}</span>
                             <span class="p-button-icon pi pi-user"></span>
                         </Button>
                         <OverlayPanel ref="user_profile_op" class="lg:w-2 md:w-3">
                             <div class="flex flex-column">
-                                <span>Welcome <strong>{{ user?.name }}</strong></span>
+                                <span>Welcome <strong>{{ user?.username }}</strong></span>
                                 <div class="mt-2">
                                     <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
                                 </div>
-                                <Button class="mt-5" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="proxy.$zitadel?.oidcAuth.signOut()" />
+                                <Button class="mt-5" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="$auth.signOut();$router.push('/login')" />
                             </div>
                         </OverlayPanel>
                     </template>
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref,getCurrentInstance,computed} from "vue";
+import {ref,computed,getCurrentInstance} from "vue";
 import { Toolbar,Dialog } from "primevue";
 import Tree from "primevue/tree";
 import Button from "primevue/button";
@@ -85,9 +85,8 @@ import { globalStore } from '@/stores';
 import axios from "axios";
 import OverlayPanel from "primevue/overlaypanel";
 import ProgressSpinner from "primevue/progressspinner";
-
-
 const { proxy } = getCurrentInstance();
+
 const store = globalStore()
 const user_profile_op = ref();
 
@@ -98,7 +97,7 @@ app_version.value = import.meta.env.VITE_APP_APP_VERSION || ""
 
 const user : any = computed(() => {
 
-    return proxy.$zitadel?.oidcAuth.userProfile
+    return proxy.$auth.currentUser.value
 
 })
 
@@ -283,13 +282,13 @@ const loadLanguage = async () => {
 
     await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${proxy.$auth.accessToken.value}`
         },
     })
     .then(async (response)=>{
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${response.data.data.language.code}`, {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${proxy.$auth.accessToken.value}`
             }
         })
         .then(response2 => {

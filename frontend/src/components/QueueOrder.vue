@@ -105,9 +105,8 @@ import OrderItemView from "./OrderItemView.vue";
 import {OrderItem, Product} from '@/classes/OrderItem'
 import {getCurrentInstance,nextTick} from 'vue'
 import { globalStore } from '@/stores';
+import auth from '../services/auth';
 
-
-const { proxy } = getCurrentInstance();
 const store = <any>globalStore()
 
 
@@ -226,7 +225,7 @@ const finishOrder = () => {
         {},
         {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         }
         ).then(() => {
@@ -245,7 +244,7 @@ const startOrder =  () => {
         },
         {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         }
         ).then((response) => {

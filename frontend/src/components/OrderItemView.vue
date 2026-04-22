@@ -61,6 +61,7 @@ import PickMaterial from '@/components/PickMaterial.vue'
 import Dialog from 'primevue/dialog'
 import axios from 'axios'
 import {globalStore} from '@/stores';
+import auth from '../services/auth';
 
 
 const store = <any>globalStore()
@@ -170,7 +171,7 @@ watch(materialValidity, (newValidities) => {
 const getSettings = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         },
     })
     .then((response)=>{

@@ -38,8 +38,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import axios from 'axios'
 import AddCustomer from '@/components/AddCustomer.vue';
-
-const { proxy } = getCurrentInstance();
+import auth from '../services/auth';
 
 
 const add_customer_dialog = ref(false)
@@ -63,7 +62,7 @@ const GetCustomers = (page_number=1,page_size=9999999999) => {
     loading.value = true
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/customers?page[number]=${page_number}&page[number]=${page_size}`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((response) => {

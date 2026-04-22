@@ -54,3 +54,6 @@ When changing mongo.Connect to GetDatabaseClient:
 ## Entities
 - `Material`, `Component` and `Inventory Item` are the same entity
 - `Product` and `Recipe` are the same entity
+
+## API http schema
+When calling the backend api from the frontend vue app, make sure to include the VITE_APP_BACKEND_HOST and VITE_APP_MODULE_CORE_API_PREFIX env vars in the request path

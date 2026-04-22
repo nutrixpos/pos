@@ -60,11 +60,11 @@ import Dialog from 'primevue/dialog';
 import { useToast } from "primevue/usetoast";
 import OrderView from '@/components/OrderView.vue';
 import { globalStore } from '@/stores';
+import auth from '../services/auth';
 
 const store = globalStore();
 
 
-const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
 const toast = useToast()
 
@@ -113,7 +113,7 @@ const cancelOrder = (order_id: string) => {
 
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${order_id}/cancel`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(()=>{
@@ -170,7 +170,7 @@ const loadOrders =  (first=0,rows=100) => {
 
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders?page[number]=${page_number}&page[size]=${rows}&filter[display_id]=${ordersSearchText.value}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((result)=>{

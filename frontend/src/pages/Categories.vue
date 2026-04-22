@@ -116,10 +116,10 @@ import { ref,getCurrentInstance } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { globalStore } from '@/stores';
+import auth from '../services/auth';
 
 const store = globalStore()
 
-const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
 const toast = useToast()
 
@@ -157,7 +157,7 @@ const submitCategory = () => {
         data: new_category.value
     }, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
         categoryAddDialog.value = false
@@ -174,7 +174,7 @@ const submitCategory = () => {
 const deleteCategory = (category_id: string) => {
     axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/categories/${category_id}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
         
@@ -193,7 +193,7 @@ const updateCategory = () => {
         data: categoryToEdit.value
     }, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Category updated successfully',group:'br' });
@@ -253,7 +253,7 @@ const getCategories = (first=0,rows=categoriesTableRowsPerPage.value) => {
     
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/categories?page[number]=${page_number}&page[size]=${rows}`, {
         headers: {
-            'Authorization': `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            'Authorization': `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

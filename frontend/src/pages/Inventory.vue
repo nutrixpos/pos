@@ -175,12 +175,11 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import MaterialLogsOrderItemsTable from '@/components/MaterialLogsOrderItemsTable.vue';
 import {Divider} from 'primevue'
 import { globalStore } from '@/stores';
-// import Message from 'primevue/message'
+import auth from '../services/auth';
   
 import { ref,getCurrentInstance,computed } from "vue";
 import { useToast } from "primevue/usetoast";
 
-const { proxy } = getCurrentInstance();
 const store = globalStore()
 
 const entries_dialog = ref(false)
@@ -251,7 +250,7 @@ const loadEntries = (first=0,rows=entriesTableRowsPerPage.value) => {
             "page[size]": rows
         },
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {
@@ -293,7 +292,7 @@ const confirmDeleteMaterial = (material_id: string) => {
   const deleteMaterial = (material_id: string) => {
     axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${material_id}`, {
     headers: {
-        Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        Authorization: `Bearer ${auth.accessToken.value}`
     }
     }).then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: "Material deleted successfully", life: 3000 });
@@ -312,7 +311,7 @@ const confirmDeleteMaterial = (material_id: string) => {
         }
     },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
       edit_material_dialog.value = false
@@ -334,7 +333,7 @@ const confirmDeleteMaterial = (material_id: string) => {
         data: material_settings.value
     },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
       toast.add({severity:'success', summary: 'Success', detail: 'Material settings saved', life: 3000,group:'br'});
@@ -365,7 +364,7 @@ const confirmDeleteMaterial = (material_id: string) => {
 
             axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${material_id}/entries/${entry_id}`,{
                 headers: {
-                    Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                    Authorization: `Bearer ${auth.accessToken.value}`
                 }
             })
             .then(() => {
@@ -399,7 +398,7 @@ const confirmDeleteMaterial = (material_id: string) => {
         ]
       },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
       })
       .then(() => {
@@ -442,7 +441,7 @@ const confirmDeleteMaterial = (material_id: string) => {
         }
       },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
       })
       .then(() => {
@@ -462,7 +461,7 @@ const confirmDeleteMaterial = (material_id: string) => {
   const onComponentLogRowExpand = (event) => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/`+event.data.order_id,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((result)=>{
@@ -489,7 +488,7 @@ const confirmDeleteMaterial = (material_id: string) => {
 
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/`+component_id+`/logs?page[number]=${page_number}&page[size]=${rows}`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((result)=>{
@@ -505,7 +504,7 @@ const confirmDeleteMaterial = (material_id: string) => {
   const loadInventory = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((result)=>{

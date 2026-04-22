@@ -12,25 +12,35 @@ import ToastService from 'primevue/toastservice';
 import ConfirmationService from 'primevue/confirmationservice';
 import { createI18n } from 'vue-i18n'
 import { dt } from '@primevue/themes';
-import '@fortawesome/fontawesome-free/css/all.css';
+import '@fortawesome/fontawesome-free/css/fontawesome.css';
+import '@fortawesome/fontawesome-free/css/regular.css';
+import '@fortawesome/fontawesome-free/css/solid.css';
+import '@fortawesome/fontawesome-free/css/brands.css';
 
 
-// library.add(fas)
 
 
 
 import {  createWebHistory, createRouter } from 'vue-router'
 
 import { createPinia } from 'pinia'
-import zitadelAuth from "@/services/zitadelAuth";
+import auth from "@/services/auth";
 import Tooltip from 'primevue/tooltip';
 import StyleClass from 'primevue/styleclass';
 import Ripple from 'primevue/ripple';
 
-const insecureRoutes = [
+const routes = [
   {
     path: '/setup',
     component: () => import('@/pages/Setup.vue'),
+  },
+  {
+    path: '/admin-setup',
+    component: () => import('@/pages/AdminSetup.vue'),
+  },
+  {
+    path: '/login',
+    component: () => import('@/pages/Login.vue'),
   },
   {
     path: '/no-access', 
@@ -41,59 +51,11 @@ const insecureRoutes = [
   { 
     path: '/', alias:['/home'], 
     component: () => {
-      return import('@/pages/Home.vue')
-    }
-  },
-  { 
-    path: '/kitchen', component: () => {
-      return import('@/pages/Kitchen.vue')
-    } 
-  },
-  { 
-    path: '/admin', 
-    component: () => {
-      return import('@/pages/Admin.vue')
-    },
-    children: [
-      {
-        path: '',
-        redirect: { path: '/admin/inventory' }
-      },
-      {path: 'inventory', component: () => import('@/pages/Inventory.vue'),},
-      {path: 'sales', component: () => import('@/pages/Sales.vue'),},
-      {path: 'products', component: ()=> import('@/pages/Products.vue'),},
-      {path: 'categories', component: () => import('@/pages/Categories.vue'),},
-      {path: 'orders',
-      children:[
-        {path: '', component: () => import('@/pages/Orders.vue'),},
-      ]},
-      {path: 'settings', component: () => import('@/pages/Settings.vue'),},
-      {path: 'customers', component: () => import('@/pages/Customers.vue'),},
-      {path: 'hubsync', component: () => import('@/pages/Hubsync.vue'),},
-    ],
-  },
-]
-
-
-const zitadelRoutes = [
-  {
-    path: '/setup',
-    component: () => import('@/pages/Setup.vue'),
-  },
-  {
-    path: '/no-access', 
-    component: ()=>{
-        return import('@/pages/NoAccessView.vue')
-    },
-  },
-  { 
-    path: '/', alias:['/home'], 
-    meta: {
-      authName: zitadelAuth.oidcAuth.authName
-    },
-    component: () => {
-
-      if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("cashier") ) {
+      if (!auth.isAuthenticated.value) {
+        window.location.href = '/login'
+        return import('@/pages/Login.vue')
+      }
+      if (auth.hasRole("admin") || auth.hasRole("superuser") || auth.hasRole("cashier") ) {
         return import('@/pages/Home.vue')
       }
       return import('@/pages/NoAccessView.vue')
@@ -101,18 +63,24 @@ const zitadelRoutes = [
   },
   { 
     path: '/kitchen', component: () => {
-
-      if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("chef")) {
+      if (!auth.isAuthenticated.value) {
+        window.location.href = '/login'
+        return import('@/pages/Login.vue')
+      }
+      if (auth.hasRole("admin") || auth.hasRole("superuser") || auth.hasRole("chef")) {
         return import('@/pages/Kitchen.vue')
       }
       return import('@/pages/NoAccessView.vue')
-
     } 
   },
-  { 
+{ 
     path: '/admin', 
     component: () => {
-      if (zitadelAuth.hasRole("admin")) {
+      if (!auth.isAuthenticated.value) {
+        window.location.href = '/login'
+        return import('@/pages/Login.vue')
+      }
+      if (auth.hasRole("admin") || auth.hasRole("superuser")) {
         return import('@/pages/Admin.vue')
       }
       return import('@/pages/NoAccessView.vue')
@@ -122,34 +90,34 @@ const zitadelRoutes = [
         path: '',
         redirect: { path: '/admin/inventory' }
       },
-      {path: 'inventory', component: () => import('@/pages/Inventory.vue'),},
-      {path: 'sales', component: () => import('@/pages/Sales.vue'),},
-      {path: 'products', component: ()=> import('@/pages/Products.vue'),},
-      {path: 'categories', component: () => import('@/pages/Categories.vue'),},
+      {path: 'inventory', component: () => import('@/pages/Inventory.vue')},
+      {path: 'sales', component: () => import('@/pages/Sales.vue')},
+      {path: 'products', component: ()=> import('@/pages/Products.vue')},
+      {path: 'categories', component: () => import('@/pages/Categories.vue')},
       {path: 'orders',
       children:[
-        {path: '', component: () => import('@/pages/Orders.vue'),},
+        {path: '', component: () => import('@/pages/Orders.vue')},
       ]},
-      {path: 'settings', component: () => import('@/pages/Settings.vue'),},
-      {path: 'customers', component: () => import('@/pages/Customers.vue'),},
-      {path: 'hubsync', component: () => import('@/pages/Hubsync.vue'),},
+      {path: 'settings', component: () => import('@/pages/Settings.vue')},
+      {path: 'customers', component: () => import('@/pages/Customers.vue')},
+      {path: 'hubsync', component: () => {
+        if (auth.hasRole("superuser")) {
+          return import('@/pages/Hubsync.vue')
+        }
+        return import('@/pages/NoAccessView.vue')
+      }},
     ],
   },
 ]
 
-const zitadelRouter = createRouter({
+const router = createRouter({
   history: createWebHistory(),
-  routes: zitadelRoutes,
-})
-
-const insecureRouter = createRouter({
-  history: createWebHistory(),
-  routes: insecureRoutes,
+  routes: routes,
 })
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-      $zitadel: typeof zitadelAuth
+      $auth: typeof auth
   }
 }
 
@@ -267,60 +235,25 @@ const Noir = definePreset(Aura, {
   }
 });
 
-if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true'){
-  zitadelAuth.oidcAuth.useRouter(zitadelRouter)
+const app = createApp(App).use(createPinia())
+app.config.globalProperties.$auth = auth
 
-  zitadelAuth.oidcAuth.startup().then(ok => {
-    if (ok) {
-          const app = createApp(App).use(createPinia())
-          app.config.globalProperties.$zitadel = zitadelAuth
-
-          app
-          .use(zitadelRouter)
-          .use(PrimeVue,{
-              // Default theme configuration
-              theme: {
-                  preset: Noir,
-                  options: {
-                      prefix: 'p',
-                      darkModeSelector: '.my-app-dark',
-                      cssLayer: false
-                  }
-              }
-          })
-          .use(ToastService)
-          .use(ConfirmationService)
-          .use(i18n)
-          .directive('tooltip', Tooltip)
-          .directive('styleclass', StyleClass)
-          .directive('ripple', Ripple)
-          .mount('#app')
-    } else {
-        console.error('Zitadel startup was not ok')
+app
+.use(router)
+.use(PrimeVue,{
+    theme: {
+        preset: Noir,
+        options: {
+            prefix: 'p',
+            darkModeSelector: '.my-app-dark',
+            cssLayer: false
+        }
     }
-  })
-} else {
-  const app = createApp(App).use(createPinia())
-
-  app
-  .use(insecureRouter)
-  .use(PrimeVue,{
-      // Default theme configuration
-      theme: {
-          preset: Noir,
-          options: {
-              prefix: 'p',
-              darkModeSelector: '.my-app-dark',
-              cssLayer: false
-          }
-      }
-  })
-  .use(ToastService)
-  .use(ConfirmationService)
-  .use(i18n)
-  .directive('tooltip', Tooltip)
-  .directive('styleclass', StyleClass)
-  .directive('ripple', Ripple)
-  .mount('#app')
-}
- 
+})
+.use(ToastService)
+.use(ConfirmationService)
+.use(i18n)
+.directive('tooltip', Tooltip)
+.directive('styleclass', StyleClass)
+.directive('ripple', Ripple)
+.mount('#app')

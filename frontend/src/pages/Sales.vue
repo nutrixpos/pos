@@ -124,6 +124,7 @@ import SalesLogTableItems from '@/components/SalesLogTableItems.vue'
 import { $dt } from '@primevue/themes';
 import {Badge, Button} from 'primevue';
 import { useI18n } from 'vue-i18n'
+import auth from '../services/auth';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,PointElement,LineElement,ArcElement, Filler)
 
@@ -295,7 +296,7 @@ const export_sales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPag
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/logs/salesperday/exportcsv?page[number]=${page_number}&page[size]=${rows}`, {
         responseType: 'blob',
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((response) => {
@@ -329,7 +330,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
 
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/logs/salesperday?page[number]=${page_number}&page[size]=${rows}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

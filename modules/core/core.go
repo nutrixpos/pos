@@ -17,10 +17,12 @@ import (
 	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules"
 	auth_mw "github.com/nutrixpos/pos/modules/auth/middlewares"
+	auth_handlers "github.com/nutrixpos/pos/modules/auth/handlers"
 	"github.com/nutrixpos/pos/modules/core/handlers"
-	"github.com/nutrixpos/pos/modules/core/middlewares"
+	core_middlewares "github.com/nutrixpos/pos/modules/core/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
+	"github.com/nutrixpos/pos/common"
 )
 
 // Core is the main struct for the core module.
@@ -144,63 +146,89 @@ func (c *Core) RegisterBackgroundWorkers() []modules.Worker {
 // RegisterHttpHandlers registers HTTP handlers.
 func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 
-	auth_svc := auth_mw.NewZitadelAuth(c.Config)
+	var auth_svc auth_mw.IAuthService
 
-	c.Logger.Info("Successfully conntected to Zitadel")
+	if c.Config.Auth.Enabled {
+		jwtUtil := auth_mw.NewJWTUtil(c.Config.Auth.JWTSecret, c.Config.Auth.JWTExpireHrs)
+		auth_svc = auth_mw.NewInternalAuth(c.Config, jwtUtil)
+		c.Logger.Info("Using internal JWT authentication")
+	} else if c.Config.Zitadel.Enabled {
+		auth_svc = auth_mw.NewZitadelAuth(c.Config)
+		c.Logger.Info("Using Zitadel authentication")
+	} else {
+		auth_svc = auth_mw.NewNoAuth(c.Config)
+		c.Logger.Info("Authentication disabled")
+	}
 
-	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteCustomer(c.Config, c.Logger, c.Settings), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/customers/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomer(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/customers", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomers(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/customers", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/logs/salesperday", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesPerDay(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/logs/salesperday/exportcsv", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.ExportSalesCSV(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materials", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteMaterial(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{id}/logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/cost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialExactCost(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{id}/entries", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{material_id}/entries", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialEntries(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/materials/{material_id}/avgcost", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialAverageCost(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/categories", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCategories(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/categories", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InsertCategory(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/categories/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteCategory(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/categories/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCategory(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/orders", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrders(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/orders", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.SubmitOrder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/start", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.StartOrder(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{order_id}/logs", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrderLogs(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/cancel", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CancelOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/finish", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/pay", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.Payorder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/printkitchenreceipt", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintKitchenReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{id}/printclientreceipt", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintClientReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{order_id}/addtips", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderAddTip(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{order_id}/removetips", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderRemoveTip(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/refund", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.RefundOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/waste", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.WasteOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/products/availability", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(c.Config, c.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/products/{id}/recipetree", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/products/{id}/image", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProductImage(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/products/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProduct(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/products/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteProduct(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/products/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/products", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProducts(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/products", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InesrtNewProduct(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
-	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSettings(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/settings", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateSettings(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/languages", middlewares.AllowCors(handlers.GetAvailableLanguages(c.Config, c.Logger))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/languages/{code}", middlewares.AllowCors(handlers.GetLanguage(c.Config, c.Logger))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/disposals/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetDisposal(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/disposals/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteProduct(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
-	router.Handle(prefix+"/api/disposals/{id}", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
-	router.Handle(prefix+"/api/disposals", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetDisposals(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
-	router.Handle(prefix+"/api/disposals", middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InesrtNewProduct(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	if c.Config.Auth.Enabled {
+		client, err := common.GetDatabaseClient(c.Logger, &c.Config)
+		if err != nil {
+			c.Logger.Error("failed to get database client", "error", err)
+			return
+		}
+		usersCollection := client.Database(c.Config.Databases[0].Database).Collection("users")
+		authHandler := auth_handlers.NewAuthHandler(c.Config, c.Logger, usersCollection)
+
+		router.Handle(prefix+"/api/auth/login", core_middlewares.AllowCors(http.HandlerFunc(authHandler.Login))).Methods("POST", "OPTIONS")
+		router.Handle(prefix+"/api/auth/register", core_middlewares.AllowCors(http.HandlerFunc(authHandler.Register))).Methods("POST", "OPTIONS")
+		router.Handle(prefix+"/api/auth/me", core_middlewares.AllowCors(auth_svc.AllowAuthenticated(http.HandlerFunc(authHandler.Me)))).Methods("GET", "OPTIONS")
+		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.GetUsers), "superuser"))).Methods("GET", "OPTIONS")
+		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.DeleteUser), "superuser"))).Methods("DELETE", "OPTIONS")
+	}
+
+	router.Handle(prefix+"/api/customers/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/customers/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteCustomer(c.Config, c.Logger, c.Settings), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/customers/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomer(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/customers", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCustomers(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/customers", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/logs/salesperday", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSalesPerDay(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/logs/salesperday/exportcsv", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.ExportSalesCSV(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterials(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.AddMaterial(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.EditMaterial(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteMaterial(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{id}/logs", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialLogs(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteEntry(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{material_id}/entries/{entry_id}/cost", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialExactCost(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{id}/entries", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PushMaterialEntry(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{material_id}/entries", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetMaterialEntries(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/materials/{material_id}/avgcost", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CalculateMaterialAverageCost(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/categories", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetCategories(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/categories", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InsertCategory(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/categories/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteCategory(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/categories/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCategory(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/orders", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrders(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/orders", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.SubmitOrder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrder(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/start", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.StartOrder(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/logs", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetOrderLogs(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/cancel", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.CancelOrder(c.Config, c.Logger), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/finish", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.FinishOrder(c.Config, c.Logger, c.Settings), "admin", "chef"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/pay", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.Payorder(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/printkitchenreceipt", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintKitchenReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/printclientreceipt", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.PrintClientReceipt(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/addtips", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderAddTip(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/removetips", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderRemoveTip(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/refund", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.RefundOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/waste", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.WasteOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/products/availability", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(c.Config, c.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/products/{id}/recipetree", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/products/{id}/image", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProductImage(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/products/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProduct(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/products/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteProduct(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/products/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/products", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetProducts(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/products", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InesrtNewProduct(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/settings", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetSettings(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/settings", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateSettings(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/languages", core_middlewares.AllowCors(handlers.GetAvailableLanguages(c.Config, c.Logger))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/languages/{code}", core_middlewares.AllowCors(handlers.GetLanguage(c.Config, c.Logger))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/disposals/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetDisposal(c.Config, c.Logger), "admin"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/disposals/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.DeleteProduct(c.Config, c.Logger), "admin"))).Methods("DELETE", "OPTIONS")
+	router.Handle(prefix+"/api/disposals/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProduct(c.Config, c.Logger), "admin"))).Methods("PATCH", "OPTIONS")
+	router.Handle(prefix+"/api/disposals", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetDisposals(c.Config, c.Logger), "admin", "cashier"))).Methods("GET", "OPTIONS")
+	router.Handle(prefix+"/api/disposals", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.InesrtNewProduct(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")
 
 	if c.NotificationSvc == nil {
 		notification_service, err := services.SpawnNotificationSingletonSvc("melody", c.Logger, c.Config)

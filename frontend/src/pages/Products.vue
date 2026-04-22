@@ -256,6 +256,7 @@ import { Image, Message, ToggleSwitch } from 'primevue';
 import { Form } from '@primevue/forms';
 // import { Material } from '@/classes/OrderItem';
 import { globalStore } from '@/stores';
+import auth from '../services/auth';
 
 const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
@@ -325,11 +326,11 @@ const newProductImageUpload = ref(null)
 const editProductImageUpload = ref(null)
 
 const beforeNewProductImageUpload = (event:any) => {
-    event.xhr.setRequestHeader("Authorization", "Bearer " + proxy.$zitadel?.oidcAuth.accessToken);
+    event.xhr.setRequestHeader("Authorization", "Bearer " + auth.accessToken.value);
 }
 
 const beforeEditProductImageUpload = (event:any) => {
-    event.xhr.setRequestHeader("Authorization", "Bearer " + proxy.$zitadel?.oidcAuth.accessToken);
+    event.xhr.setRequestHeader("Authorization", "Bearer " + auth.accessToken.value);
 }
 
 const onAdvancedUpload = () => {
@@ -362,7 +363,7 @@ const backendUrl = computed(() => {
 const deleteProduct = (product_id: string) => {
     axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/products/${product_id}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     }).then(() => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Product deleted successfully',group:'br',life:3000 });
@@ -423,7 +424,7 @@ const updateProduct = () => {
         data : productToEdit.value
     },{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(() => {
@@ -464,7 +465,7 @@ const submitProduct = () => {
         data : payload
     } , {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
         .then(async response => {
@@ -565,7 +566,7 @@ const loadProducts = (first=0,rows=productsTableRowsPerPage.value) => {
             "page[size]": rows
         },
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {

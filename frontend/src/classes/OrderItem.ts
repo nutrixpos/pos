@@ -1,5 +1,5 @@
 import axios from 'axios';
-import zitadelAuth from "@/services/zitadelAuth";
+import auth from "@/services/auth";
 import { globalStore } from '@/stores';
 
 const store = <any>globalStore()
@@ -298,7 +298,7 @@ export class OrderItem {
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/products/${this.Id}`,
             {
                 headers: {
-                    'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+                    'Authorization': `Bearer ${auth.accessToken.value}`
                 }
             }
         ).then((response) => { 
@@ -313,7 +313,7 @@ export class OrderItem {
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/products/${this.product.id}/recipetree`,
             {
                 headers: {
-                    'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+                    'Authorization': `Bearer ${auth.accessToken.value}`
                 }
             }
         ).then((response) => {
@@ -382,7 +382,7 @@ export class OrderItem {
     async UpdateMaterialAverageCost(materialIndex: number){
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${this.materials[materialIndex].material.id}/avgcost?quantity=${this.materials[materialIndex].quantity}`, {
             headers: {
-                'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+                'Authorization': `Bearer ${auth.accessToken.value}`
             }
         }).then((response) => {
             this.materials[materialIndex].avgcost = response.data.data
@@ -394,7 +394,7 @@ export class OrderItem {
         if (this.materials[materialIndex].entry != undefined){
             await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${this.materials[materialIndex].material.id}/entries/${this.materials[materialIndex].entry.id}/cost?quantity=${this.materials[materialIndex].quantity}`, {
                 headers: {
-                    'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+                    'Authorization': `Bearer ${auth.accessToken.value}`
                 }
             }).then((response) => {
     
@@ -564,7 +564,7 @@ export class OrderItem {
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/products/${this.product.id}/recipetree`,
         {
             headers: {
-                'Authorization': `Bearer ${zitadelAuth.oidcAuth.accessToken}`
+                'Authorization': `Bearer ${auth.accessToken.value}`
             }
         }).then((response) => {
 

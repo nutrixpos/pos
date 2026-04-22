@@ -37,9 +37,17 @@ type ZitadelConfig struct {
 	Enabled bool   `mapstructure:"enabled" yaml:"enabled"`
 }
 
+// AuthConfig holds the configuration for internal authentication
+type AuthConfig struct {
+	JWTSecret    string `mapstructure:"jwt_secret" yaml:"jwt_secret"`
+	JWTExpireHrs int    `mapstructure:"jwt_expire_hrs" yaml:"jwt_expire_hrs"`
+	Enabled      bool   `mapstructure:"enabled" yaml:"enabled"`
+}
+
 // Config represents the overall configuration structure
 type Config struct {
 	Databases     []Database    `mapstructure:"databases" yaml:"databases"`
+	Auth          AuthConfig    `mapstructure:"auth" yaml:"auth"`
 	Zitadel       ZitadelConfig `mapstructure:"zitadel" yaml:"zitadel"`
 	Env           string        `mapstructure:"env" yaml:"env"`
 	TimeZone      string        `mapstructure:"timezone" yaml:"timezone"`

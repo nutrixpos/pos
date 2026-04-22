@@ -30,6 +30,7 @@ import InputText from 'primevue/inputtext'
 import ButtonGroup from 'primevue/buttongroup'
 import Button from 'primevue/button'
 import { globalStore } from '../stores';
+import auth from '../services/auth';
 
 const store = globalStore()
 
@@ -80,7 +81,7 @@ const submitCustomer = () => {
        data : payload
    } , {
        headers: {
-           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           Authorization: `Bearer ${auth.accessToken.value}`
        }
    })
        .then(response => {

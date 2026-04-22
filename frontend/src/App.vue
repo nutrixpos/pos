@@ -100,6 +100,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router'
 import { useToast } from "primevue/usetoast";
 import { useI18n } from 'vue-i18n'
+import auth from '@/services/auth';
 
 
 onMounted(() => {
@@ -123,7 +124,7 @@ const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
 const getSettings = () => {
     return axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         },
     })
     .then((response) => {
@@ -136,7 +137,7 @@ const getSettings = () => {
 
         axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${response.data.data.language.code}`, {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         })
         .then(response2 => {
@@ -171,7 +172,7 @@ const saveShopMode = () => {
         },
         {
             headers: {
-                Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                Authorization: `Bearer ${auth.accessToken.value}`
             }
         }
     )
@@ -190,7 +191,7 @@ const saveShopMode = () => {
 const getConfigStatus = () => {
     return axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/api/setup/status`, {
         headers: {
-            Authorization: `bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `bearer ${auth.accessToken.value}`
         },
     })
 }
@@ -199,9 +200,15 @@ const init = () => {
     getConfigStatus()
     .then((response) => {
         if(response.data.setup) {
-            getSettings().finally(() => {
-                setting_up.value = false
-            })
+            if (response.data.needsAdminSetup) {
+                router.push({ path: '/admin-setup' }).finally(() => {
+                    setting_up.value = false
+                })
+            } else {
+                getSettings().finally(() => {
+                    setting_up.value = false
+                })
+            }
         }else {
             router.push({ path: '/setup' }).finally(() => {
                 setting_up.value = false

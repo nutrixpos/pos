@@ -87,10 +87,10 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 // import { Material } from '@/classes/OrderItem';
 import { globalStore } from '../stores';
+import auth from '../services/auth';
 
 
 const store = globalStore()
-const { proxy } = getCurrentInstance();
 const confirm = useConfirm();
 
 const customerToEdit = ref<any>({})
@@ -115,7 +115,7 @@ const toast = useToast()
 const deleteCustomer = (customer_id: string) => {
    axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/customers/${customer_id}`, {
        headers: {
-           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           Authorization: `Bearer ${auth.accessToken.value}`
        }
    }).then(() => {
        toast.add({ severity: 'success', summary: 'Success', detail: 'Customer deleted successfully',group:'br',life:3000 });
@@ -165,7 +165,7 @@ const updateCustomer = () => {
        data : customerToEdit.value
    },{
        headers: {
-           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           Authorization: `Bearer ${auth.accessToken.value}`
        }
    })
    .then(() => {
@@ -191,7 +191,7 @@ const submitCustomer = () => {
        data : payload
    } , {
        headers: {
-           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           Authorization: `Bearer ${auth.accessToken.value}`
        }
    })
        .then(response => {
@@ -227,7 +227,7 @@ const loadCustomers = (first=0,rows=customersTableRowsPerPage.value) => {
            "page[size]": rows
        },
        headers: {
-           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           Authorization: `Bearer ${auth.accessToken.value}`
        }
    })
    .then(response => {

@@ -150,6 +150,7 @@ import OrderItemsInfo from './OrderItemsInfo.vue';
 import Order from '@/classes/Order';
 import Dialog from 'primevue/dialog'
 import { globalStore } from '@/stores';
+import auth from '../services/auth';
 
 const store = globalStore();
 
@@ -179,7 +180,7 @@ const remove_tips_amount = ref(0);
 const addTip = (amount: number) => {
     axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/addtips?tip_amount=${amount}`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
         }
     })
     .then(()=>{
@@ -196,7 +197,7 @@ const addTip = (amount: number) => {
 const removeTip = (amount: number) => {
     axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/removetips?tip_amount=${amount}`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
         }
     })
     .then(()=>{
@@ -221,7 +222,7 @@ const toggle_remove_tip_popover = (event) => {
 const getOrderLogs = () => {
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/logs`, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((response)=>{
@@ -236,7 +237,7 @@ const getOrderLogs = () => {
 const finishOrder = () => {
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/finish`,{}, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
         }
     })
     .then(()=>{
@@ -251,7 +252,7 @@ const finishOrder = () => {
 const collectedMoney = () => {
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/pay`,{}, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
         }
     })
     .then(()=>{
@@ -266,7 +267,7 @@ const collectedMoney = () => {
 const PrintKitchenReceipt = () => {
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/printkitchenreceipt`,{}, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
             "Accept-Language": proxy.$i18n.locale
         }
     })
@@ -281,7 +282,7 @@ const PrintKitchenReceipt = () => {
 const PrintClientReceipt = () => {
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/printclientreceipt`,{}, {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`,
+            Authorization: `Bearer ${auth.accessToken.value}`,
             "Accept-Language": proxy.$i18n.locale
         }
     })
@@ -310,7 +311,7 @@ const confirmCancelOrder = (event) => {
             
             axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/cancel`, {},{
                 headers: {
-                    Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+                    Authorization: `Bearer ${auth.accessToken.value}`
                 }
             })
             .then(()=>{

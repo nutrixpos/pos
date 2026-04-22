@@ -36,7 +36,7 @@ import Column from 'primevue/column';
 import axios from 'axios'
 import { Material, MaterialEntry } from '@/classes/OrderItem';
 import { useToast } from "primevue/usetoast";
-const { proxy } = getCurrentInstance();
+import auth from '../services/auth';
 
 
 const materials = ref([])
@@ -60,7 +60,7 @@ const returnMaterial = async (material: Material) => {
             "page[size]": 999
         },
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(response => {
@@ -78,7 +78,7 @@ const GetMaterials = () => {
     loading.value = true
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials`,{
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then((response) => {

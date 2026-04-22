@@ -86,6 +86,7 @@ import { Slider,RadioButton,Divider,InputText,Button,Dialog,Textarea } from 'pri
 import axios from 'axios';
 import Order from '@/classes/Order.ts'
 import { useToast } from "primevue/usetoast";
+import auth from '../services/auth';
 
 const toast = useToast()
 
@@ -147,7 +148,7 @@ const submitRefund = () => {
     },
     {
         headers: {
-            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+            Authorization: `Bearer ${auth.accessToken.value}`
         }
     })
     .then(()=>{
