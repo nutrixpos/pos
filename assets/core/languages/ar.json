@@ -178,6 +178,15 @@
     "print_receipt_disabled": "طباعة الايصال معطل",
     "cost_method": "طريقة الحساب",
     "fixed": "ثابت",
-    "user": "المستخدم | المستخدمين"
+    "user": "المستخدم | المستخدمين",
+    "edit_user": "تعديل المستخدم",
+    "change_password": "تغيير كلمة المرور",
+    "password": "كلمة المرور",
+    "new_password": "كلمة المرور الجديدة",
+    "confirm_password": "تأكيد كلمة المرور",
+    "username": "اسم المستخدم",
+    "roles": "الأدوار",
+    "profile": "الملف الشخصي",
+    "current_password": "كلمة المرور الحالية"
   }
 }

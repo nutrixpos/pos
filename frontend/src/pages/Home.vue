@@ -329,6 +329,7 @@
                             {{ user?.username || "Anonymous" }}
                         </div>
                         <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                        <Button class="mt-1 w-full" icon="pi pi-user" severity="secondary" text aria-label="Profile" :label="$t('profile')" @click="$router.push('/profile')" />
                         <Button class="mt-1 w-full" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label="t('signout')" @click="auth.signOut(); $router.push('/login')" />
                     </div>
                 </div>

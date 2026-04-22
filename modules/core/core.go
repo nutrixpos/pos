@@ -175,7 +175,8 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.GetUsers), "superuser"))).Methods("GET", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.Register), "superuser"))).Methods("POST", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.DeleteUser), "superuser"))).Methods("DELETE", "OPTIONS")
-		router.Handle(prefix+"/api/auth/users/password", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.ChangePassword), "superuser"))).Methods("POST", "OPTIONS")
+		router.Handle(prefix+"/api/auth/users/password", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.ChangePassword), "superuser"))).Methods("PATCH", "OPTIONS")
+		router.Handle(prefix+"/api/auth/password", core_middlewares.AllowCors(auth_svc.AllowAuthenticated(http.HandlerFunc(authHandler.ChangeMyPassword)))).Methods("PATCH", "OPTIONS")
 	}
 
 	router.Handle(prefix+"/api/customers/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")

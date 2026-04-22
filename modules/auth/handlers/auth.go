@@ -318,3 +318,70 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
 }
+
+func (h *AuthHandler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
+	authCtx := r.Context().Value("auth_ctx")
+	if authCtx == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := authCtx.(*middlewares.Claims)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		CurrentPassword string `json:"current_password"`
+		Password        string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.CurrentPassword == "" || req.Password == "" {
+		http.Error(w, "current_password and password are required", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+
+	var user models.User
+
+	user_id_obj, err := primitive.ObjectIDFromHex(claims.UserID)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Collection.FindOne(ctx, bson.M{"_id": user_id_obj}).Decode(&user)
+	if err != nil {
+		h.Logger.Error("user not found", "error", err)
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	if !middlewares.CheckPassword(req.CurrentPassword, user.PasswordHash) {
+		http.Error(w, "invalid current password", http.StatusUnauthorized)
+		return
+	}
+
+	hashedPassword, err := middlewares.HashPassword(req.Password)
+	if err != nil {
+		h.Logger.Error("failed to hash password", "error", err)
+		http.Error(w, "failed to change password", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = h.Collection.UpdateOne(ctx, bson.M{"_id": user_id_obj}, bson.M{"$set": bson.M{"password_hash": hashedPassword, "updated_at": time.Now()}})
+	if err != nil {
+		h.Logger.Error("failed to change password", "error", err)
+		http.Error(w, "failed to change password", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
+}

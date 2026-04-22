@@ -178,6 +178,16 @@
     "print_receipt_disabled": "Print receipt disabled",
     "cost_method": "Cost method",
     "fixed": "Fixed",
-    "user": "User | Users"
+    "user": "User | Users",
+    "add_user": "Add user",
+    "edit_user": "Edit user",
+    "change_password": "Change password",
+    "password": "Password",
+    "confirm_password": "Confirm password",
+    "username": "Username",
+    "roles": "Roles",
+    "new_password": "New password",
+    "profile": "Profile",
+    "current_password": "Current password"
   }
 }

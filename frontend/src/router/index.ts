@@ -88,6 +88,16 @@ const router = createRouter({
           }},
         ],
       },
+      {
+        path: '/profile',
+        component: () => {
+          if (!auth.isAuthenticated.value) {
+            window.location.href = '/login'
+            return import('@/pages/Login.vue')
+          }
+          return import('@/pages/Profile.vue')
+        },
+      },
   ],
 })
 

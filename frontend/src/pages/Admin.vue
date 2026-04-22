@@ -17,19 +17,10 @@
 
                     <template #end>
                         <Button outlined :icon="`pi pi-${store.getColorMode == 'light' ? 'sun' : 'moon'}`" @click="toggleDarkMode()" />
-                        <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click.stop="user_profile_toggle">
+                        <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click="$router.push('/profile')">
                             <span style="font-size:0.9rem;" class="mr-2">{{ user?.username }}</span>
                             <span class="p-button-icon pi pi-user"></span>
                         </Button>
-                        <OverlayPanel ref="user_profile_op" class="lg:w-2 md:w-3">
-                            <div class="flex flex-column">
-                                <span>Welcome <strong>{{ user?.username }}</strong></span>
-                                <div class="mt-2">
-                                    <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
-                                </div>
-                                <Button class="mt-5" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="$auth.signOut();$router.push('/login')" />
-                            </div>
-                        </OverlayPanel>
                     </template>
                 </Toolbar>
             </div>
