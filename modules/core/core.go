@@ -11,18 +11,18 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/helpers"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
 	"github.com/nutrixpos/pos/modules"
-	auth_mw "github.com/nutrixpos/pos/modules/auth/middlewares"
 	auth_handlers "github.com/nutrixpos/pos/modules/auth/handlers"
+	auth_mw "github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/handlers"
 	core_middlewares "github.com/nutrixpos/pos/modules/core/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
-	"github.com/nutrixpos/pos/common"
 )
 
 // Core is the main struct for the core module.
@@ -175,6 +175,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.GetUsers), "superuser"))).Methods("GET", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.Register), "superuser"))).Methods("POST", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.DeleteUser), "superuser"))).Methods("DELETE", "OPTIONS")
+		router.Handle(prefix+"/api/auth/users/password", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.ChangePassword), "superuser"))).Methods("POST", "OPTIONS")
 	}
 
 	router.Handle(prefix+"/api/customers/{id}", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateCustomer(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")

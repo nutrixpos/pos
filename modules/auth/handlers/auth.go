@@ -94,6 +94,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var userReq models.User
 	if len(req.Roles) > 0 {
 		userReq.Roles = req.Roles
+		for _, role := range userReq.Roles {
+			if role == "superuser" {
+				http.Error(w, "cannot create superuser", http.StatusForbidden)
+				return
+			}
+		}
 	} else {
 		userReq.Roles = defaultRoles
 	}
@@ -107,11 +113,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user := models.User{
 		Username:     req.Username,
-		Email:       req.Email,
+		Email:        req.Email,
 		PasswordHash: hashedPassword,
-		Roles:       userReq.Roles,
-		CreatedAt:   time.Now(),
-		UpdatedAt:  time.Now(),
+		Roles:        userReq.Roles,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	result, err := h.Collection.InsertOne(ctx, user)
@@ -200,18 +206,9 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, ok := authCtx.(*middlewares.Claims)
-	if !ok {
+	if _, ok := authCtx.(*middlewares.Claims); !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
-	}
-
-	isSuperuser := false
-	for _, role := range claims.Roles {
-		if role == "superuser" {
-			isSuperuser = true
-			break
-		}
 	}
 
 	userID := r.URL.Query().Get("id")
@@ -243,7 +240,7 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if isTargetSuperuser && !isSuperuser {
+	if isTargetSuperuser {
 		http.Error(w, "cannot delete superuser", http.StatusForbidden)
 		return
 	}
@@ -257,4 +254,67 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "user deleted"})
+}
+
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	authCtx := r.Context().Value("auth_ctx")
+	if authCtx == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := authCtx.(*middlewares.Claims)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	isSuperuser := false
+	for _, role := range claims.Roles {
+		if role == "superuser" {
+			isSuperuser = true
+			break
+		}
+	}
+
+	if !isSuperuser {
+		http.Error(w, "only superuser can change user passwords", http.StatusForbidden)
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.UserID == "" || req.Password == "" {
+		http.Error(w, "user_id and password are required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(req.UserID)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, err := middlewares.HashPassword(req.Password)
+	if err != nil {
+		h.Logger.Error("failed to hash password", "error", err)
+		http.Error(w, "failed to change password", http.StatusInternalServerError)
+		return
+	}
+
+	ctx := context.Background()
+
+	_, err = h.Collection.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{"$set": bson.M{"password_hash": hashedPassword, "updated_at": time.Now()}})
+	if err != nil {
+		h.Logger.Error("failed to change password", "error", err)
+		http.Error(w, "failed to change password", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
 }

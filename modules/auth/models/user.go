@@ -48,3 +48,8 @@ type RegisterRequest struct {
 	Password string   `json:"password"`
 	Roles    []string `json:"roles"`
 }
+
+type ChangePasswordRequest struct {
+	UserID    string `json:"user_id"`
+	Password string `json:"password"`
+}

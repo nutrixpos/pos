@@ -24,7 +24,8 @@
                                 <template #body="slotProps">
                                     <ConfirmPopup></ConfirmPopup>
                                     <ButtonGroup>
-                                        <Button icon="pi pi-trash" severity="danger" aria-label="Remove" @click="confirmDeleteUser($event,slotProps.data.id)"/>
+                                        <Button v-if="isSuperuser && !slotProps.data.roles.includes('superuser')" icon="pi pi-pencil" severity="secondary" aria-label="Edit Password" @click="openPasswordEditDialog(slotProps.data)"/>
+                                        <Button v-if="!slotProps.data.roles.includes('superuser')" icon="pi pi-trash" severity="danger" aria-label="Remove" @click="confirmDeleteUser($event,slotProps.data.id)"/>
                                     </ButtonGroup>
                                 </template>
                             </Column>
@@ -58,15 +59,31 @@
                                 </ButtonGroup>
                             </template>
                         </Dialog>
+                        <Dialog v-model:visible="passwordEditDialog" modal :header="$t('change_password')" :style="{ width: '25rem' }">
+                            <div class="flex flex-column gap-2">
+                                <label for="editUsername">{{$t('username')}}</label>
+                                <InputText id="editUsername" v-model="editPassword.username" disabled />
+                            </div>
+                            <div class="flex flex-column gap-2 mt-2">
+                                <label for="newPassword">{{$t('new_password')}}</label>
+                                <InputText id="newPassword" v-model="editPassword.password" type="password" />
+                            </div>
+                            <template #footer>
+                                <ButtonGroup>
+                                    <Button :label="$t('cancel')"  severity="secondary" aria-label="Cancel" @click="passwordEditDialog=false" />
+                                    <Button class="ml-2" severity="primary" @click="submitPasswordChange" :label="$t('save')" aria-label="Save" />
+                                </ButtonGroup>
+                            </template>
+                        </Dialog>
                     </div>
                 </div>
             </div>
         </div>
-     </div>
+      </div>
 </template>
 
 <script setup lang="ts">
-import {ref,onMounted} from "vue";
+import {ref,onMounted,computed} from "vue";
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '@/stores';
 import axios from "axios";
@@ -93,15 +110,23 @@ const backendUrl = `http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta
 
 const users = ref([])
 const userAddDialog = ref(false)
-const availableRoles = ['admin', 'cashier', 'chef', 'superuser']
+const passwordEditDialog = ref(false)
+const availableRoles = ['admin', 'cashier', 'chef']
 const newUser = ref({
     username: '',
     email: '',
     password: '',
     roles: []
 })
+const editPassword = ref({
+    userId: '',
+    username: '',
+    password: ''
+})
 
 const auth = proxy.$auth;
+console.log(auth)
+const isSuperuser = computed(() => auth.currentUser?.value.roles?.includes('superuser') || false)
 
 const loadUsers = () => {
     axios.get(`${backendUrl}/api/auth/users`, {
@@ -176,6 +201,37 @@ const confirmDeleteUser = (event, user_id) => {
         },
         reject: () => {
         }
+    });
+}
+
+const openPasswordEditDialog = (user) => {
+    editPassword.value = {
+        userId: user.id,
+        username: user.username,
+        password: ''
+    };
+    passwordEditDialog.value = true;
+}
+
+const submitPasswordChange = () => {
+    if (!editPassword.value.password) {
+        toast.add({severity: 'warn', summary: 'Warning', detail: 'Please enter a new password'});
+        return;
+    }
+
+    axios.post(`${backendUrl}/api/auth/users/password`, {
+        user_id: editPassword.value.userId,
+        password: editPassword.value.password
+    }, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken.value}`
+        }
+    }).then(() => {
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Password changed successfully',group:'br',life:3000 });
+        passwordEditDialog.value = false;
+        editPassword.value.password = '';
+    }).catch(error => {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Failed to change password',group:'br',life:3000 });
     });
 }
 
