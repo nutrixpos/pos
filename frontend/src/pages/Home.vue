@@ -322,17 +322,15 @@
     <Drawer v-model:visible="drawer_visible">
         <template #container="">
             <div class="flex flex-column h-full">
-                <div class="flex gap-2 p-2 align-items-start mt-3">
+                <div class="flex gap-2 p-2 pb-0 align-items-start mt-3 w-full">
                     <Avatar icon="pi pi-user" class="mr-2" size="medium" />
-                    <div class="flex flex-column align-items-start justify-content-start">
+                    <div class="flex flex-column align-items-start justify-content-start w-full">
                         <div class="mx-2">
                             {{ user?.username || "Anonymous" }}
                         </div>
-                        <Button class="mt-1" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label="t('signout')" @click="auth.signOut(); $router.push('/login')" />
+                        <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                        <Button class="mt-1 w-full" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label="t('signout')" @click="auth.signOut(); $router.push('/login')" />
                     </div>
-                </div>
-                <div class="mt-2">
-                    <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
                 </div>
                 <Divider />
                 <div class="overflow-y-auto">

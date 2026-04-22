@@ -236,6 +236,16 @@ const menu_tree =ref([
     {
         key: '7',
         label: {
+            title:'user',
+            plural:true
+        },
+        data: 'Users',
+        icon: 'pi pi-user',
+        link:'/admin/users',
+    },
+    {
+        key: '8',
+        label: {
             title:'Hubsync',
             plural:false
         },

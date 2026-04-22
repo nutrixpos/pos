@@ -173,6 +173,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 		router.Handle(prefix+"/api/auth/register", core_middlewares.AllowCors(http.HandlerFunc(authHandler.Register))).Methods("POST", "OPTIONS")
 		router.Handle(prefix+"/api/auth/me", core_middlewares.AllowCors(auth_svc.AllowAuthenticated(http.HandlerFunc(authHandler.Me)))).Methods("GET", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.GetUsers), "superuser"))).Methods("GET", "OPTIONS")
+		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.Register), "superuser"))).Methods("POST", "OPTIONS")
 		router.Handle(prefix+"/api/auth/users", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(http.HandlerFunc(authHandler.DeleteUser), "superuser"))).Methods("DELETE", "OPTIONS")
 	}
 

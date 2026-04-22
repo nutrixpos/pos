@@ -99,7 +99,7 @@
     "address": "العنوان",
     "phone": "الهاتف",
     "custom_data": "بيانات مخصصة",
-    "customer": "العميل",
+    "customer": "العميل | العملاء",
     "key": "المفتاح",
     "value": "القيمة",
     "dine_in": "في المطعم",
@@ -177,6 +177,7 @@
     "print_receipt_enabled": "طباعة الايصال مفعل",
     "print_receipt_disabled": "طباعة الايصال معطل",
     "cost_method": "طريقة الحساب",
-    "fixed": "ثابت"
+    "fixed": "ثابت",
+    "user": "المستخدم | المستخدمين"
   }
 }

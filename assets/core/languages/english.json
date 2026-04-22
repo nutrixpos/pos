@@ -100,7 +100,7 @@
     "address": "Address",
     "phone": "Phone",
     "custom_data": "Custom data",
-    "customer": "Customer",
+    "customer": "Customer | Customers",
     "key": "Key",
     "value": "Value",
     "dine_in": "Dine in",
@@ -177,6 +177,7 @@
     "print_receipt_enabled": "Print receipt enabled",
     "print_receipt_disabled": "Print receipt disabled",
     "cost_method": "Cost method",
-    "fixed": "Fixed"
+    "fixed": "Fixed",
+    "user": "User | Users"
   }
 }

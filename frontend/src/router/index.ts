@@ -74,6 +74,12 @@ const router = createRouter({
           ]},
           {path: 'settings', component: () => import('@/pages/Settings.vue')},
           {path: 'customers', component: () => import('@/pages/Customers.vue')},
+          {path: 'users', component: () => { 
+            if (auth.hasRole("superuser")) {
+              return import('@/pages/Users.vue')
+            }
+            return import('@/pages/NoAccessView.vue')
+          }},
           {path: 'hubsync', component: () => {
             if (auth.hasRole("superuser")) {
               return import('@/pages/Hubsync.vue')
