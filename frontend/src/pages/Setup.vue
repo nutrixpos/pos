@@ -155,7 +155,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 
-const apiUrl = `http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}`
+const apiUrl = `http://${import.meta.env.VITE_APP_BACKEND_HOST}`
 
 const form = reactive({
   host: '',
