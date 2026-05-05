@@ -215,6 +215,7 @@ func (c *Core) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle(prefix+"/api/orders/{order_id}/removetips", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.OrderRemoveTip(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/refund", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.RefundOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
 	router.Handle(prefix+"/api/orders/{order_id}/items/{item_id}/waste", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.WasteOrderItem(c.Config, c.Logger, c.Settings), "admin", "cashier"))).Methods("POST", "OPTIONS")
+	router.Handle(prefix+"/api/orders/{id}/customdata", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateOrderCustomData(c.Config, c.Logger), "admin", "cashier"))).Methods("PATCH", "OPTIONS")
 	router.Handle(prefix+"/api/products/availability", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeAvailability(c.Config, c.Logger), "admin", "chef", "cashier"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/products/{id}/recipetree", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.GetRecipeTree(c.Config, c.Logger), "admin", "cashier", "chef"))).Methods("GET", "OPTIONS")
 	router.Handle(prefix+"/api/products/{id}/image", core_middlewares.AllowCors(auth_svc.AllowAnyOfRoles(handlers.UpdateProductImage(c.Config, c.Logger), "admin"))).Methods("POST", "OPTIONS")

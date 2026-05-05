@@ -1018,3 +1018,20 @@ func (os *OrderService) GetOrder(order_id string) (models.Order, error) {
 
 	return order, nil
 }
+
+// UpdateCustomData updates the custom_data field of an order.
+func (os *OrderService) UpdateCustomData(order_id string, customData map[string]string) error {
+	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
+	filter := bson.M{"id": order_id}
+	update := bson.M{"$set": bson.M{"custom_data": customData}}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	return err
+}

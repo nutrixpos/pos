@@ -895,3 +895,38 @@ func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		w.Write(jsonOrder)
 	}
 }
+
+// UpdateOrderCustomData returns a HTTP handler function to update the custom_data of an order.
+func UpdateOrderCustomData(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		params := mux.Vars(r)
+		id_param := params["id"]
+
+		decoder := json.NewDecoder(r.Body)
+		request := struct {
+			Data map[string]string `json:"data"`
+		}{}
+
+		err := decoder.Decode(&request)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		orderService := services.OrderService{
+			Logger: logger,
+			Config: config,
+		}
+
+		err = orderService.UpdateCustomData(id_param, request.Data)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

@@ -98,16 +98,34 @@
             </div>
 
             <div class="col-12 flex flex-column" v-if="Object.keys(props.order.custom_data).length > 0">
-                <h4>Custom data</h4>
+                <h4 class="mb-0">Custom data</h4>
                 <div class="flex flex-column gap-2">
-                    <div v-for="(value, key) in props.order.custom_data" :key="key">
-                        <div class="flex items-center gap-2">
-                            <div>{{ key }}</div>
-                            <div>{{ value }}</div>
-                        </div>
+                    <div v-for="(value, key) in props.order.custom_data" :key="key" class="flex items-center gap-2">
+                        <div class="flex-1">{{ key }}</div>
+                        <div class="flex-1">{{ value }}</div>
+                        <Button icon="pi pi-pencil" severity="info" size="small" @click="openEditDialog(key, value)" />
+                        <Button icon="pi pi-trash" severity="danger" size="small" @click="deleteCustomData($event, key)" />
                     </div>
+                    <Button icon="pi pi-plus" severity="success" size="small" :label="$t('add')" @click="openAddDialog" class="mt-2" />
                 </div>
             </div>
+            
+            <Dialog v-model:visible="custom_data_dialog" :header="is_editing ? 'Edit custom data' : 'Add custom data'" modal>
+                <div class="flex flex-column gap-3">
+                    <div class="flex flex-column gap-1">
+                        <label for="cd_key">Key</label>
+                        <InputText id="cd_key" v-model="cd_key" :disabled="is_editing" />
+                    </div>
+                    <div class="flex flex-column gap-1">
+                        <label for="cd_value">Value</label>
+                        <InputText id="cd_value" v-model="cd_value" />
+                    </div>
+                    <div class="flex gap-2 justify-content-end">
+                        <Button label="Cancel" severity="secondary" @click="custom_data_dialog = false" />
+                        <Button label="Save" severity="success" @click="saveCustomData" />
+                    </div>
+                </div>
+            </Dialog>
             
 
             <div class="col-12 flex flex-column">
@@ -143,12 +161,11 @@ import {defineProps,getCurrentInstance,computed,defineEmits,ref} from 'vue'
 import Badge from 'primevue/badge';
 import { ButtonGroup } from 'primevue';
 import Button from 'primevue/button';
-import { useConfirm,ConfirmPopup,Popover,InputText,InputGroup,DataTable,Column } from "primevue";
+import { useConfirm,ConfirmPopup,Popover,InputText,InputGroup,DataTable,Column,Dialog } from "primevue";
 import axios from 'axios'
 import { useToast } from "primevue/usetoast";
 import OrderItemsInfo from './OrderItemsInfo.vue';
 import Order from '@/classes/Order';
-import Dialog from 'primevue/dialog'
 import { globalStore } from '@/stores';
 import auth from '../services/auth';
 
@@ -158,6 +175,12 @@ const toast = useToast()
 
 const order_logs = ref([])
 const order_logs_dialog = ref(false)
+
+const custom_data_dialog = ref(false)
+const cd_key = ref('')
+const cd_value = ref('')
+const is_editing = ref(false)
+const original_key = ref('')
 
 
 const props = defineProps({
@@ -216,6 +239,72 @@ const toggle_add_tip_popover = (event) => {
 
 const toggle_remove_tip_popover = (event) => {
     remove_tip_popover.value.toggle(event);
+}
+
+const openEditDialog = (key: string, value: string) => {
+    cd_key.value = key
+    cd_value.value = value
+    is_editing.value = true
+    original_key.value = key
+    custom_data_dialog.value = true
+}
+
+const openAddDialog = () => {
+    cd_key.value = ''
+    cd_value.value = ''
+    is_editing.value = false
+    original_key.value = ''
+    custom_data_dialog.value = true
+}
+
+const deleteCustomData = (event: Event, key: string) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: 'Are you sure you want to delete this custom data entry?',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Delete',
+            severity: 'danger'
+        },
+        accept: () => {
+            const updatedData = {...props.order.custom_data}
+            delete updatedData[key]
+            saveCustomDataChanges(updatedData)
+        },
+        reject: () => {}
+    });
+}
+
+const saveCustomData = () => {
+    const updatedData = {...props.order.custom_data}
+    if (is_editing.value && original_key.value) {
+        delete updatedData[original_key.value]
+    }
+    updatedData[cd_key.value] = cd_value.value
+    saveCustomDataChanges(updatedData)
+}
+
+const saveCustomDataChanges = (data: Record<string, string>) => {
+    axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/customdata`, {
+        data: data
+    }, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken.value}`,
+        }
+    })
+    .then(()=>{
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Custom data updated',group:'br' });
+        custom_data_dialog.value = false
+        emit('updated')
+    })
+    .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to perform the request',group:'br' });
+    });
 }
 
 
