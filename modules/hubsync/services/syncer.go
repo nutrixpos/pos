@@ -371,7 +371,7 @@ func (s *SyncerService) UploadSalesToServer(host string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/api/logs?tenant_id=1", host), bytes.NewBuffer(json_body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/api/logs", host), bytes.NewBuffer(json_body))
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.Info.Settings.Token))
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
