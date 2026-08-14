@@ -96,6 +96,26 @@
             </tr>
         </table>
 
+        {{#has_payments}}
+        <div style="width:100%;overflow:hidden;margin-top:1rem;height:1rem;">
+            -----------------------------------------------------------------------------------
+        </div>
+        <table style="width:100%;">
+            <tr style="border:0px;">
+                <td style="width:50%;">{{t_payment}}</td>
+                <td style="width:25%;"></td>
+                <td style="width:25%;"></td>
+            </tr>
+            {{#payments}}
+            <tr style="border:0px;">
+                <td style="width:50%;">{{source}}</td>
+                <td style="width:25%;"></td>
+                <td style="width:25%;">{{amount}}</td>
+            </tr>
+            {{/payments}}
+        </table>
+        {{/has_payments}}
+
         {{#is_delivery}}
         <div style="width:100%;overflow:hidden;margin-top:1rem;height:1rem;">
             -----------------------------------------------------------------------------------

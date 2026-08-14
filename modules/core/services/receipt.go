@@ -61,6 +61,14 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 
 	total := subtotal - int(discount)
 
+	receipt_payments := make([]map[string]interface{}, 0, len(order.Payments))
+	for _, payment := range order.Payments {
+		receipt_payments = append(receipt_payments, map[string]interface{}{
+			"source": payment.Source,
+			"amount": fmt.Sprintf("%.2f", payment.Amount),
+		})
+	}
+
 	custom_data := []struct {
 		Key   string
 		Value string
@@ -95,6 +103,9 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		"subtotal":        subtotal,
 		"custom_data":     custom_data,
 		"has_custom_data": len(custom_data) > 0,
+		"payments":        receipt_payments,
+		"has_payments":    len(receipt_payments) > 0,
+		"t_payment":       lang.Pack["payment"],
 		"is_kitchen_mode": shop_mode == "kitchen",
 	}
 

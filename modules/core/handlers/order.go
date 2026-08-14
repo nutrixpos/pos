@@ -392,15 +392,28 @@ func Payorder(config config.Config, logger logger.ILogger, settings models.Setti
 		params := mux.Vars(r)
 		id_param := params["id"]
 
+		request := struct {
+			Data struct {
+				Payments []models.OrderPayment `json:"payments"`
+			} `json:"data"`
+		}{}
+
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		orderService := services.OrderService{
 			Logger: logger,
 			Config: config,
 		}
 
-		err := orderService.PayUnpaidOrder(id_param)
+		err = orderService.PayUnpaidOrder(id_param, request.Data.Payments)
 		if err != nil {
 			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 

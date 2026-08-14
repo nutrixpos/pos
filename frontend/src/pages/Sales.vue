@@ -81,7 +81,7 @@
                                             <template #body="slotProps">
                                                 <div class="flex gap-2 align-items-center">
                                                     <div>{{ slotProps.data.order.sale_price }} </div>
-                                                    <Badge :value="slotProps.data.order.payment_source" severity="secondary" class="mr-2" />
+                                                    <Badge :value="paymentsSummary(slotProps.data.order.payments)" severity="secondary" class="mr-2" />
                                                 </div>
                                             </template>
                                         </Column>
@@ -130,6 +130,11 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 
 const { t } = useI18n() 
 const {proxy} = getCurrentInstance()
+
+const paymentsSummary = (payments: any[] | undefined) => {
+    if (!payments || payments.length === 0) return "—"
+    return payments.map((payment) => `${payment.source}: ${payment.amount.toFixed(2)}`).join(" | ")
+}
 
 const sales_log = ref([])
 const orders_refunds = ref({})

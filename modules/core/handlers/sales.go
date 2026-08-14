@@ -15,12 +15,25 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 )
+
+// paymentsSummary formats an order's payments into a human readable summary
+// like "Cash: 50.00 | Card: 50.00". It returns an empty string when there are
+// no recorded payments (e.g. legacy orders or pay-later orders).
+func paymentsSummary(payments []models.OrderPayment) string {
+	parts := make([]string, 0, len(payments))
+	for _, payment := range payments {
+		parts = append(parts, fmt.Sprintf("%s: %.2f", payment.Source, payment.Amount))
+	}
+	return strings.Join(parts, " | ")
+}
 
 func ExportSalesCSV(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +59,12 @@ func ExportSalesCSV(config config.Config, logger logger.ILogger) http.HandlerFun
 		}
 
 		data := make([][]string, 0)
-		data = append(data, []string{"Id", "Display Id", "Date", "Cost", "Sale Price", "Payment Source", "Refunds Value", "Profit"})
+		data = append(data, []string{"Id", "Display Id", "Date", "Cost", "Sale Price", "Payments", "Refunds Value", "Profit"})
 
 		for _, sale_day := range sales {
 			for _, order := range sale_day.Orders {
 				submitted_at_str := order.Order.SubmittedAt.Format(time.RFC3339)
-				data = append(data, []string{order.Id, order.Order.DisplayId, submitted_at_str, fmt.Sprintf("%v", order.Order.Cost), fmt.Sprintf("%v", order.Order.SalePrice), order.Order.PaymentSource, fmt.Sprintf("%v", sale_day.RefundsValue), fmt.Sprintf("%v", order.Order.SalePrice-order.Order.Cost)})
+				data = append(data, []string{order.Id, order.Order.DisplayId, submitted_at_str, fmt.Sprintf("%v", order.Order.Cost), fmt.Sprintf("%v", order.Order.SalePrice), paymentsSummary(order.Order.Payments), fmt.Sprintf("%v", sale_day.RefundsValue), fmt.Sprintf("%v", order.Order.SalePrice-order.Order.Cost)})
 			}
 		}
 

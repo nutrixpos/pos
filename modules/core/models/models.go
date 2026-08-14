@@ -109,6 +109,14 @@ type OrderItem struct {
 	Status             string              `json:"status" bson:"status" mapstructure:"status"`
 }
 
+// OrderPayment represents a single payment made towards an order, using a
+// specific payment source and amount. Multiple payments can be attached to an
+// order to split the cost between several payment methods.
+type OrderPayment struct {
+	Source string  `json:"source" bson:"source" mapstructure:"source"`
+	Amount float64 `json:"amount" bson:"amount" mapstructure:"amount"`
+}
+
 type SubmitOrderMeta struct {
 	IsPrintClientReceipt  bool `json:"is_print_client_receipt" bson:"is_print_client_receipt" mapstructure:"is_print_client_receipt"`
 	IsPrintKitchenReceipt bool `json:"is_print_kitchen_receipt" bson:"is_print_kitchen_receipt" mapstructure:"is_print_kitchen_receipt"`
@@ -134,8 +142,8 @@ type Order struct {
 	SalePrice     float64     `json:"sale_price" bson:"sale_price" mapstructure:"sale_price"`
 	Customer      Customer    `json:"customer" bson:"customer" mapstructure:"customer"`
 	IsPayLater    bool        `json:"is_pay_later" bson:"is_pay_later" mapstructure:"is_pay_later"`
-	IsPaid        bool        `json:"is_paid" bson:"is_paid" mapstructure:"is_paid"`
-	PaymentSource string      `json:"payment_source" bson:"payment_source" mapstructure:"payment_source"`
+	IsPaid        bool           `json:"is_paid" bson:"is_paid" mapstructure:"is_paid"`
+	Payments      []OrderPayment `json:"payments" bson:"payments" mapstructure:"payments"`
 	// IsAutoStart determines whether the order is automatically started when it is submitted.
 	IsAutoStart  bool `json:"is_auto_start" bson:"is_auto_start" mapstructure:"is_auto_start"`
 	IsAutoFinish bool `json:"is_auto_finish" bson:"is_auto_finish" mapstructure:"is_auto_finish"`

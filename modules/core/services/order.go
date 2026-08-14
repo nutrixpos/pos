@@ -342,8 +342,37 @@ func (os *OrderService) DeleteOrder(order_id string) (err error) {
 	return
 }
 
-// PayUnpaidOrder sets the is_paid field of the order with the given order_id to true.
-func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
+// validatePayments checks that the provided payments are valid and sum up to
+// the expected total. An empty payments list is allowed when allowEmpty is true.
+func (os *OrderService) validatePayments(payments []models.OrderPayment, expectedTotal float64, allowEmpty bool) error {
+	if len(payments) == 0 {
+		if allowEmpty {
+			return nil
+		}
+		return fmt.Errorf("at least one payment method is required")
+	}
+
+	total := 0.0
+	for _, payment := range payments {
+		if payment.Source == "" {
+			return fmt.Errorf("payment source cannot be empty")
+		}
+		if payment.Amount <= 0 {
+			return fmt.Errorf("payment amount must be greater than zero")
+		}
+		total += payment.Amount
+	}
+
+	if math.Abs(total-expectedTotal) > 0.01 {
+		return fmt.Errorf("sum of payment amounts (%.2f) does not match the order total (%.2f)", total, expectedTotal)
+	}
+
+	return nil
+}
+
+// PayUnpaidOrder sets the is_paid field of the order with the given order_id to true,
+// and stores the provided payments split between the different payment sources.
+func (os *OrderService) PayUnpaidOrder(order_id string, payments []models.OrderPayment) (err error) {
 	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return
@@ -354,7 +383,19 @@ func (os *OrderService) PayUnpaidOrder(order_id string) (err error) {
 	collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	filter := bson.M{"id": order_id}
-	update := bson.M{"$set": bson.M{"is_paid": true}}
+
+	var order models.Order
+	err = collection.FindOne(ctx, filter).Decode(&order)
+	if err != nil {
+		return err
+	}
+
+	err = os.validatePayments(payments, order.SalePrice+order.Tips, false)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{"$set": bson.M{"is_paid": true, "payments": payments}}
 
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -750,6 +791,11 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 
 	if order.State != "stashed" {
 		order.State = "pending"
+	}
+
+	err = os.validatePayments(order.Payments, order.SalePrice+order.Tips, order.IsPayLater)
+	if err != nil {
+		return order, err
 	}
 
 	_, err = client.Database(os.Config.Databases[0].Database).Collection("orders").InsertOne(ctx, order)
