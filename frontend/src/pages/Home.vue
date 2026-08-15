@@ -165,8 +165,8 @@
                                     <ToggleButton v-model="is_collecting_money" onIcon="fa fa-hand-holding-dollar" offIcon="fa fa-hand-holding-dollar" :offLabel="`Collect (${total.toFixed(2)} EGP)`" :onLabel="`${$t('collecting')} (${(total+ ( current_order_tip || 0 )).toFixed(2)} EGP)`" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <ToggleButton v-model="is_pay_later" onIcon="pi pi-hourglass" offIcon="fa fa-hourglass" :offLabel="$t('pay_later')" :onLabel="$t('paying_later')" class="w-15rem h-5rem lg:h-10rem sm:w-40 border-noround" aria-label="Confirmation" />
                                     <div class="flex flex-column align-items-start justify-content-start mt-4 w-full">
-                                        <h4 class="mt-0">{{$t('payment_source')}}</h4>
-                                        <Select v-model="payment_source" :options="payment_sources" optionLabel="name" :placeholder="$t('payment_source')" />
+                                        <h4 class="mt-0">{{$t('payments')}}</h4>
+                                        <SplitPayment v-model="payments" :total="total + current_order_tip" :payment_sources="payment_sources" @validity-change="is_payment_valid = $event" />
                                     </div>
 
                                     <div class="flex m-0 p-0 flex-column mt-4 align-items-start justify-content-start w-full">
@@ -260,11 +260,11 @@
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{$t('payment')}}:</span>
-                                    <p class="my-0"><strong> {{ is_pay_later ? $t('pay_later') : $t('now') }} </strong></p>
+                                    <p class="my-0"><strong> {{ is_collecting_money ? $t('now') : $t('pay_later') }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
-                                    <span>{{$t('payment_source')}}:</span>
-                                    <p class="my-0"><strong> {{ payment_source?.name }} </strong></p>
+                                    <span>{{$t('payments')}}:</span>
+                                    <p class="my-0"><strong> {{ is_collecting_money ? paymentsSummary : $t('pay_later') }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{$t('location')}}:</span>
@@ -303,7 +303,7 @@
                                 </div>
                                 <div class="flex pt-6 justify-content-end gap-2">
                                     <Button :label="$t('back')" :icon="`pi pi-arrow-${store.orientation == 'rtl' ? 'right' : 'left'}`" :iconPos="`${store.orientation == 'rtl' ? 'right' : 'left'}`" @click="order_details_steps.length == 3 ? activateCallback('2') : activateCallback('1')" severity="secondary" />
-                                    <Button :label="`${is_auto_start_order ? $t('start') : $t('submit')} ${is_collecting_money ? '( '+$t('collect')+ ' '+ total.toFixed(2) + ` ${$t('egp')} )` : '( '+$t('pay_later') + ' )'} `" :disabled="!is_order_valid" @click="submitOrder()" />
+                                    <Button :label="`${is_auto_start_order ? $t('start') : $t('submit')} ${is_collecting_money ? '( '+$t('collect')+ ' '+ total.toFixed(2) + ` ${$t('egp')} )` : '( '+$t('pay_later') + ' )'} `" :disabled="!is_order_valid || (is_collecting_money && !is_payment_valid)" @click="submitOrder()" />
                                 </div>
                             </div>
                         </StepPanel>
@@ -489,6 +489,7 @@
   import OrderItemView from '@/components/OrderItemView.vue'
   import {OrderItem} from '@/classes/OrderItem'
   import Order from '@/classes/Order'
+  import type { OrderPayment } from '@/classes/Order'
   import Divider from 'primevue/divider';
   import Slider from 'primevue/slider';
   import Badge from 'primevue/badge'
@@ -512,9 +513,10 @@
   import PickCustomer from '@/components/PickCustomer.vue';
   import AddCustomer from '@/components/AddCustomer.vue';
   import { useI18n } from 'vue-i18n'
-  import { ToggleButton,Drawer,Avatar,ButtonGroup, Select } from 'primevue';
+  import { ToggleButton,Drawer,Avatar,ButtonGroup } from 'primevue';
   import { globalStore } from '@/stores';
   import auth from '@/services/auth'
+  import SplitPayment from '@/components/SplitPayment.vue'
 
 
 const app_version = ref("")
@@ -526,7 +528,8 @@ const { t } = useI18n()
 const { proxy } = getCurrentInstance();
 const store = globalStore()
 
-const payment_source = ref()
+const payments = ref<OrderPayment[]>([])
+const is_payment_valid = ref(true)
 const current_order_tip = ref(0)
 const is_print_receipt_client = ref(true)
 const is_print_receipt_kitchen = ref(true)
@@ -722,6 +725,11 @@ const orderToShowAmountCollected = () => {
 
     getCurrentOrders()
 }
+
+const paymentsSummary = computed(() => {
+    if (payments.value.length === 0) return "—"
+    return payments.value.map((payment) => `${payment.source}: ${payment.amount.toFixed(2)}`).join(" | ")
+})
 
 const mainSearchTextChanged = (event:any) => {
 
@@ -1040,8 +1048,8 @@ const loadSettings = async () => {
     .then(async (response)=>{
 
         payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
-        if (payment_sources.value.length > 0){
-            payment_source.value = {"name": payment_sources.value[0].name}
+        if (payment_sources.value.length > 0 && payments.value.length == 0){
+            payments.value = [{"source": payment_sources.value[0].name, "amount": 0}]
         }
 
         await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/languages/${response.data.data.language.code}`, {
@@ -1205,9 +1213,9 @@ const submitOrder = () => {
         is_take_away: is_take_away.value,
         is_delivery: is_delivery.value,
         is_paid: is_collecting_money.value,
-        is_pay_later: is_pay_later.value,
+        is_pay_later: !is_collecting_money.value,
         tips: current_order_tip.value,
-        payment_source: payment_source.value.name,
+        payments: is_collecting_money.value ? payments.value : [],
         custom_data: custom_data_map,
         comment: order_comment.value,
         customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null,

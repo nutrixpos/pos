@@ -704,6 +704,21 @@ paths:
           required: true
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    payments:
+                      description: Split of the order total between the different payment sources. The sum of the amounts must equal the order total (sale price + tips).
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/OrderPayment"
       responses:
         '204':
           description: Payment was successful
@@ -1601,6 +1616,11 @@ components:
           type: boolean
         is_paid:
           type: boolean
+        payments:
+          description: Split of the order total between the different payment sources. The sum of the amounts equals the order total (sale price + tips).
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderPayment'
         is_auto_start:
           type: boolean
         items:
@@ -1621,6 +1641,17 @@ components:
           additionalProperties:
             type: string
         
+
+    OrderPayment:
+      type: object
+      properties:
+        source:
+          type: string
+          description: The payment source (e.g. Cash, Card)
+        amount:
+          type: number
+          format: float
+          description: The amount paid using this payment source
 
     Category:
       type: object

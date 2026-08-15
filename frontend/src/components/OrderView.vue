@@ -61,8 +61,8 @@
             <div class="col-6">{{$t('paid')}}</div>
             <div class="col-6">{{ props.order.is_paid }}</div>
 
-            <div class="col-6">{{$t('payment_source')}}</div>
-            <div class="col-6">{{ props.order.payment_source }}</div>
+            <div class="col-6">{{$t('payments')}}</div>
+            <div class="col-6">{{ paymentsSummary }}</div>
 
             <div class="col-6">{{$t('discount')}}</div>
             <div class="col-6">{{ props.order.discount }}</div>
@@ -134,7 +134,7 @@
                     <ButtonGroup class="flex">
                         <Button icon="fa fa-print" severity="secondary" :label="$t('client_receipt')" @click="PrintClientReceipt()" />
                         <Button icon="fa fa-print" severity="secondary" :label="$t('kitchen_receipt')" @click="PrintKitchenReceipt()" />
-                        <Button v-if="!props.order.is_paid" icon="fa fa-hand-holding-dollar" severity="secondary" :label="$t('collect_money')" @click="collectedMoney()"/>
+                        <Button v-if="!props.order.is_paid" icon="fa fa-hand-holding-dollar" severity="secondary" :label="$t('collect_money')" @click="openCollectMoneyDialog()"/>
                         <Button v-if="props.order.state.toUpperCase() != 'CANCELLED' && props.order.state.toUpperCase() != 'FINISHED'" icon="fa fa-check" severity="secondary" :label="$t('finish')" @click="finishOrder()"/>
                         <Button v-if="props.order.state.toUpperCase() != 'CANCELLED' && props.order.state.toUpperCase() != 'FINISHED'" severity="secondary" size="small" aria-label="Cancel order" @click.stop="confirmCancelOrder($event)">
                             {{$t('cancel')}} {{ $t('order') }}
@@ -152,6 +152,19 @@
                     {{order_logs}}
                 </pre>
             </Dialog>
+            <Dialog v-model:visible="collect_money_dialog" modal :header="$t('collect_money')" class="xs:w-12 md:w-10 lg:w-8">
+                <div class="flex flex-column gap-3">
+                    <div class="flex justify-content-between align-items-center">
+                        <span>{{ $t('total') }}:</span>
+                        <strong>{{ collect_total.toFixed(2) }} {{ $t('egp') }}</strong>
+                    </div>
+                    <SplitPayment v-model="collect_payments" :total="collect_total" :payment_sources="collect_payment_sources" @validity-change="is_collect_payment_valid = $event" />
+                    <div class="flex justify-content-end gap-2">
+                        <Button :label="$t('close')" severity="secondary" @click="collect_money_dialog = false" />
+                        <Button :label="$t('collect')" severity="success" :disabled="!is_collect_payment_valid" @click="collectedMoney()" />
+                    </div>
+                </div>
+            </Dialog>
         </div>
     </div>
 </template>
@@ -166,6 +179,8 @@ import axios from 'axios'
 import { useToast } from "primevue/usetoast";
 import OrderItemsInfo from './OrderItemsInfo.vue';
 import Order from '@/classes/Order';
+import type { OrderPayment } from '@/classes/Order';
+import SplitPayment from './SplitPayment.vue';
 import { globalStore } from '@/stores';
 import auth from '../services/auth';
 
@@ -175,6 +190,11 @@ const toast = useToast()
 
 const order_logs = ref([])
 const order_logs_dialog = ref(false)
+
+const collect_money_dialog = ref(false)
+const collect_payments = ref<OrderPayment[]>([])
+const collect_payment_sources = ref<any[]>([])
+const is_collect_payment_valid = ref(false)
 
 const custom_data_dialog = ref(false)
 const cd_key = ref('')
@@ -193,6 +213,37 @@ const props = defineProps({
 const confirm = useConfirm();
 const { proxy } = getCurrentInstance();
 const emit = defineEmits(['amount_collected','finished','updated','cancelled'])
+
+const collect_total = computed(() => (props.order.sale_price || 0) + (props.order.tips || 0))
+
+const paymentsSummary = computed(() => {
+    const payments = props.order.payments || []
+    if (payments.length === 0) return "—"
+    return payments.map((payment) => `${payment.source}: ${payment.amount.toFixed(2)}`).join(" | ")
+})
+
+const openCollectMoneyDialog = () => {
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/settings`, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken.value}`
+        }
+    })
+    .then((response) => {
+        collect_payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
+        if (props.order.payments && props.order.payments.length > 0) {
+            collect_payments.value = JSON.parse(JSON.stringify(props.order.payments))
+        } else if (collect_payment_sources.value.length > 0) {
+            collect_payments.value = [{ source: collect_payment_sources.value[0].name, amount: 0 }]
+        } else {
+            collect_payments.value = []
+        }
+        is_collect_payment_valid.value = false
+        collect_money_dialog.value = true
+    })
+    .catch(() => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load payment sources', group: 'br' });
+    });
+}
 
 const add_tip_popover = ref();
 const remove_tip_popover = ref();
@@ -339,13 +390,16 @@ const finishOrder = () => {
 }
 
 const collectedMoney = () => {
-    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/pay`,{}, {
+    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/pay`,{ data: { payments: collect_payments.value } }, {
         headers: {
             Authorization: `Bearer ${auth.accessToken.value}`,
         }
     })
     .then(()=>{
         toast.add({ severity: 'success', summary: 'Success', detail: 'Money collected',group:'br' });
+        props.order.is_paid = true
+        props.order.payments = collect_payments.value
+        collect_money_dialog.value = false
         emit('amount_collected')
     })
     .catch(() => {

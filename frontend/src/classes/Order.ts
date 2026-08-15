@@ -1,5 +1,9 @@
 import {OrderItem} from '@/classes/OrderItem'
 
+export interface OrderPayment {
+    source: string
+    amount: number
+}
 
 export default class Order {
     submitted_at: Date
@@ -14,7 +18,7 @@ export default class Order {
     is_auto_start: boolean
     is_paid: boolean
     tips: number
-    payment_source: string
+    payments: OrderPayment[]
     customer: any
     delivery_info: any
     custom_data: any
@@ -32,7 +36,7 @@ export default class Order {
         this.is_auto_start = false
         this.is_paid = false
         this.tips = 0
-        this.payment_source = ""
+        this.payments = []
         this.customer = {}
         this.delivery_info = null
         this.custom_data = null

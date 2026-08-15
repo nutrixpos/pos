@@ -28,3 +28,6 @@ var ErrInvalidObjectId = errors.New("invalid object id")
 
 // ErrInsufficientReady is an error returned when there is not enough ready.
 var ErrInsufficientReady = errors.New("insufficient ready")
+
+// ErrOrderAlreadyPaid is an error returned when attempting to pay an order that is already paid.
+var ErrOrderAlreadyPaid = errors.New("order already paid")
