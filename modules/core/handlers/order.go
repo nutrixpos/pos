@@ -12,6 +12,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"math"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
@@ -413,6 +415,10 @@ func Payorder(config config.Config, logger logger.ILogger, settings models.Setti
 		err = orderService.PayUnpaidOrder(id_param, request.Data.Payments)
 		if err != nil {
 			logger.Error(err.Error())
+			if errors.Is(err, customerrors.ErrOrderAlreadyPaid) {
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

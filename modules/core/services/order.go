@@ -16,6 +16,7 @@ import (
 
 	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
@@ -397,9 +398,14 @@ func (os *OrderService) PayUnpaidOrder(order_id string, payments []models.OrderP
 
 	update := bson.M{"$set": bson.M{"is_paid": true, "payments": payments}}
 
-	_, err = collection.UpdateOne(ctx, filter, update)
+	updateFilter := bson.M{"id": order_id, "is_paid": false}
+	result, err := collection.UpdateOne(ctx, updateFilter, update)
 	if err != nil {
 		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return customerrors.ErrOrderAlreadyPaid
 	}
 
 	return
