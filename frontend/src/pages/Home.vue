@@ -260,11 +260,11 @@
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{$t('payment')}}:</span>
-                                    <p class="my-0"><strong> {{ is_pay_later ? $t('pay_later') : $t('now') }} </strong></p>
+                                    <p class="my-0"><strong> {{ is_collecting_money ? $t('now') : $t('pay_later') }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{$t('payments')}}:</span>
-                                    <p class="my-0"><strong> {{ is_pay_later ? $t('pay_later') : paymentsSummary }} </strong></p>
+                                    <p class="my-0"><strong> {{ is_collecting_money ? paymentsSummary : $t('pay_later') }} </strong></p>
                                 </div>
                                 <div class="flex align-items-start mt-3 gap-1">
                                     <span>{{$t('location')}}:</span>
@@ -1213,9 +1213,9 @@ const submitOrder = () => {
         is_take_away: is_take_away.value,
         is_delivery: is_delivery.value,
         is_paid: is_collecting_money.value,
-        is_pay_later: is_pay_later.value,
+        is_pay_later: !is_collecting_money.value,
         tips: current_order_tip.value,
-        payments: is_pay_later.value ? [] : payments.value,
+        payments: is_collecting_money.value ? payments.value : [],
         custom_data: custom_data_map,
         comment: order_comment.value,
         customer: new_order_delivery_customer.value.length > 0 ? new_order_delivery_customer.value[0] : null,

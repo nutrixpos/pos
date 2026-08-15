@@ -798,6 +798,10 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 		return order, err
 	}
 
+	if len(order.Payments) > 0 && !order.IsPaid {
+		return order, fmt.Errorf("payments cannot be recorded for an unpaid order")
+	}
+
 	_, err = client.Database(os.Config.Databases[0].Database).Collection("orders").InsertOne(ctx, order)
 	if err != nil {
 		return order, err

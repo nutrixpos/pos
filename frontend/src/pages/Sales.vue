@@ -81,7 +81,7 @@
                                             <template #body="slotProps">
                                                 <div class="flex gap-2 align-items-center">
                                                     <div>{{ slotProps.data.order.sale_price }} </div>
-                                                    <Badge :value="paymentsSummary(slotProps.data.order.payments)" severity="secondary" class="mr-2" />
+                                                    <Badge :value="paymentsSummary(slotProps.data.order.payments)" severity="secondary" class="mr-2 py-3" />
                                                 </div>
                                             </template>
                                         </Column>
