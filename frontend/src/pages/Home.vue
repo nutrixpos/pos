@@ -1255,6 +1255,8 @@ const submitOrder = () => {
         })
     
         orderItems.value = []
+        payments.value = []
+        current_order_tip.value = 0
         
     }
 };
