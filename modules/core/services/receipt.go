@@ -54,9 +54,9 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 
 	for _, item := range order.Items {
 		order_items = append(order_items,
-			map[string]interface{}{"name": item.Product.Name, "quantity": item.Quantity, "price": item.SalePrice * item.Quantity},
+			map[string]interface{}{"name": item.Product.Name, "quantity": item.Quantity, "price": item.SalePrice},
 		)
-		subtotal += int(item.SalePrice) * int(item.Quantity)
+		subtotal += int(item.SalePrice)
 	}
 
 	total := subtotal - int(discount)
@@ -90,7 +90,7 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		"t_name":          lang.Pack["name"],
 		"t_quantity":      lang.Pack["quantity"],
 		"t_total":         lang.Pack["total"],
-		"t_price":         lang.Pack["price"],
+		"t_price":         lang.Pack["total"],
 		"t_discount":      lang.Pack["discount"],
 		"t_subtotal":      lang.Pack["subtotal"],
 		"t_service_cost":  lang.Pack["service"],
