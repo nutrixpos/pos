@@ -63,6 +63,12 @@
           <router-link to="/register" class="text-primary font-semibold">Contact admin</router-link>
         </small>
       </div>
+
+      <div class="login-footer">
+        <a href="https://www.nutrixpos.com" target="_blank" rel="noopener" class="brand-link">
+          www.nutrixpos.com
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -259,6 +265,22 @@ async function login() {
 
 .text-center {
   text-align: center;
+}
+
+.login-footer {
+  margin-top: 1.25rem;
+  text-align: center;
+}
+
+.brand-link {
+  color: #14977B;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.brand-link:hover {
+  text-decoration: underline;
 }
 
 .text-muted {

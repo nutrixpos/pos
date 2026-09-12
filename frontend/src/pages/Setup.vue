@@ -141,6 +141,12 @@
         </div>
 
         <Button v-if="saved" class="submit-btn mt-2" label="Let's go 🚀" @click="router.push({ path: '/home' })" />
+
+        <div class="setup-footer">
+          <a href="https://www.nutrixpos.com" target="_blank" rel="noopener" class="brand-link">
+            www.nutrixpos.com
+          </a>
+        </div>
       </form>
     </div>
   </div>
@@ -417,5 +423,21 @@ async function submit() {
   padding: 0.75rem 1rem;
   color: red;
   font-size: 0.875rem;
+}
+
+.setup-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.brand-link {
+  color: #14977B;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.brand-link:hover {
+  text-decoration: underline;
 }
 </style>
