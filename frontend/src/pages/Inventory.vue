@@ -140,7 +140,11 @@
                             <Tag :value="slotProps.data.type == 'component_consume' ? `- ${slotProps.data.quantity}` : `+ ${slotProps.data.quantity}`" :severity="slotProps.data.type == 'component_consume' ? 'danger' : 'success'" />
                         </template>
                     </Column>
-                    <Column field="order_id" :header="$t('order_id')"></Column>
+                    <Column :header="$t('order_id')">
+                        <template #body="slotProps">
+                            <Button v-if="slotProps.data.order_id" :label="slotProps.data.display_id || slotProps.data.order_id" link severity="secondary" class="p-0" @click="showOrder(slotProps.data.order_id)" />
+                        </template>
+                    </Column>
                     <template #expansion="slotProps">
                         <div class="p-4">
                             <h4>{{ $t('order_items') }}</h4>
@@ -178,7 +182,10 @@ import { globalStore } from '@/stores';
 import auth from '../services/auth';
   
 import { ref,getCurrentInstance,computed } from "vue";
+import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
+
+const router = useRouter()
 
 const store = globalStore()
 
@@ -474,6 +481,11 @@ const confirmDeleteMaterial = (material_id: string) => {
 
     })
   };
+
+
+  const showOrder = (order_id: string) => {
+    router.push(`/admin/orders/${order_id}`)
+}
 
 
   const loadComponentLogs = (component_id:string,first=0,rows=50) => {

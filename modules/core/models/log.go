@@ -107,6 +107,7 @@ type LogMaterialConsume struct {
 	MaterialId     string  `json:"material_id" bson:"material_id" mapstructure:"material_id"`
 	EntryId        string  `json:"entry_id" bson:"entry_id" mapstructure:"entry_id"`
 	OrderId        string  `json:"order_id" bson:"order_id" mapstructure:"order_id"`
+	DisplayId      string  `json:"display_id" bson:"display_id" mapstructure:"display_id"`
 	ProductId      string  `json:"recipe_id" bson:"recipe_id" mapstructure:"recipe_id"`
 	OrderItemIndex int     `json:"order_item_index" bson:"order_item_index" mapstructure:"order_item_index"`
 	Reason         string  `json:"reason" bson:"reason" mapstructure:"reason"`
