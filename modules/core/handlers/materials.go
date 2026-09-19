@@ -222,10 +222,10 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 }
 
 // AddMaterial returns a HTTP handler function to add a new material to the database.
+// Materials are created without stock; inventory is added through the
+// purchase order / GRN cycle.
 func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		// Parse the request body into a DBComponent struct
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
@@ -242,9 +242,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		for index, entry := range request.Data.Entries {
-			request.Data.Entries[index].PurchaseQuantity = entry.Quantity
-		}
+		request.Data.Entries = []models.MaterialEntry{}
 
 		materialService := services.MaterialService{
 			Logger: logger,
@@ -340,44 +338,7 @@ func EditMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc 
 	}
 }
 
-// PushMaterialEntry returns a HTTP handler function to add a new entry to a material in the database.
-func PushMaterialEntry(config config.Config, logger logger.ILogger) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		user_id := "0"
-		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
-		}
-
-		params := mux.Vars(r)
-		material_id := params["id"]
-
-		request := struct {
-			Data []models.MaterialEntry `json:"data"`
-		}{}
-
-		err := json.NewDecoder(r.Body).Decode(&request)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		materialService := services.MaterialService{
-			Logger: logger,
-			Config: config,
-		}
-
-		err = materialService.PushMaterialEntry(material_id, request.Data, user_id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}
-
-}
+// PushMaterialEntry was removed in favor of the purchase order / GRN cycle.
 
 func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

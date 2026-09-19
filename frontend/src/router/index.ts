@@ -65,6 +65,7 @@ const router = createRouter({
             redirect: { path: '/admin/inventory' }
           },
           {path: 'inventory', component: () => import('@/pages/Inventory.vue')},
+          {path: 'purchase-orders', component: () => import('@/pages/PurchaseOrders.vue')},
           {path: 'sales', component: () => import('@/pages/Sales.vue')},
           {path: 'products', component: ()=> import('@/pages/Products.vue')},
           {path: 'categories', component: () => import('@/pages/Categories.vue')},
