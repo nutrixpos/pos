@@ -9,7 +9,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -18,6 +20,11 @@ import (
 func userIDFromContext(config config.Config, r *http.Request) string {
 	if config.Zitadel.Enabled {
 		return r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+	}
+	if config.Auth.Enabled {
+		if claims, ok := r.Context().Value("auth_ctx").(*middlewares.Claims); ok {
+			return claims.UserID
+		}
 	}
 	return "0"
 }
@@ -192,6 +199,10 @@ func ReceivePurchaseOrder(config config.Config, logger logger.ILogger) http.Hand
 
 		grn, err := purchaseOrderService.ReceivePurchaseOrder(purchase_order_id, user_id, request.Data)
 		if err != nil {
+			if errors.Is(err, customerrors.ErrPurchaseOrderModified) {
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

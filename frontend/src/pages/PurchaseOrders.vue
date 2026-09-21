@@ -310,7 +310,7 @@ const submitNewPurchaseOrder = () => {
             company: i.company,
             sku: i.sku,
             quantity: i.quantity,
-            purchase_price: i.quantity > 0 ? Math.round((i.total_price / i.quantity) * 100) / 100 : 0,
+            purchase_price: i.quantity > 0 ? i.total_price / i.quantity : 0,
             expiration_date: i.expiration_date
         }))
 

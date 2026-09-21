@@ -31,3 +31,6 @@ var ErrInsufficientReady = errors.New("insufficient ready")
 
 // ErrOrderAlreadyPaid is an error returned when attempting to pay an order that is already paid.
 var ErrOrderAlreadyPaid = errors.New("order already paid")
+
+// ErrPurchaseOrderModified is an error returned when a purchase order changed during a receive.
+var ErrPurchaseOrderModified = errors.New("purchase order was modified by another operation")

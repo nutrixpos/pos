@@ -7,6 +7,7 @@ import (
 
 	"github.com/nutrixpos/pos/common"
 	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -99,9 +100,9 @@ func (ps *PurchaseOrderService) CreatePurchaseOrder(po models.PurchaseOrder, use
 		if item.PurchasePrice < 0 {
 			return po, fmt.Errorf("item purchase price cannot be negative")
 		}
-		if item.ItemId == "" {
-			item.ItemId = primitive.NewObjectID().Hex()
-		}
+		item.ItemId = primitive.NewObjectID().Hex()
+		item.ReceivedQuantity = 0
+		item.EntryIds = []string{}
 
 		var material models.Material
 		err = materialsCollection.FindOne(ctx, bson.M{"id": item.MaterialId}).Decode(&material)
@@ -244,9 +245,16 @@ func (ps *PurchaseOrderService) CancelPurchaseOrder(purchase_order_id string) (e
 		return fmt.Errorf("only open purchase orders can be cancelled")
 	}
 
-	_, err = collection.UpdateOne(ctx, bson.M{"id": purchase_order_id}, bson.M{"$set": bson.M{"status": models.PurchaseOrderStatusCancelled}})
+	result, err := collection.UpdateOne(
+		ctx,
+		bson.M{"id": purchase_order_id, "status": models.PurchaseOrderStatusOpen},
+		bson.M{"$set": bson.M{"status": models.PurchaseOrderStatusCancelled}},
+	)
 	if err != nil {
 		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("only open purchase orders can be cancelled")
 	}
 
 	return nil
@@ -311,6 +319,16 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		Items:                  []models.GRNItem{},
 	}
 
+	type pendingReceive struct {
+		item      *models.PurchaseOrderItem
+		original  float64
+		toReceive float64
+		entry     models.MaterialEntry
+		logDoc    bson.M
+	}
+
+	pending := []pendingReceive{}
+
 	for i := range po.Items {
 		poItem := &po.Items[i]
 
@@ -344,14 +362,6 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			ExpirationDate:   poItem.ExpirationDate,
 		}
 
-		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": poItem.MaterialId}, bson.M{"$push": bson.M{"entries": entry}})
-		if err != nil {
-			return grn, err
-		}
-
-		poItem.ReceivedQuantity += toReceive
-		poItem.EntryIds = append(poItem.EntryIds, entry.Id)
-
 		grn.Items = append(grn.Items, models.GRNItem{
 			ItemId:         poItem.ItemId,
 			MaterialId:     poItem.MaterialId,
@@ -365,30 +375,54 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			ExpirationDate: poItem.ExpirationDate,
 		})
 
-		log_doc := bson.M{
-			"id":                        primitive.NewObjectID().Hex(),
-			"type":                      models.LogTypeMaterialGRNReceive,
-			"date":                      now,
-			"user_id":                   user_id,
-			"component_id":              poItem.MaterialId,
-			"material_id":               poItem.MaterialId,
-			"entry_id":                  entry.Id,
-			"quantity":                  toReceive,
-			"company":                   poItem.Company,
-			"price":                     poItem.PurchasePrice,
-			"grn_id":                    grn.Id,
-			"grn_display_id":            grn.DisplayId,
-			"purchase_order_id":         po.Id,
-			"purchase_order_display_id": po.DisplayId,
-		}
-		_, err = logsCollection.InsertOne(ctx, log_doc)
-		if err != nil {
-			return grn, err
+		pending = append(pending, pendingReceive{
+			item:      poItem,
+			original:  poItem.ReceivedQuantity,
+			toReceive: toReceive,
+			entry:     entry,
+			logDoc: bson.M{
+				"id":                        primitive.NewObjectID().Hex(),
+				"type":                      models.LogTypeMaterialGRNReceive,
+				"date":                      now,
+				"user_id":                   user_id,
+				"component_id":              poItem.MaterialId,
+				"material_id":               poItem.MaterialId,
+				"entry_id":                  entry.Id,
+				"quantity":                  toReceive,
+				"company":                   poItem.Company,
+				"price":                     poItem.PurchasePrice,
+				"grn_id":                    grn.Id,
+				"grn_display_id":            grn.DisplayId,
+				"purchase_order_id":         po.Id,
+				"purchase_order_display_id": po.DisplayId,
+			},
+		})
+	}
+
+	if len(pending) == 0 {
+		return grn, fmt.Errorf("no items to receive for purchase order %s", po.DisplayId)
+	}
+
+	materialIds := make([]string, 0, len(pending))
+	seen := map[string]bool{}
+	for _, p := range pending {
+		if !seen[p.item.MaterialId] {
+			seen[p.item.MaterialId] = true
+			materialIds = append(materialIds, p.item.MaterialId)
 		}
 	}
 
-	if len(grn.Items) == 0 {
-		return grn, fmt.Errorf("no items to receive for purchase order %s", po.DisplayId)
+	existingMaterials, err := materialsCollection.CountDocuments(ctx, bson.M{"id": bson.M{"$in": materialIds}})
+	if err != nil {
+		return grn, err
+	}
+	if int(existingMaterials) != len(materialIds) {
+		return grn, fmt.Errorf("one or more materials no longer exist")
+	}
+
+	for i := range pending {
+		pending[i].item.ReceivedQuantity += pending[i].toReceive
+		pending[i].item.EntryIds = append(pending[i].item.EntryIds, pending[i].entry.Id)
 	}
 
 	fully_received := true
@@ -404,6 +438,20 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		status = models.PurchaseOrderStatusReceived
 	}
 
+	guards := make([]bson.M, 0, len(pending))
+	for _, p := range pending {
+		guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
+			"item_id":           p.item.ItemId,
+			"received_quantity": p.original,
+		}}})
+	}
+
+	filter := bson.M{
+		"id":     po.Id,
+		"status": bson.M{"$nin": []string{models.PurchaseOrderStatusReceived, models.PurchaseOrderStatusCancelled}},
+		"$and":   guards,
+	}
+
 	update := bson.M{
 		"$set": bson.M{
 			"status":      status,
@@ -412,9 +460,25 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			"items":       po.Items,
 		},
 	}
-	_, err = poCollection.UpdateOne(ctx, bson.M{"id": po.Id}, update)
+
+	result, err := poCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return grn, err
+	}
+	if result.MatchedCount == 0 {
+		return grn, customerrors.ErrPurchaseOrderModified
+	}
+
+	for _, p := range pending {
+		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}})
+		if err != nil {
+			return grn, err
+		}
+
+		_, err = logsCollection.InsertOne(ctx, p.logDoc)
+		if err != nil {
+			return grn, err
+		}
 	}
 
 	_, err = grnsCollection.InsertOne(ctx, grn)
