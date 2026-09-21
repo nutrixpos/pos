@@ -321,7 +321,6 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 
 	type pendingReceive struct {
 		item      *models.PurchaseOrderItem
-		original  float64
 		toReceive float64
 		entry     models.MaterialEntry
 		logDoc    bson.M
@@ -377,7 +376,6 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 
 		pending = append(pending, pendingReceive{
 			item:      poItem,
-			original:  poItem.ReceivedQuantity,
 			toReceive: toReceive,
 			entry:     entry,
 			logDoc: bson.M{
@@ -420,6 +418,11 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		return grn, fmt.Errorf("one or more materials no longer exist")
 	}
 
+	originalReceived := make(map[string]float64, len(po.Items))
+	for _, item := range po.Items {
+		originalReceived[item.ItemId] = item.ReceivedQuantity
+	}
+
 	for i := range pending {
 		pending[i].item.ReceivedQuantity += pending[i].toReceive
 		pending[i].item.EntryIds = append(pending[i].item.EntryIds, pending[i].entry.Id)
@@ -438,11 +441,11 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		status = models.PurchaseOrderStatusReceived
 	}
 
-	guards := make([]bson.M, 0, len(pending))
-	for _, p := range pending {
+	guards := make([]bson.M, 0, len(po.Items))
+	for _, item := range po.Items {
 		guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
-			"item_id":           p.item.ItemId,
-			"received_quantity": p.original,
+			"item_id":           item.ItemId,
+			"received_quantity": originalReceived[item.ItemId],
 		}}})
 	}
 
