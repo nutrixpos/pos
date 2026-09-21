@@ -140,7 +140,7 @@
             <template #footer>
                 <ButtonGroup>
                     <Button :label="$t('cancel')" @click="new_po_dialog = false" severity="secondary" />
-                    <Button class="ml-2" severity="primary" :label="$t('submit')" @click="submitNewPurchaseOrder" />
+                    <Button class="ml-2" severity="primary" :label="$t('submit')" :disabled="is_submitting_po" @click="submitNewPurchaseOrder" />
                 </ButtonGroup>
             </template>
         </Dialog>
@@ -174,7 +174,7 @@
             <template #footer>
                 <ButtonGroup>
                     <Button :label="$t('cancel')" @click="receive_dialog = false" severity="secondary" />
-                    <Button class="ml-2" severity="success" :label="$t('receive')" @click="submitReceive" />
+                    <Button class="ml-2" severity="success" :label="$t('receive')" :disabled="is_submitting_receive" @click="submitReceive" />
                 </ButtonGroup>
             </template>
         </Dialog>
@@ -239,6 +239,8 @@ const grns = ref<GRN[]>([])
 const material_options = ref<Material[]>([])
 const is_po_loading = ref(false)
 const is_grn_loading = ref(false)
+const is_submitting_po = ref(false)
+const is_submitting_receive = ref(false)
 
 const new_po_dialog = ref(false)
 const new_po_supplier = ref("")
@@ -319,6 +321,8 @@ const submitNewPurchaseOrder = () => {
         return
     }
 
+    is_submitting_po.value = true
+
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/purchase-orders`, {
         data: {
             supplier: new_po_supplier.value,
@@ -339,6 +343,9 @@ const submitNewPurchaseOrder = () => {
     })
     .catch((error) => {
         toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data || error.message, life: 3000, group: 'br' })
+    })
+    .finally(() => {
+        is_submitting_po.value = false
     })
 }
 
@@ -376,6 +383,8 @@ const submitReceive = () => {
 
     const purchase_order_id = receive_po.value.id
 
+    is_submitting_receive.value = true
+
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/purchase-orders/${purchase_order_id}/receive`, {
         data: items
     }, {
@@ -391,6 +400,9 @@ const submitReceive = () => {
     })
     .catch((error) => {
         toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data || error.message, life: 3000, group: 'br' })
+    })
+    .finally(() => {
+        is_submitting_receive.value = false
     })
 }
 
