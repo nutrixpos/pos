@@ -53,6 +53,8 @@ type ComponentConsumeLogs struct {
 	OrderItemIndex uint      `json:"order_item_index" bson:"order_item_index" mapstructure:"order_item_index"`
 	OrderId        string    `json:"order_id" bson:"order_id" mapstructure:"order_id"`
 	DisplayId      string    `json:"display_id" bson:"display_id" mapstructure:"display_id"`
+	GrnId          string    `json:"grn_id" bson:"grn_id" mapstructure:"grn_id"`
+	GrnDisplayId   string    `json:"grn_display_id" bson:"grn_display_id" mapstructure:"grn_display_id"`
 	Type           string    `json:"type" bson:"type" mapstructure:"type"`
 }
 

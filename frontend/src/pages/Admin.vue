@@ -244,6 +244,16 @@ const menu_tree =ref([
         icon: 'pi pi-sync',
         link:'/admin/hubsync',
     },
+    {
+        key: '9',
+        label: {
+            title: 'purchase_order',
+            plural: true
+        },
+        data: 'Purchase Orders',
+        icon: 'pi pi-shopping-cart',
+        link:'/admin/purchase-orders',
+    },
 ])
 
 const items = ref([

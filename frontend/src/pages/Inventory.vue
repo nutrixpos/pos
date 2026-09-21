@@ -25,7 +25,7 @@
                                 <template #body="slotProps">
                                     <ButtonGroup>
                                         <Button icon="pi pi-clock" :label="$t('history')" @click="loadComponentLogs(slotProps.data.id)" severity="secondary" aria-label="Save" />
-                                        <Button icon="fa fa-dolly-flatbed" severity="secondary" aria-label="ShowEntries" @click="entries_dialog_material = slotProps.data; entries_dialog=true; loadEntries()"/>
+                                        <Button icon="fa fa-shopping-cart" severity="secondary" aria-label="ShowEntries" @click="entries_dialog_material = slotProps.data; entries_dialog=true; loadEntries()"/>
                                         <Button icon="pi pi-pencil" severity="secondary" @click="edit_material = slotProps.data; edit_material_dialog=true" aria-label="Edit"  />
                                         <Button icon="pi pi-cog" severity="secondary" aria-label="Settings" @click="material_settings = slotProps.data; material_settings_dialog=true"  />
                                         <Button icon="pi pi-times" severity="danger" aria-label="Delete" @click="confirmDeleteMaterial(slotProps.data.id)"/>
@@ -51,17 +51,12 @@
                     </ButtonGroup>
                 </template>
             </Dialog>
-            <Dialog v-if="entries_dialog" :header="`${$t('entries')} (${ entries_dialog_material?.name })`" v-model:visible="entries_dialog" :style="{ width: '90rem' }">
+            <Dialog v-if="entries_dialog" :header="`${$t('entries')} (${ entries_dialog_material?.name })`" v-model:visible="entries_dialog"   
+                :style="{ width: '70rem', maxWidth: '95vw' }"
+                :breakpoints="{ '200px': '80rem' }">
                 <div class="p-0">
-                    <div class="flex flex-column w-8 xl:w-4">
-                        <InputText class="m-1" :placeholder="$t('company')" v-model="new_entry_company" aria-describedby="name-help" />
-                        <InputText class="m-1" :placeholder="$t('purchase_quantity')" v-model="new_entry_quantity" aria-describedby="name-help" />
-                        <InputText class="m-1" :placeholder="$t('purchase_price')" v-model="new_entry_price" aria-describedby="name-help" />
-                        <FloatLabel class="mx-1">
-                            <Calendar inputId="new_entry_expiration_date" v-model="new_entry_expiration_date" showIcon />
-                            <label for="new_entry_expiration_date">{{$t('expiration_date')}}</label>
-                        </FloatLabel>
-                        <Button icon="pi pi-plus" :label="$t('add_entry')" class="my-1" @click="addNewEntry(entries_dialog_material.id)" severity="info" raised />
+                    <div class="flex mb-2">
+                        <Button icon="pi pi-shopping-cart" :label="$t('new_purchase_order')" class="my-1" @click="addViaPurchaseOrder()" severity="info" raised />
                     </div>
                     <DataTable @page="updatEntriesTableRowsPerPage" :lazy="true" :totalRecords="entriesTableTotalRecords" :loading="isEntriesTableLoading"  paginatorPosition="both"  paginator :rows="entriesTableRowsPerPage" :rowsPerPageOptions="[50, 100, 500]"stripedRows :value="entries_dialog_material.entries" v-model:expandedRows="expandedEntryRows">
                         <Column expander style="width: 5rem" />
@@ -95,33 +90,6 @@
                         <label for="unit">{{ $t('measuring_unit') }}</label>
                         <InputText id="unit" v-model="new_component_unit" aria-describedby="unit-help" />
                     </div>
-                    <Divider />
-                    <h4>{{$t('entries')}}</h4>
-                    <div class="flex flex-column w-full xl:w-3">
-                        <InputText class="m-1" :placeholder="$t('company')" v-model="new_component_entry_company" aria-describedby="name-help" />
-                        <InputText class="m-1" :placeholder="$t('quantity')" v-model="new_component_entry_quantity" aria-describedby="name-help" />
-                        <InputText class="m-1" :placeholder="$t('total_price')" v-model="new_component_entry_price" aria-describedby="name-help" />
-                        <div>
-                            <Button class="mx-1 my-2" :label="$t('add')" @click="new_component_entries.push({company: new_component_entry_company, quantity: new_component_entry_quantity, unit: new_component_unit, purchase_price: new_component_entry_price})" />
-                        </div>
-                    </div>
-                    <DataTable :value="new_component_entries">
-                        <Column field="company" :header="$t('company')"></Column>
-                        <Column field="quantity" :header="$t('quantity')"></Column>
-                        <Column field="unit" :header="$t('unit')">
-                            <template #body="slotProps">
-                                {{ slotProps.data.unit }}
-                            </template>
-                        </Column>
-                        <Column field="purchase_price" :header="$t('total_price')"></Column>
-                        <Column :header="$t('actions')" style="width:30rem">
-                            <template #body="slotProps">
-                                <ButtonGroup>
-                                    <Button icon="pi pi-times" severity="secondary" aria-label="Delete" @click="new_component_entries.splice(new_component_entries.findIndex(el => el === slotProps.data), 1)" />
-                                </ButtonGroup>
-                            </template>
-                        </Column>
-                    </DataTable>
 
                     <div class="flex w-full mt-5 justify-content-center align-items-center">
                         <Button :label="$t('submit')" class="lg:w-6" @click="submitNewComponent" />
@@ -140,16 +108,18 @@
                             <Tag :value="slotProps.data.type == 'component_consume' ? `- ${slotProps.data.quantity}` : `+ ${slotProps.data.quantity}`" :severity="slotProps.data.type == 'component_consume' ? 'danger' : 'success'" />
                         </template>
                     </Column>
-                    <Column :header="$t('order_id')">
+                    <Column :header="$t('reference')">
                         <template #body="slotProps">
-                            <Button v-if="slotProps.data.order_id" :label="slotProps.data.display_id || slotProps.data.order_id" link severity="secondary" class="p-0" @click="showOrder(slotProps.data.order_id)" />
+                            <Button v-if="slotProps.data.type === 'grn_receive' && slotProps.data.grn_id" :label="slotProps.data.grn_display_id || slotProps.data.grn_id" link severity="secondary" class="p-0" @click="showGRN(slotProps.data.grn_id)" />
+                            <Button v-else-if="slotProps.data.order_id" :label="slotProps.data.display_id || slotProps.data.order_id" link severity="secondary" class="p-0" @click="showOrder(slotProps.data.order_id)" />
+                            <span v-else>-</span>
                         </template>
                     </Column>
                     <template #expansion="slotProps">
                         <div class="p-4">
                             <h4>{{ $t('order_items') }}</h4>
                             <MaterialLogsOrderItemsTable v-if="slotProps.data.order" :items="slotProps.data.order.items" :order_item_index="slotProps.data.order_item_index" />
-                            <div v-else>
+                            <div v-else-if="slotProps.data.order_id">
                                 {{ $t('loading') }} ...
                             </div>
                         </div>
@@ -171,13 +141,10 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from "primevue/useconfirm";
 import Tag from 'primevue/tag'
-import { Material, MaterialEntry } from '@/classes/OrderItem';
-import Calendar from 'primevue/calendar';
-import FloatLabel from 'primevue/floatlabel'
+import { Material } from '@/classes/OrderItem';
 import EditMaterial from '@/components/EditMaterial.vue'
 import ConfirmDialog from 'primevue/confirmdialog'
 import MaterialLogsOrderItemsTable from '@/components/MaterialLogsOrderItemsTable.vue';
-import {Divider} from 'primevue'
 import { globalStore } from '@/stores';
 import auth from '../services/auth';
   
@@ -227,17 +194,6 @@ const isLogsTableLoading = ref(true)
 
   const new_component_name = ref("")
   const new_component_unit = ref("")
-
-  const new_component_entry_company = ref("")
-  const new_component_entry_quantity = ref("")
-  const new_component_entry_price = ref("")
-  const new_component_entries = ref([])
-
-  const new_entry_company = ref("")
-  const new_entry_quantity = ref("")
-  const new_entry_price = ref("")
-  const new_entry_expiration_date = ref("")
-
 
   const material_logs_id = ref("")
 
@@ -390,61 +346,16 @@ const confirmDeleteMaterial = (material_id: string) => {
   }
 
 
-  const addNewEntry = (component_id) => {
-
-    var newEntry = {
-                "quantity": parseFloat(new_entry_quantity.value),
-                "purchase_price": parseFloat(new_entry_price.value),
-                "company": new_entry_company.value,
-                "expiration_date": new_entry_expiration_date.value
-            }
-
-    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${component_id}/entries`, {
-        data: [
-           newEntry
-        ]
-      },{
-        headers: {
-            Authorization: `Bearer ${auth.accessToken.value}`
-        }
-      })
-      .then(() => {
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Entry saved successfully !', life: 3000,group:'br' });
-
-        inventory_components.value.forEach((component) => {
-            if (component.id == component_id)
-            {
-                component.entries.push(newEntry)
-            }
-        })
-
-
-        new_entry_company.value = ""
-        new_entry_quantity.value = ""
-        new_entry_price.value = ""
-
-
-      });
+  const addViaPurchaseOrder = () => {
+    router.push('/admin/purchase-orders?new_po=1')
   }
 
-
-
   const submitNewComponent = () => {
-
-      var entries : any = []
-      new_component_entries.value.forEach((entry) => {
-          entries.push({
-            company: entry.company,
-            quantity: parseInt(entry.quantity),
-            purchase_price: parseFloat(entry.purchase_price)
-          })
-      })
 
       axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials`, {
         data : {
             name: new_component_name.value,
             unit: new_component_unit.value,
-            entries: entries,
         }
       },{
         headers: {
@@ -455,17 +366,14 @@ const confirmDeleteMaterial = (material_id: string) => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Component saved successfully !', life: 3000,group:'br' });
         add_component_dialog.value = false
         loadInventory()
-        new_component_entries.value = []
         new_component_name.value = ""
         new_component_unit.value = ""
-        new_component_entry_company.value = ""
-        new_component_entry_quantity.value = ""
-        new_component_entry_price.value = ""
       });
   }
 
 
   const onComponentLogRowExpand = (event) => {
+    if (!event.data.order_id) return
     axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/`+event.data.order_id,{
         headers: {
             Authorization: `Bearer ${auth.accessToken.value}`
@@ -485,6 +393,11 @@ const confirmDeleteMaterial = (material_id: string) => {
 
   const showOrder = (order_id: string) => {
     router.push(`/admin/orders/${order_id}`)
+}
+
+
+  const showGRN = (grn_id: string) => {
+    router.push(`/admin/purchase-orders?grn_id=${grn_id}`)
 }
 
 

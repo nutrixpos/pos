@@ -43,9 +43,15 @@ func (l *LogService) GetMaterialLogs(component_id string, page_number, page_size
 		return logs, total_records, err
 	}
 
-	filter := bson.M{"type": bson.M{
-		"$in": []string{models.LogTypeMaterialConsume, models.LogTypeMaterialInventoryReturn},
-	}, "component_id": component_id}
+	filter := bson.M{
+		"type": bson.M{
+			"$in": []string{models.LogTypeMaterialConsume, models.LogTypeMaterialInventoryReturn, models.LogTypeMaterialAdd, models.LogTypeMaterialGRNReceive},
+		},
+		"$or": []bson.M{
+			{"component_id": component_id},
+			{"material_id": component_id},
+		},
+	}
 
 	skip := (page_number - 1) * page_size
 	if page_number == 1 {

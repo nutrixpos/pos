@@ -782,10 +782,9 @@ func (cs *MaterialService) EditMaterial(material_id string, material_to_edit mod
 	return nil
 }
 
-// AddComponent adds a new material component to the database.
-// It first inserts the material into the "materials" collection,
-// then logs the addition of each entry into the "logs" collection.
-// If there is any error during the database operations, it returns the error.
+// AddComponent adds a new material to the database. Inventory stock is not
+// added through materials anymore; stock is received through the purchase
+// order / GRN cycle (see PurchaseOrderService.ReceivePurchaseOrder).
 func (cs *MaterialService) AddComponent(material models.Material, user_id string) error {
 
 	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
@@ -796,10 +795,7 @@ func (cs *MaterialService) AddComponent(material models.Material, user_id string
 	ctx := context.Background()
 
 	material.Id = primitive.NewObjectID().Hex()
-
-	for index, _ := range material.Entries {
-		material.Entries[index].Id = primitive.NewObjectID().Hex()
-	}
+	material.Entries = []models.MaterialEntry{}
 
 	// Insert the DBComponent struct into the "materials" collection
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
@@ -807,86 +803,6 @@ func (cs *MaterialService) AddComponent(material models.Material, user_id string
 	if err != nil {
 		cs.Logger.Error(err.Error())
 		return err
-	}
-
-	for _, entry := range material.Entries {
-
-		logs_data := bson.M{
-			"id":          primitive.NewObjectID().Hex(),
-			"type":        "component_add",
-			"date":        time.Now(),
-			"material_id": material.Id,
-			"entry_id":    entry.Id,
-			"company":     entry.Company,
-			"quantity":    entry.Quantity,
-			"price":       entry.PurchasePrice,
-			"user_id":     user_id,
-		}
-		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
-		if err != nil {
-			cs.Logger.Error(err.Error())
-			return err
-		}
-	}
-
-	return nil
-}
-
-// PushMaterialEntry adds a new entry to a material in the database.
-//
-// The function takes a component ID and a slice of MaterialEntry structs as parameters.
-// It then finds the material with the given ID and appends the new entries to the material's
-// entries array. If the material is not found, the function will return an error.
-func (cs *MaterialService) PushMaterialEntry(componentId string, entries []models.MaterialEntry, user_id string) error {
-
-	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
-	if err != nil {
-		return err
-	}
-
-	ctx := context.Background()
-
-	filter := bson.M{"id": componentId}
-
-	for _, entry := range entries {
-
-		entry.PurchaseQuantity = entry.Quantity
-		entry_id := primitive.NewObjectID().Hex()
-
-		entry_data := bson.M{
-			"id":                entry_id,
-			"purchase_quantity": entry.PurchaseQuantity,
-			"price":             entry.PurchasePrice,
-			"quantity":          entry.Quantity,
-			"company":           entry.Company,
-			"sku":               entry.SKU,
-			"expiration_date":   entry.ExpirationDate,
-		}
-
-		update := bson.M{"$push": bson.M{"entries": entry_data}}
-		opts := options.Update().SetUpsert(false)
-
-		_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(ctx, filter, update, opts)
-		if err != nil {
-			return err
-		}
-
-		logs_data := bson.M{
-			"type":        "component_add",
-			"id":          primitive.NewObjectID().Hex(),
-			"date":        time.Now(),
-			"material_id": componentId,
-			"entry_id":    entry_id,
-			"company":     entry.Company,
-			"quantity":    entry.Quantity,
-			"price":       entry.PurchasePrice,
-			"user_id":     user_id,
-		}
-		_, err = client.Database(cs.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data)
-		if err != nil {
-			cs.Logger.Error(err.Error())
-			return err
-		}
 	}
 
 	return nil

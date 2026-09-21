@@ -12,6 +12,7 @@ const (
 	LogTypeOrderFinish             = "order_finish"
 	LogTypeMaterialConsume         = "component_consume"
 	LogTypeMaterialAdd             = "component_add"
+	LogTypeMaterialGRNReceive      = "grn_receive"
 	LogTypeMaterialWaste           = "material_waste"
 	LogTypeProductIncrease         = "product_increase"
 	LogTypeSalesPerDayOrder        = "sales_per_day_order"
