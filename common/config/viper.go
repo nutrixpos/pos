@@ -72,6 +72,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		Password: vc.v.GetString("databases.0.password"),
 		Type:     vc.v.GetString("databases.0.type"),
 		Name:     vc.v.GetString("databases.0.name"),
+		FilePath: vc.v.GetString("databases.0.file_path"),
 		Tables:   tables,
 	}
 

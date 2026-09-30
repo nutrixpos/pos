@@ -50,61 +50,32 @@ func (rs *MaterialService) GetMaterialEntries(material_id string, params GetMate
 	entries = make([]models.MaterialEntry, 0)
 
 	collection := client.Database(rs.Config.Databases[0].Database).Collection("materials")
-	// findOptions.SetSort(bson.M{"name": 1})
-	// findOptions.SetSkip(int64((params.PageNumber - 1) * params.PageSize))
-	// findOptions.SetLimit(int64(params.PageSize))
 
-	// Get the total number of entries
-	entryCountPipeline := []bson.M{
-		{"$match": bson.M{"id": material_id}},
-		{"$project": bson.M{"entryCount": bson.M{"$size": "$entries"}}},
-	}
-
-	entryCountCursor, err := collection.Aggregate(ctx, entryCountPipeline)
+	var material models.Material
+	err = collection.FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
 	if err != nil {
 		return entries, totalRecords, err
 	}
-	defer entryCountCursor.Close(ctx)
 
-	totalRecords = 0
+	totalRecords = int64(len(material.Entries))
 
-	var entryCountResult []bson.M
-	if err = entryCountCursor.All(ctx, &entryCountResult); err != nil {
-		return entries, totalRecords, err
+	skip := params.PageNumber * params.PageSize
+	end := skip + params.PageSize
+	if skip < 0 {
+		skip = 0
 	}
-	if len(entryCountResult) > 0 {
-		totalRecords = int64(entryCountResult[0]["entryCount"].(int32))
+	if skip > len(material.Entries) {
+		skip = len(material.Entries)
 	}
-
-	skip := (params.PageNumber) * params.PageSize
-
-	// Create aggregation pipeline
-	pipeline := []bson.M{
-		{"$match": bson.M{"id": material_id}},
-		{"$project": bson.M{
-			"entries": bson.M{
-				"$slice": []interface{}{"$entries", skip, params.PageSize},
-			},
-		}},
+	if end > len(material.Entries) {
+		end = len(material.Entries)
 	}
 
-	cursor, err := collection.Aggregate(ctx, pipeline)
-	if err != nil {
-		return entries, totalRecords, err
-	}
-	defer cursor.Close(ctx)
-
-	// Get results
-	var results []models.Material
-	if err = cursor.All(ctx, &results); err != nil {
-		return entries, totalRecords, err
+	if len(material.Entries) > 0 {
+		entries = material.Entries[skip:end]
 	}
 
-	if len(results) == 0 {
-		return entries, totalRecords, err
-	}
-
-	return results[0].Entries, totalRecords, err
+	return entries, totalRecords, nil
 }
 
 func (ms *MaterialService) GetMaterial(material_id string) (material models.Material, err error) {
