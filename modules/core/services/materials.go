@@ -104,28 +104,48 @@ func (ms *MaterialService) Waste(entry_id, material_id string, quantity float64,
 
 	ctx := context.Background()
 
+	materials_collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
+
 	if is_consume {
 		var material models.Material
-		err = client.Database(ms.Config.Databases[0].Database).Collection("materials").FindOne(context.Background(), bson.M{
-			"id":         material_id,
-			"entries.id": entry_id,
-		},
-			options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+		err = materials_collection.FindOne(context.Background(), bson.M{"id": material_id}).Decode(&material)
 		if err != nil {
 			return err
 		}
-		ms.ConsumeFromInventory(material, material.Entries[0].Id, quantity, reason, order_id, user_id)
+
+		entry_found := false
+		for _, entry := range material.Entries {
+			if entry.Id == entry_id {
+				entry_found = true
+				break
+			}
+		}
+		if !entry_found {
+			return fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+		}
+
+		ms.ConsumeFromInventory(material, entry_id, quantity, reason, order_id, user_id)
 	}
 
-	filter := bson.M{"id": material_id, "entries.id": entry_id}
-	// Define the update operation
-	update := bson.M{
-		"$inc": bson.M{
-			"entries.$.quantity": -quantity,
-		},
+	var material models.Material
+	err = materials_collection.FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
+	if err != nil {
+		return err
 	}
 
-	_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	entry_found := false
+	for i := range material.Entries {
+		if material.Entries[i].Id == entry_id {
+			material.Entries[i].Quantity -= quantity
+			entry_found = true
+			break
+		}
+	}
+	if !entry_found {
+		return fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+	}
+
+	_, err = materials_collection.UpdateOne(ctx, bson.M{"id": material_id}, bson.M{"$set": bson.M{"entries": material.Entries}})
 	if err != nil {
 		return err
 	}
@@ -164,53 +184,58 @@ func (ms *MaterialService) InventoryReturn(entry_id, material_id string, quantit
 
 	ctx := context.Background()
 
-	filter := bson.M{"id": material_id, "entries.id": entry_id}
-	// Define the update operation
-	update := bson.M{
-		"$inc": bson.M{
-			"entries.$.quantity": quantity,
-		},
+	materials_collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
+
+	var material models.Material
+	err = materials_collection.FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
+	if err != nil {
+		return err
 	}
 
-	_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	entry_found := false
+	for i := range material.Entries {
+		if material.Entries[i].Id == entry_id {
+			material.Entries[i].Quantity += quantity
+			entry_found = true
+			break
+		}
+	}
+	if !entry_found {
+		return fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+	}
+
+	_, err = materials_collection.UpdateOne(ctx, bson.M{"id": material_id}, bson.M{"$set": bson.M{"entries": material.Entries}})
 	if err != nil {
 		return err
 	}
 
 	if is_refunded {
 
-		filter = bson.M{"id": order_id, "items.materials": bson.M{
-			"$elemMatch": bson.M{
-				"material.id": material_id,
-				"entry.id":    entry_id,
-			},
-		}}
+		orders_collection := client.Database(ms.Config.Databases[0].Database).Collection("orders")
 
-		update = bson.M{
-			"$set": bson.M{
-				"items.$[item].materials.$[material].entry.is_refunded":   true,
-				"items.$[item].materials.$[material].entry.refund_reason": reason,
-			},
-		}
-
-		arrayFilters := options.ArrayFilters{
-			Filters: []interface{}{
-				bson.M{
-					"item.materials.material.id": material_id,
-					"item.materials.entry.id":    entry_id,
-				},
-				bson.M{
-					"material.material.id": material_id,
-					"material.entry.id":    entry_id,
-				},
-			},
-		}
-
-		opts := options.Update().SetArrayFilters(arrayFilters)
-
-		_, err = client.Database(ms.Config.Databases[0].Database).Collection("orders").UpdateOne(context.Background(), filter, update, opts)
+		var order models.Order
+		err = orders_collection.FindOne(ctx, bson.M{"id": order_id}).Decode(&order)
 		if err != nil {
 			return err
+		}
+
+		refund_marked := false
+		for i := range order.Items {
+			for j := range order.Items[i].Materials {
+				material_refund := &order.Items[i].Materials[j]
+				if material_refund.Material.Id == material_id && material_refund.Entry.Id == entry_id {
+					material_refund.IsRefunded = true
+					material_refund.RefundReason = reason
+					refund_marked = true
+				}
+			}
+		}
+
+		if refund_marked {
+			_, err = orders_collection.UpdateOne(ctx, bson.M{"id": order_id}, bson.M{"$set": bson.M{"items": order.Items}})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -261,15 +286,27 @@ func (cs *MaterialService) ConsumeFromInventory(material models.Material, entry_
 		return notifications, fmt.Errorf("entry %s is insufficient", material.Id)
 	}
 
-	filter := bson.M{"id": material.Id, "entries.id": entry_id}
-	// Define the update operation
-	update := bson.M{
-		"$inc": bson.M{
-			"entries.$.quantity": -quantity,
-		},
+	materials_collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
+
+	var current models.Material
+	err = materials_collection.FindOne(ctx, bson.M{"id": material.Id}).Decode(&current)
+	if err != nil {
+		return notifications, err
 	}
 
-	_, err = client.Database(cs.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+	entry_found := false
+	for i := range current.Entries {
+		if current.Entries[i].Id == entry_id {
+			current.Entries[i].Quantity -= quantity
+			entry_found = true
+			break
+		}
+	}
+	if !entry_found {
+		return notifications, fmt.Errorf("entry %s not found in material %s", entry_id, material.Id)
+	}
+
+	_, err = materials_collection.UpdateOne(ctx, bson.M{"id": material.Id}, bson.M{"$set": bson.M{"entries": current.Entries}})
 	if err != nil {
 		return notifications, err
 	}
@@ -342,20 +379,23 @@ func (cs *MaterialService) CalculateMaterialExactCost(entry_id, material_id stri
 	ctx := context.Background()
 
 	var material models.Material
-	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{
-		"id":         material_id,
-		"entries.id": entry_id,
-	},
-		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
 	if err != nil {
 		return 0, err
 	}
 
-	if len(material.Entries) == 0 {
+	var entry *models.MaterialEntry
+	for i := range material.Entries {
+		if material.Entries[i].Id == entry_id {
+			entry = &material.Entries[i]
+			break
+		}
+	}
+	if entry == nil {
 		return 0.0, fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
 	}
 
-	cost = (material.Entries[0].PurchasePrice / float64(material.Entries[0].PurchaseQuantity)) * quantity
+	cost = (entry.PurchasePrice / float64(entry.PurchaseQuantity)) * quantity
 
 	return cost, nil
 }
@@ -375,22 +415,18 @@ func (cs *MaterialService) GetMaterialEntryAvailability(material_id string, entr
 	ctx := context.Background()
 
 	var material models.Material
-	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{
-		"id":         material_id,
-		"entries.id": entry_id,
-	},
-		options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&material)
+	err = client.Database(cs.Config.Databases[0].Database).Collection("materials").FindOne(ctx, bson.M{"id": material_id}).Decode(&material)
 	if err != nil {
 		return 0.0, err
 	}
 
-	if len(material.Entries) == 0 {
-		return 0.0, fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
+	for _, entry := range material.Entries {
+		if entry.Id == entry_id {
+			return entry.Quantity, nil
+		}
 	}
 
-	amount = material.Entries[0].Quantity
-
-	return amount, err
+	return 0.0, fmt.Errorf("entry %s not found in material %s", entry_id, material_id)
 
 }
 
@@ -437,15 +473,27 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 				return notifications, fmt.Errorf("entry %s is insufficient", component.Material.Id)
 			}
 
-			filter := bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}
-			// Define the update operation
-			update := bson.M{
-				"$inc": bson.M{
-					"entries.$.quantity": -component.Quantity * item.Quantity,
-				},
+			materials_collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
+
+			var material models.Material
+			err = materials_collection.FindOne(ctx, bson.M{"id": component.Material.Id}).Decode(&material)
+			if err != nil {
+				return notifications, err
 			}
 
-			_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
+			entry_found := false
+			for i := range material.Entries {
+				if material.Entries[i].Id == component.Entry.Id {
+					material.Entries[i].Quantity -= component.Quantity * item.Quantity
+					entry_found = true
+					break
+				}
+			}
+			if !entry_found {
+				return notifications, fmt.Errorf("entry %s not found in material %s", component.Entry.Id, component.Material.Id)
+			}
+
+			_, err = materials_collection.UpdateOne(ctx, bson.M{"id": component.Material.Id}, bson.M{"$set": bson.M{"entries": material.Entries}})
 			if err != nil {
 				return notifications, err
 			}
@@ -501,30 +549,22 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 			demanded_quantity := component.Quantity * item.Quantity
 
-			for _, entry := range material.Entries {
+			materials_collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
+
+			for i := range material.Entries {
+				entry := &material.Entries[i]
 
 				if entry.Quantity < demanded_quantity && entry.Quantity > 0 && demanded_quantity > 0 {
-					demanded_quantity = demanded_quantity - entry.Quantity
-
-					filter := bson.M{"id": component.Material.Id, "entries.id": entry.Id}
-					// Define the update operation
-					update := bson.M{
-						"$inc": bson.M{
-							"entries.$.quantity": -entry.Quantity,
-						},
-					}
-
-					_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
-					if err != nil {
-						return notifications, err
-					}
+					consumed := entry.Quantity
+					demanded_quantity = demanded_quantity - consumed
+					entry.Quantity -= consumed
 
 					logs_data := bson.M{
 						"type":             "component_consume",
 						"date":             time.Now(),
 						"id":               primitive.NewObjectID().Hex(),
 						"component_id":     component.Material.Id,
-						"quantity":         entry.Quantity,
+						"quantity":         consumed,
 						"entry_id":         entry.Id,
 						"order_id":         order.Id,
 						"display_id":       order.DisplayId,
@@ -537,27 +577,18 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 						return notifications, err
 					}
 
-				} else if (entry.Quantity >= demanded_quantity) && demanded_quantity > 0 {
+				} else if entry.Quantity >= demanded_quantity && demanded_quantity > 0 {
 
-					filter := bson.M{"id": component.Material.Id, "entries.id": entry.Id}
-					// Define the update operation
-					update := bson.M{
-						"$inc": bson.M{
-							"entries.$.quantity": -demanded_quantity,
-						},
-					}
-
-					_, err = client.Database(ms.Config.Databases[0].Database).Collection("materials").UpdateOne(context.Background(), filter, update)
-					if err != nil {
-						return notifications, err
-					}
+					consumed := demanded_quantity
+					demanded_quantity = 0
+					entry.Quantity -= consumed
 
 					logs_data := bson.M{
 						"type":             "component_consume",
 						"date":             time.Now(),
 						"id":               primitive.NewObjectID().Hex(),
 						"component_id":     component.Material.Id,
-						"quantity":         demanded_quantity,
+						"quantity":         consumed,
 						"entry_id":         entry.Id,
 						"order_id":         order.Id,
 						"display_id":       order.DisplayId,
@@ -573,6 +604,11 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 					break
 				}
 
+			}
+
+			_, err = materials_collection.UpdateOne(ctx, bson.M{"id": component.Material.Id}, bson.M{"$set": bson.M{"entries": material.Entries}})
+			if err != nil {
+				return notifications, err
 			}
 
 		}

@@ -6,6 +6,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -15,6 +16,7 @@ import (
 	"github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -217,17 +219,31 @@ func (ss *SalesService) SetOrderToSalesDay(order models.Order) error {
 
 	ctx := context.Background()
 
-	// Connected successfully
+	collection := client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"])
 
-	filter := bson.M{"orders.id": order.Id}
-	update := bson.M{
-		"$set": bson.M{
-			"orders.$.tips": order.Tips,
-		},
-	}
-	_, err = client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"]).UpdateOne(ctx, filter, update)
+	var sales_day models.SalesPerDay
+	err = collection.FindOne(ctx, bson.M{"orders.id": order.Id}).Decode(&sales_day)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil
+		}
 		return err
+	}
+
+	order_found := false
+	for i := range sales_day.Orders {
+		if sales_day.Orders[i].Id == order.Id {
+			sales_day.Orders[i].Order.Tips = order.Tips
+			order_found = true
+			break
+		}
+	}
+
+	if order_found {
+		_, err = collection.UpdateOne(ctx, bson.M{"orders.id": order.Id}, bson.M{"$set": bson.M{"orders": sales_day.Orders}})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

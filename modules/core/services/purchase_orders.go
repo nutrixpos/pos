@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -14,6 +15,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// purchaseOrderReceiveMu serializes receive operations in-process. It protects
+// the ferret backend where the multi-key $elemMatch optimistic lock is
+// unsupported, so concurrent receives cannot double-apply quantities.
+var purchaseOrderReceiveMu sync.Mutex
 
 // PurchaseOrderService provides methods to manage purchase orders and their
 // automated goods received notes (GRNs). Receiving a purchase order pushes the
@@ -139,6 +145,7 @@ func (ps *PurchaseOrderService) CreatePurchaseOrder(po models.PurchaseOrder, use
 	if po.AutoReceive {
 		_, err = ps.ReceivePurchaseOrder(po.Id, user_id, nil)
 		if err != nil {
+			_, _ = collection.DeleteOne(ctx, bson.M{"id": po.Id})
 			return po, err
 		}
 
@@ -265,6 +272,9 @@ func (ps *PurchaseOrderService) CancelPurchaseOrder(purchase_order_id string) (e
 // the materials inventory and writes a history log for each received material.
 // Passing an empty received_items receives all remaining quantities.
 func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, user_id string, received_items []ReceiveItem) (grn models.GRN, err error) {
+	purchaseOrderReceiveMu.Lock()
+	defer purchaseOrderReceiveMu.Unlock()
+
 	client, err := common.GetDatabaseClient(ps.Logger, &ps.Config)
 	if err != nil {
 		return grn, err
@@ -441,18 +451,23 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		status = models.PurchaseOrderStatusReceived
 	}
 
-	guards := make([]bson.M, 0, len(po.Items))
-	for _, item := range po.Items {
-		guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
-			"item_id":           item.ItemId,
-			"received_quantity": originalReceived[item.ItemId],
-		}}})
-	}
-
 	filter := bson.M{
 		"id":     po.Id,
 		"status": bson.M{"$nin": []string{models.PurchaseOrderStatusReceived, models.PurchaseOrderStatusCancelled}},
-		"$and":   guards,
+	}
+
+	// The ferret backend does not support $elemMatch with multiple conditions,
+	// so the optimistic lock on the received quantities is only applied for
+	// other backends; on ferret the in-process mutex serializes receives.
+	if ps.Config.Databases[0].Type != "ferret" {
+		guards := make([]bson.M, 0, len(po.Items))
+		for _, item := range po.Items {
+			guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
+				"item_id":           item.ItemId,
+				"received_quantity": originalReceived[item.ItemId],
+			}}})
+		}
+		filter["$and"] = guards
 	}
 
 	update := bson.M{

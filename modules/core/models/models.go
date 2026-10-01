@@ -110,6 +110,8 @@ type OrderItem struct {
 	Cost               float64             `json:"cost" bson:"cost" mapstructure:"cost"`
 	CostMethod         string              `json:"cost_method" bson:"cost_method" mapstructure:"cost_method"`
 	Status             string              `json:"status" bson:"status" mapstructure:"status"`
+	RefundValue        float64             `json:"refund_value" bson:"refund_value" mapstructure:"refund_value"`
+	RefundReason       string              `json:"refund_reason" bson:"refund_reason" mapstructure:"refund_reason"`
 }
 
 // OrderPayment represents a single payment made towards an order, using a
