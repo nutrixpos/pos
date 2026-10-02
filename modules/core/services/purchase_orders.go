@@ -335,6 +335,7 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		item      *models.PurchaseOrderItem
 		toReceive float64
 		entry     models.MaterialEntry
+		logId     string
 		logDoc    bson.M
 	}
 
@@ -386,12 +387,15 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			ExpirationDate: poItem.ExpirationDate,
 		})
 
+		logId := primitive.NewObjectID().Hex()
+
 		pending = append(pending, pendingReceive{
 			item:      poItem,
 			toReceive: toReceive,
 			entry:     entry,
+			logId:     logId,
 			logDoc: bson.M{
-				"id":                        primitive.NewObjectID().Hex(),
+				"id":                        logId,
 				"type":                      models.LogTypeMaterialGRNReceive,
 				"date":                      now,
 				"user_id":                   user_id,
@@ -434,6 +438,63 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 	for _, item := range po.Items {
 		originalReceived[item.ItemId] = item.ReceivedQuantity
 	}
+
+	// Capture the pre-receipt state so a failure after the purchase order
+	// update can be compensated without leaving partial receipt data behind.
+	originalStatus := po.Status
+	originalReceivedAt := po.ReceivedAt
+	originalReceivedBy := po.ReceivedBy
+	originalItems := make([]models.PurchaseOrderItem, len(po.Items))
+	copy(originalItems, po.Items)
+	for i := range originalItems {
+		originalItems[i].EntryIds = append([]string(nil), po.Items[i].EntryIds...)
+	}
+
+	type pushedEntry struct {
+		materialId string
+		entryId    string
+	}
+
+	pushedEntries := make([]pushedEntry, 0, len(pending))
+	insertedLogIds := make([]string, 0, len(pending))
+	writesStarted := false
+
+	// rollback undoes material entries and logs written by this call and
+	// restores the purchase order. It runs before purchaseOrderReceiveMu is
+	// released (defers are LIFO).
+	defer func() {
+		if err == nil || !writesStarted {
+			return
+		}
+
+		for _, pe := range pushedEntries {
+			materialEntriesMu.Lock()
+			_, rollbackErr := materialsCollection.UpdateOne(
+				ctx,
+				bson.M{"id": pe.materialId},
+				bson.M{"$pull": bson.M{"entries": bson.M{"id": pe.entryId}}, "$inc": bson.M{"version": 1}},
+			)
+			materialEntriesMu.Unlock()
+			if rollbackErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back material entry %s: %s", pe.entryId, rollbackErr.Error()))
+			}
+		}
+
+		for _, logId := range insertedLogIds {
+			if _, rollbackErr := logsCollection.DeleteOne(ctx, bson.M{"id": logId}); rollbackErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back receive log %s: %s", logId, rollbackErr.Error()))
+			}
+		}
+
+		if _, rollbackErr := poCollection.UpdateOne(ctx, bson.M{"id": po.Id}, bson.M{"$set": bson.M{
+			"status":      originalStatus,
+			"received_at": originalReceivedAt,
+			"received_by": originalReceivedBy,
+			"items":       originalItems,
+		}}); rollbackErr != nil {
+			ps.Logger.Error(fmt.Sprintf("failed to restore purchase order %s: %s", po.Id, rollbackErr.Error()))
+		}
+	}()
 
 	for i := range pending {
 		pending[i].item.ReceivedQuantity += pending[i].toReceive
@@ -488,19 +549,25 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 	if result.MatchedCount == 0 {
 		return grn, customerrors.ErrPurchaseOrderModified
 	}
+	writesStarted = true
 
 	for _, p := range pending {
 		materialEntriesMu.Lock()
-		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}, "$inc": bson.M{"version": 1}})
+		materialResult, updateErr := materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}, "$inc": bson.M{"version": 1}})
 		materialEntriesMu.Unlock()
-		if err != nil {
-			return grn, err
+		if updateErr != nil {
+			return grn, updateErr
 		}
+		if materialResult.MatchedCount == 0 {
+			return grn, fmt.Errorf("material %s no longer exists", p.item.MaterialId)
+		}
+		pushedEntries = append(pushedEntries, pushedEntry{materialId: p.item.MaterialId, entryId: p.entry.Id})
 
 		_, err = logsCollection.InsertOne(ctx, p.logDoc)
 		if err != nil {
 			return grn, err
 		}
+		insertedLogIds = append(insertedLogIds, p.logId)
 	}
 
 	_, err = grnsCollection.InsertOne(ctx, grn)

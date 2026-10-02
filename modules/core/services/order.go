@@ -32,6 +32,11 @@ import (
 // atomic $inc and does not rely on this mutex for cross-instance safety.
 var orderDisplayIdMu sync.Mutex
 
+// orderItemsMu serializes refunds that rewrite an order's items array on the
+// ferret backend, which does not support positional array updates. The mongo
+// backend uses an atomic positional update and does not rely on this mutex.
+var orderItemsMu sync.Mutex
+
 // OrderService is the service to interact with the orders collection in the database.
 type OrderService struct {
 	Logger   logger.ILogger
@@ -245,6 +250,13 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 		}
 	}
 
+	if os.Config.Databases[0].Type == "ferret" {
+		// Ferret cannot do positional array updates, so serialize the
+		// read-modify-write of the order's items against other refunds.
+		orderItemsMu.Lock()
+		defer orderItemsMu.Unlock()
+	}
+
 	order, err := os.GetOrder(request.OrderId)
 	if err != nil {
 		return err
@@ -312,7 +324,21 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 	}
 
 	if refund_item_found {
-		_, err = order_collection.UpdateOne(ctx, bson.M{"id": request.OrderId}, bson.M{"$set": bson.M{"items": order.Items}})
+		if os.Config.Databases[0].Type != "ferret" {
+			// Atomically update only the matching item so a concurrent change
+			// to another item is not overwritten.
+			_, err = order_collection.UpdateOne(
+				ctx,
+				bson.M{"id": request.OrderId, "items.id": request.ItemId},
+				bson.M{"$set": bson.M{
+					"items.$.status":        "refunded",
+					"items.$.refund_value":  request.RefundValue,
+					"items.$.refund_reason": request.Reason,
+				}},
+			)
+		} else {
+			_, err = order_collection.UpdateOne(ctx, bson.M{"id": request.OrderId}, bson.M{"$set": bson.M{"items": order.Items}})
+		}
 		if err != nil {
 			return err
 		}

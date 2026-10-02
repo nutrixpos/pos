@@ -546,6 +546,8 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 
 			materials_collection := client.Database(ms.Config.Databases[0].Database).Collection("materials")
 
+			pending_logs := make([]bson.M, 0)
+
 			err = ms.mutateMaterialEntries(ctx, materials_collection, component.Material.Id, func(material *models.Material) error {
 				if len(material.Entries) == 0 {
 					return fmt.Errorf("no entries found for material %s", component.Material.Id)
@@ -574,7 +576,7 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 						demanded_quantity = demanded_quantity - consumed
 						entry.Quantity -= consumed
 
-						logs_data := bson.M{
+						pending_logs = append(pending_logs, bson.M{
 							"type":             "component_consume",
 							"date":             time.Now(),
 							"id":               primitive.NewObjectID().Hex(),
@@ -586,10 +588,7 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 							"recipe_id":        item.Product.Id,
 							"order_item_index": order_item_index,
 							"user_id":          user_id,
-						}
-						if _, err := client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data); err != nil {
-							return err
-						}
+						})
 
 					} else if entry.Quantity >= demanded_quantity && demanded_quantity > 0 {
 
@@ -597,7 +596,7 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 						demanded_quantity = 0
 						entry.Quantity -= consumed
 
-						logs_data := bson.M{
+						pending_logs = append(pending_logs, bson.M{
 							"type":             "component_consume",
 							"date":             time.Now(),
 							"id":               primitive.NewObjectID().Hex(),
@@ -609,10 +608,7 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 							"recipe_id":        item.Product.Id,
 							"order_item_index": order_item_index,
 							"user_id":          user_id,
-						}
-						if _, err := client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data); err != nil {
-							return err
-						}
+						})
 
 						break
 					}
@@ -623,6 +619,12 @@ func (ms *MaterialService) ConsumeItemComponentsForOrder(item models.OrderItem, 
 			})
 			if err != nil {
 				return notifications, err
+			}
+
+			for _, logs_data := range pending_logs {
+				if _, err = client.Database(ms.Config.Databases[0].Database).Collection("logs").InsertOne(ctx, logs_data); err != nil {
+					return notifications, err
+				}
 			}
 
 		}
