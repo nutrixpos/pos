@@ -12,6 +12,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -24,6 +25,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// orderDisplayIdMu serializes order display id assignment in-process. The
+// ferret backend does not support positional $ updates, so its queue counter is
+// a read-modify-write in Go and needs the lock; the mongo backend uses an
+// atomic $inc and does not rely on this mutex for cross-instance safety.
+var orderDisplayIdMu sync.Mutex
+
+// orderItemsMu serializes refunds that rewrite an order's items array on the
+// ferret backend, which does not support positional array updates. The mongo
+// backend uses an atomic positional update and does not rely on this mutex.
+var orderItemsMu sync.Mutex
 
 // OrderService is the service to interact with the orders collection in the database.
 type OrderService struct {
@@ -238,6 +250,13 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 		}
 	}
 
+	if os.Config.Databases[0].Type == "ferret" {
+		// Ferret cannot do positional array updates, so serialize the
+		// read-modify-write of the order's items against other refunds.
+		orderItemsMu.Lock()
+		defer orderItemsMu.Unlock()
+	}
+
 	order, err := os.GetOrder(request.OrderId)
 	if err != nil {
 		return err
@@ -293,12 +312,36 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
-	filter := bson.M{"id": request.OrderId, "items.id": request.ItemId}
-	update := bson.M{"$set": bson.M{"items.$.status": "refunded", "items.$.refund_value": request.RefundValue, "items.$.refund_reason": request.Reason}}
+	refund_item_found := false
+	for i := range order.Items {
+		if order.Items[i].Id == request.ItemId {
+			order.Items[i].Status = "refunded"
+			order.Items[i].RefundValue = request.RefundValue
+			order.Items[i].RefundReason = request.Reason
+			refund_item_found = true
+			break
+		}
+	}
 
-	_, err = order_collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
+	if refund_item_found {
+		if os.Config.Databases[0].Type != "ferret" {
+			// Atomically update only the matching item so a concurrent change
+			// to another item is not overwritten.
+			_, err = order_collection.UpdateOne(
+				ctx,
+				bson.M{"id": request.OrderId, "items.id": request.ItemId},
+				bson.M{"$set": bson.M{
+					"items.$.status":        "refunded",
+					"items.$.refund_value":  request.RefundValue,
+					"items.$.refund_reason": request.Reason,
+				}},
+			)
+		} else {
+			_, err = order_collection.UpdateOne(ctx, bson.M{"id": request.OrderId}, bson.M{"$set": bson.M{"items": order.Items}})
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	sales_svc := SalesService{
@@ -526,8 +569,6 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 					Quantity:      component.Quantity * items[itemIndex].Quantity,
 				}
 
-				var component_with_specific_entry models.Material
-
 				if os.Settings.Orders.DefaultCostCalculationMethod == "average" {
 					var material models.Material
 					err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
@@ -557,23 +598,34 @@ func (os *OrderService) CalculateCost(items []models.OrderItem) (cost []models.I
 					}
 
 				} else {
+					var material models.Material
 					err = client.Database(os.Config.Databases[0].Database).Collection("materials").FindOne(
-						context.Background(), bson.M{"id": component.Material.Id, "entries.id": component.Entry.Id}, options.FindOne().SetProjection(bson.M{"entries.$": 1})).Decode(&component_with_specific_entry)
+						context.Background(), bson.M{"id": component.Material.Id}).Decode(&material)
 
-					if err == nil {
-						quantity_cost := (component_with_specific_entry.Entries[0].PurchasePrice / float64(component_with_specific_entry.Entries[0].PurchaseQuantity)) * float64(component.Quantity) * items[itemIndex].Quantity
-
-						// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
-						if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
-							quantity_cost = 0
-						}
-
-						itemCost.Cost += quantity_cost
-						itemComponent.Cost = quantity_cost
-
-					} else {
+					if err != nil {
 						return cost, err
 					}
+
+					var entry *models.MaterialEntry
+					for i := range material.Entries {
+						if material.Entries[i].Id == component.Entry.Id {
+							entry = &material.Entries[i]
+							break
+						}
+					}
+					if entry == nil {
+						return cost, fmt.Errorf("entry %s not found in material %s", component.Entry.Id, component.Material.Id)
+					}
+
+					quantity_cost := (entry.PurchasePrice / float64(entry.PurchaseQuantity)) * float64(component.Quantity) * items[itemIndex].Quantity
+
+					// check if cost is positive or negative infinity (semantic bug in calculation that causes problems later on)
+					if math.IsInf(quantity_cost, 0) || math.IsInf(quantity_cost, -1) {
+						quantity_cost = 0
+					}
+
+					itemCost.Cost += quantity_cost
+					itemComponent.Cost = quantity_cost
 				}
 
 				itemCost.Components = append(itemCost.Components, itemComponent)
@@ -714,6 +766,9 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 
 // GetOrderDisplayId returns a new order display id and increments the current value in the database.
 func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error) {
+	orderDisplayIdMu.Lock()
+	defer orderDisplayIdMu.Unlock()
+
 	client, err := common.GetDatabaseClient(os.Logger, &os.Config)
 	if err != nil {
 		return order_display_id, err
@@ -721,8 +776,10 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 
 	ctx := context.Background()
 
+	settings_collection := client.Database(os.Config.Databases[0].Database).Collection("settings")
+
 	var settings models.Settings
-	err = client.Database(os.Config.Databases[0].Database).Collection("settings").FindOne(ctx, bson.M{}).Decode(&settings)
+	err = settings_collection.FindOne(ctx, bson.M{}).Decode(&settings)
 	if err != nil {
 		return order_display_id, err
 	}
@@ -734,24 +791,56 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 	}
 	random_queue := settings.Orders.Queues[random_queue_index]
 
-	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
+	if os.Config.Databases[0].Type == "ferret" {
+		// The ferret backend does not support positional array updates, so
+		// rewrite the whole queues array under the in-process lock.
+		order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
 
-	_, err = client.Database(os.Config.Databases[0].Database).Collection("settings").UpdateOne(
+		for i := range settings.Orders.Queues {
+			if settings.Orders.Queues[i].Prefix == random_queue.Prefix {
+				settings.Orders.Queues[i].Next++
+				break
+			}
+		}
+
+		_, err = settings_collection.UpdateOne(
+			ctx,
+			bson.M{"id": settings.Id},
+			bson.M{"$set": bson.M{"orders.queues": settings.Orders.Queues}},
+		)
+		if err != nil {
+			return order_display_id, err
+		}
+
+		return order_display_id, nil
+	}
+
+	// Atomically increment only the selected queue and use the pre-increment
+	// value for the display id, so concurrent instances cannot assign the same
+	// id or overwrite other queues' counters.
+	var before models.Settings
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.Before)
+	err = settings_collection.FindOneAndUpdate(
 		ctx,
 		bson.M{"id": settings.Id, "orders.queues.prefix": random_queue.Prefix},
-		bson.M{
-			"$inc": bson.M{
-				"orders.queues.$.next": 1,
-			},
-		},
-	)
-
+		bson.M{"$inc": bson.M{"orders.queues.$.next": 1}},
+		opts,
+	).Decode(&before)
 	if err != nil {
 		return order_display_id, err
 	}
 
-	return order_display_id, err
+	next := random_queue.Next
+	for i := range before.Orders.Queues {
+		if before.Orders.Queues[i].Prefix == random_queue.Prefix {
+			next = before.Orders.Queues[i].Next
+			break
+		}
+	}
 
+	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, next)
+
+	return order_display_id, nil
 }
 
 // SubmitOrder adds an order to the database and creates a display id.

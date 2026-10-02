@@ -64,5 +64,6 @@ type Database struct {
 	Type     string            `mapstructure:"type" yaml:"type"`
 	Name     string            `mapstructure:"name" yaml:"name"`
 	Database string            `mapstructure:"database" yaml:"database"`
+	FilePath string            `mapstructure:"file_path" yaml:"file_path"`
 	Tables   map[string]string `mapstructure:"tables" yaml:"tables"`
 }

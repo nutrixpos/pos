@@ -1,11 +1,15 @@
 databases:
   - name: core
+    # type: mongo  -> connect to an external/centralized mongodb server (host/port)
+    # type: ferret -> embedded local database (FerretDB + SQLite), no server install needed
     type: mongo
     host: 127.0.0.1
     port: 27017
     database: nutrix
     username: ""
     password: ""
+    # file_path is used when type is "ferret": directory where the local db file is stored
+    file_path: ./data/db
     tables: # this is to allow changing the following specific table names
       sales: sales
 

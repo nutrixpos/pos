@@ -42,8 +42,8 @@ func (rs *RecipeService) Waste(product_id string, quantity float64, order_id str
 		filter := bson.M{"id": product_id}
 		// Define the update operation
 		update := bson.M{
-			"$dec": bson.M{
-				"ready": quantity,
+			"$inc": bson.M{
+				"ready": -quantity,
 			},
 		}
 

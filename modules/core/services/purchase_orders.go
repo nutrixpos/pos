@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -14,6 +15,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// purchaseOrderReceiveMu serializes receive operations in-process. It protects
+// the ferret backend where the multi-key $elemMatch optimistic lock is
+// unsupported, so concurrent receives cannot double-apply quantities.
+var purchaseOrderReceiveMu sync.Mutex
 
 // PurchaseOrderService provides methods to manage purchase orders and their
 // automated goods received notes (GRNs). Receiving a purchase order pushes the
@@ -139,6 +145,9 @@ func (ps *PurchaseOrderService) CreatePurchaseOrder(po models.PurchaseOrder, use
 	if po.AutoReceive {
 		_, err = ps.ReceivePurchaseOrder(po.Id, user_id, nil)
 		if err != nil {
+			if _, delErr := collection.DeleteOne(ctx, bson.M{"id": po.Id}); delErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back purchase order %s: %s", po.Id, delErr.Error()))
+			}
 			return po, err
 		}
 
@@ -265,6 +274,9 @@ func (ps *PurchaseOrderService) CancelPurchaseOrder(purchase_order_id string) (e
 // the materials inventory and writes a history log for each received material.
 // Passing an empty received_items receives all remaining quantities.
 func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, user_id string, received_items []ReceiveItem) (grn models.GRN, err error) {
+	purchaseOrderReceiveMu.Lock()
+	defer purchaseOrderReceiveMu.Unlock()
+
 	client, err := common.GetDatabaseClient(ps.Logger, &ps.Config)
 	if err != nil {
 		return grn, err
@@ -323,6 +335,7 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		item      *models.PurchaseOrderItem
 		toReceive float64
 		entry     models.MaterialEntry
+		logId     string
 		logDoc    bson.M
 	}
 
@@ -374,12 +387,15 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			ExpirationDate: poItem.ExpirationDate,
 		})
 
+		logId := primitive.NewObjectID().Hex()
+
 		pending = append(pending, pendingReceive{
 			item:      poItem,
 			toReceive: toReceive,
 			entry:     entry,
+			logId:     logId,
 			logDoc: bson.M{
-				"id":                        primitive.NewObjectID().Hex(),
+				"id":                        logId,
 				"type":                      models.LogTypeMaterialGRNReceive,
 				"date":                      now,
 				"user_id":                   user_id,
@@ -423,6 +439,63 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		originalReceived[item.ItemId] = item.ReceivedQuantity
 	}
 
+	// Capture the pre-receipt state so a failure after the purchase order
+	// update can be compensated without leaving partial receipt data behind.
+	originalStatus := po.Status
+	originalReceivedAt := po.ReceivedAt
+	originalReceivedBy := po.ReceivedBy
+	originalItems := make([]models.PurchaseOrderItem, len(po.Items))
+	copy(originalItems, po.Items)
+	for i := range originalItems {
+		originalItems[i].EntryIds = append([]string(nil), po.Items[i].EntryIds...)
+	}
+
+	type pushedEntry struct {
+		materialId string
+		entryId    string
+	}
+
+	pushedEntries := make([]pushedEntry, 0, len(pending))
+	insertedLogIds := make([]string, 0, len(pending))
+	writesStarted := false
+
+	// rollback undoes material entries and logs written by this call and
+	// restores the purchase order. It runs before purchaseOrderReceiveMu is
+	// released (defers are LIFO).
+	defer func() {
+		if err == nil || !writesStarted {
+			return
+		}
+
+		for _, pe := range pushedEntries {
+			materialEntriesMu.Lock()
+			_, rollbackErr := materialsCollection.UpdateOne(
+				ctx,
+				bson.M{"id": pe.materialId},
+				bson.M{"$pull": bson.M{"entries": bson.M{"id": pe.entryId}}, "$inc": bson.M{"version": 1}},
+			)
+			materialEntriesMu.Unlock()
+			if rollbackErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back material entry %s: %s", pe.entryId, rollbackErr.Error()))
+			}
+		}
+
+		for _, logId := range insertedLogIds {
+			if _, rollbackErr := logsCollection.DeleteOne(ctx, bson.M{"id": logId}); rollbackErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back receive log %s: %s", logId, rollbackErr.Error()))
+			}
+		}
+
+		if _, rollbackErr := poCollection.UpdateOne(ctx, bson.M{"id": po.Id}, bson.M{"$set": bson.M{
+			"status":      originalStatus,
+			"received_at": originalReceivedAt,
+			"received_by": originalReceivedBy,
+			"items":       originalItems,
+		}}); rollbackErr != nil {
+			ps.Logger.Error(fmt.Sprintf("failed to restore purchase order %s: %s", po.Id, rollbackErr.Error()))
+		}
+	}()
+
 	for i := range pending {
 		pending[i].item.ReceivedQuantity += pending[i].toReceive
 		pending[i].item.EntryIds = append(pending[i].item.EntryIds, pending[i].entry.Id)
@@ -441,18 +514,23 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		status = models.PurchaseOrderStatusReceived
 	}
 
-	guards := make([]bson.M, 0, len(po.Items))
-	for _, item := range po.Items {
-		guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
-			"item_id":           item.ItemId,
-			"received_quantity": originalReceived[item.ItemId],
-		}}})
-	}
-
 	filter := bson.M{
 		"id":     po.Id,
 		"status": bson.M{"$nin": []string{models.PurchaseOrderStatusReceived, models.PurchaseOrderStatusCancelled}},
-		"$and":   guards,
+	}
+
+	// The ferret backend does not support $elemMatch with multiple conditions,
+	// so the optimistic lock on the received quantities is only applied for
+	// other backends; on ferret the in-process mutex serializes receives.
+	if ps.Config.Databases[0].Type != "ferret" {
+		guards := make([]bson.M, 0, len(po.Items))
+		for _, item := range po.Items {
+			guards = append(guards, bson.M{"items": bson.M{"$elemMatch": bson.M{
+				"item_id":           item.ItemId,
+				"received_quantity": originalReceived[item.ItemId],
+			}}})
+		}
+		filter["$and"] = guards
 	}
 
 	update := bson.M{
@@ -471,17 +549,25 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 	if result.MatchedCount == 0 {
 		return grn, customerrors.ErrPurchaseOrderModified
 	}
+	writesStarted = true
 
 	for _, p := range pending {
-		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}})
-		if err != nil {
-			return grn, err
+		materialEntriesMu.Lock()
+		materialResult, updateErr := materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}, "$inc": bson.M{"version": 1}})
+		materialEntriesMu.Unlock()
+		if updateErr != nil {
+			return grn, updateErr
 		}
+		if materialResult.MatchedCount == 0 {
+			return grn, fmt.Errorf("material %s no longer exists", p.item.MaterialId)
+		}
+		pushedEntries = append(pushedEntries, pushedEntry{materialId: p.item.MaterialId, entryId: p.entry.Id})
 
 		_, err = logsCollection.InsertOne(ctx, p.logDoc)
 		if err != nil {
 			return grn, err
 		}
+		insertedLogIds = append(insertedLogIds, p.logId)
 	}
 
 	_, err = grnsCollection.InsertOne(ctx, grn)

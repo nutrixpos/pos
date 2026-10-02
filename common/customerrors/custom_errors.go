@@ -34,3 +34,6 @@ var ErrOrderAlreadyPaid = errors.New("order already paid")
 
 // ErrPurchaseOrderModified is an error returned when a purchase order changed during a receive.
 var ErrPurchaseOrderModified = errors.New("purchase order was modified by another operation")
+
+// ErrMaterialModified is an error returned when a material's entries changed during an update.
+var ErrMaterialModified = errors.New("material was modified by another operation")

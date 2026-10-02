@@ -10,6 +10,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -81,7 +83,7 @@ func (root *RootProcess) Execute() error {
 				return func(w http.ResponseWriter, r *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
 
-					if root.Config.Databases[0].Host == "" {
+					if root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret" {
 						w.Write([]byte(`{"setup":false}`))
 						return
 					}
@@ -108,7 +110,7 @@ func (root *RootProcess) Execute() error {
 			// can provide connection details via the browser (Setup.vue). The process
 			// exits with code 0 after writing the config so the process manager can
 			// restart the app with the new configuration.
-			if len(root.Config.Databases) == 0 || root.Config.Databases[0].Host == "" {
+			if len(root.Config.Databases) == 0 || (root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret") {
 
 				setupRun = true
 				stopChan := make(chan struct{})
@@ -370,7 +372,28 @@ func (root *RootProcess) Execute() error {
 				log.Fatal(err)
 			}
 
-			log.Fatal(srv.Serve(listener))
+			stop := make(chan os.Signal, 1)
+			signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+			go func() {
+				if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					root.Logger.Error("server error: " + err.Error())
+					os.Exit(1)
+				}
+			}()
+
+			<-stop
+			root.Logger.Info("Shutting down...")
+
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer shutdownCancel()
+			if err := srv.Shutdown(shutdownCtx); err != nil {
+				root.Logger.Error("server shutdown error: " + err.Error())
+			}
+
+			common.CloseDatabase()
+
+			root.Logger.Info("Shutdown complete")
 		},
 	}
 

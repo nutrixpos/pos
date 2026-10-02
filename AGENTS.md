@@ -20,6 +20,11 @@ go run ./cmd/pos      # run the CLI
 ## Database
 - Use `common.GetDatabaseClient()` singleton - never create new `mongo.Connect()` connections
 - Singleton pattern in `common/database.go` ensures single connection
+- Two backends, selected by `databases[0].type` in config:
+  - `type: mongo` - connects to an external/centralized MongoDB server (host/port)
+  - `type: ferret` - starts an embedded FerretDB (SQLite, pure Go) in-process; no database service install required. Data is stored in `databases[0].file_path` (default `./data/db`)
+- The app code always talks to a `*mongo.Client` regardless of backend
+- FerretDB embedded caveat: aggregation `$project` with expression operators (`$size`, `$slice`) is unsupported - fetch the doc with `FindOne` and do the work in Go instead
 
 ## Common Pitfalls to Avoid
 
