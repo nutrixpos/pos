@@ -145,7 +145,9 @@ func (ps *PurchaseOrderService) CreatePurchaseOrder(po models.PurchaseOrder, use
 	if po.AutoReceive {
 		_, err = ps.ReceivePurchaseOrder(po.Id, user_id, nil)
 		if err != nil {
-			_, _ = collection.DeleteOne(ctx, bson.M{"id": po.Id})
+			if _, delErr := collection.DeleteOne(ctx, bson.M{"id": po.Id}); delErr != nil {
+				ps.Logger.Error(fmt.Sprintf("failed to roll back purchase order %s: %s", po.Id, delErr.Error()))
+			}
 			return po, err
 		}
 
@@ -488,7 +490,9 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 	}
 
 	for _, p := range pending {
-		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}})
+		materialEntriesMu.Lock()
+		_, err = materialsCollection.UpdateOne(ctx, bson.M{"id": p.item.MaterialId}, bson.M{"$push": bson.M{"entries": p.entry}, "$inc": bson.M{"version": 1}})
+		materialEntriesMu.Unlock()
 		if err != nil {
 			return grn, err
 		}

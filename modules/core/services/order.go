@@ -27,9 +27,9 @@ import (
 )
 
 // orderDisplayIdMu serializes order display id assignment in-process. The
-// queue counter increment is a read-modify-write in Go (the ferret backend does
-// not support positional $ updates), so without the lock concurrent order
-// submissions could assign duplicate display ids.
+// ferret backend does not support positional $ updates, so its queue counter is
+// a read-modify-write in Go and needs the lock; the mongo backend uses an
+// atomic $inc and does not rely on this mutex for cross-instance safety.
 var orderDisplayIdMu sync.Mutex
 
 // OrderService is the service to interact with the orders collection in the database.
@@ -765,31 +765,56 @@ func (os *OrderService) GetOrderDisplayId() (order_display_id string, err error)
 	}
 	random_queue := settings.Orders.Queues[random_queue_index]
 
-	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
+	if os.Config.Databases[0].Type == "ferret" {
+		// The ferret backend does not support positional array updates, so
+		// rewrite the whole queues array under the in-process lock.
+		order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, random_queue.Next)
 
-	queue_found := false
-	for i := range settings.Orders.Queues {
-		if settings.Orders.Queues[i].Prefix == random_queue.Prefix {
-			settings.Orders.Queues[i].Next++
-			queue_found = true
-			break
+		for i := range settings.Orders.Queues {
+			if settings.Orders.Queues[i].Prefix == random_queue.Prefix {
+				settings.Orders.Queues[i].Next++
+				break
+			}
 		}
-	}
 
-	if queue_found {
 		_, err = settings_collection.UpdateOne(
 			ctx,
 			bson.M{"id": settings.Id},
 			bson.M{"$set": bson.M{"orders.queues": settings.Orders.Queues}},
 		)
-
 		if err != nil {
 			return order_display_id, err
 		}
+
+		return order_display_id, nil
 	}
 
-	return order_display_id, err
+	// Atomically increment only the selected queue and use the pre-increment
+	// value for the display id, so concurrent instances cannot assign the same
+	// id or overwrite other queues' counters.
+	var before models.Settings
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.Before)
+	err = settings_collection.FindOneAndUpdate(
+		ctx,
+		bson.M{"id": settings.Id, "orders.queues.prefix": random_queue.Prefix},
+		bson.M{"$inc": bson.M{"orders.queues.$.next": 1}},
+		opts,
+	).Decode(&before)
+	if err != nil {
+		return order_display_id, err
+	}
 
+	next := random_queue.Next
+	for i := range before.Orders.Queues {
+		if before.Orders.Queues[i].Prefix == random_queue.Prefix {
+			next = before.Orders.Queues[i].Next
+			break
+		}
+	}
+
+	order_display_id = fmt.Sprintf("%s-%v", random_queue.Prefix, next)
+
+	return order_display_id, nil
 }
 
 // SubmitOrder adds an order to the database and creates a display id.

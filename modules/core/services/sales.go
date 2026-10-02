@@ -7,6 +7,7 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/nutrixpos/pos/common"
@@ -19,6 +20,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// salesDayMu serializes read-modify-write updates to a sales-day document on
+// the ferret backend, which does not support positional array updates. The
+// mongo backend uses atomic updates and does not rely on this mutex.
+var salesDayMu sync.Mutex
 
 // SalesService contains the configuration and logger for the sales service.
 type SalesService struct {
@@ -221,6 +227,25 @@ func (ss *SalesService) SetOrderToSalesDay(order models.Order) error {
 
 	collection := client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"])
 
+	if ss.Config.Databases[0].Type != "ferret" {
+		// Atomically update only the matching order's tips so a concurrent
+		// $push of another order is not overwritten.
+		_, err = collection.UpdateOne(
+			ctx,
+			bson.M{"orders.id": order.Id},
+			bson.M{"$set": bson.M{"orders.$.tips": order.Tips}},
+		)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// The ferret backend does not support positional array updates, so
+	// serialize the read-modify-write against AddOrderToSalesDay's $push.
+	salesDayMu.Lock()
+	defer salesDayMu.Unlock()
+
 	var sales_day models.SalesPerDay
 	err = collection.FindOne(ctx, bson.M{"orders.id": order.Id}).Decode(&sales_day)
 	if err != nil {
@@ -270,6 +295,13 @@ func (ss *SalesService) AddOrderToSalesDay(order models.Order, items_cost []mode
 
 	collection := client.Database(ss.Config.Databases[0].Database).Collection(ss.Config.Databases[0].Tables["sales"])
 	filter := bson.M{"date": time.Now().Format("2006-01-02")}
+
+	if ss.Config.Databases[0].Type == "ferret" {
+		// Serialize against SetOrderToSalesDay's whole-array rewrite so a
+		// concurrent push is not overwritten.
+		salesDayMu.Lock()
+		defer salesDayMu.Unlock()
+	}
 
 	count, err := collection.CountDocuments(ctx, filter)
 	if err != nil {

@@ -180,6 +180,7 @@ type Material struct {
 	Quantity float64          `json:"quantity" mapstructure:"quantity"`
 	Settings MaterialSettings `json:"settings" bson:"settings" mapstructure:"settings"`
 	Unit     string           `json:"unit" bson:"unit" mapstructure:"unit"`
+	Version  int              `json:"version" bson:"version" mapstructure:"version"`
 }
 
 // ProductEntry represents an entry of a product, detailing purchase and quantity information.
