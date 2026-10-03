@@ -19,7 +19,6 @@ type ModuleBuilder struct {
 	Prompter                    userio.Prompter
 	module                      IBaseModule
 	module_name                 string
-	workers                     []Worker
 	isRegisterHttpHandlers      bool
 	isRegisterBackgroundWorkers bool
 	httpRouter                  *mux.Router

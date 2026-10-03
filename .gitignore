@@ -21,6 +21,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 data/mongo
+coverage.out
 
 # Editor directories and files
 .idea
@@ -30,3 +31,5 @@ data/mongo
 *.njsproj
 *.sln
 *.sw?
+
+.husky/_

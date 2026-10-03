@@ -35,7 +35,7 @@ func PatchSettings(config config.Config, logger logger.ILogger) http.HandlerFunc
 		ctx := context.Background()
 
 		collection := client.Database(config.Databases[0].Database).Collection("hubsync")
-		_, err = collection.UpdateOne(ctx, bson.D{{"settings", bson.D{{"$exists", true}}}}, bson.D{{"$set", bson.D{{"settings", data.Data.Settings}}}})
+		_, err = collection.UpdateOne(ctx, bson.M{"settings": bson.M{"$exists": true}}, bson.M{"$set": bson.M{"settings": data.Data.Settings}})
 		if err != nil {
 			logger.Error(fmt.Sprintf("error in updating settings: %v", err))
 			w.WriteHeader(http.StatusInternalServerError)

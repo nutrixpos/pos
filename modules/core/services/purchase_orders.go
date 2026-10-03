@@ -21,6 +21,11 @@ import (
 // unsupported, so concurrent receives cannot double-apply quantities.
 var purchaseOrderReceiveMu sync.Mutex
 
+// testHookAfterPOUpdate is a test-only hook invoked right after the purchase
+// order update in ReceivePurchaseOrder. It is nil in production and lets tests
+// deterministically exercise the failure rollback path.
+var testHookAfterPOUpdate func() error
+
 // PurchaseOrderService provides methods to manage purchase orders and their
 // automated goods received notes (GRNs). Receiving a purchase order pushes the
 // received quantities into the materials inventory and records them in the
@@ -550,6 +555,12 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		return grn, customerrors.ErrPurchaseOrderModified
 	}
 	writesStarted = true
+
+	if testHookAfterPOUpdate != nil {
+		if hookErr := testHookAfterPOUpdate(); hookErr != nil {
+			return grn, hookErr
+		}
+	}
 
 	for _, p := range pending {
 		materialEntriesMu.Lock()

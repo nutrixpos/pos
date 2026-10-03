@@ -880,7 +880,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 	order.SubmittedAt = time.Now()
 	order.Id = primitive.NewObjectID().Hex()
 
-	for index, _ := range order.Items {
+	for index := range order.Items {
 		order.Items[index].Id = primitive.NewObjectID().Hex()
 	}
 
@@ -993,9 +993,10 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		filter["$and"] = stateFilters
 	}
 
-	if params.IsPayLater == 1 {
+	switch params.IsPayLater {
+	case 1:
 		filter["is_pay_later"] = bson.M{"$eq": true}
-	} else if params.IsPayLater == 0 {
+	case 0:
 		filter["is_pay_later"] = bson.M{"$eq": false}
 	}
 

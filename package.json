@@ -1,0 +1,19 @@
+{
+  "name": "nutrixpos-dev",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "hooks": "husky",
+    "build": "go build . ./cmd/... ./common/... ./internal/... ./modules/...",
+    "test": "go test . ./cmd/... ./common/... ./internal/... ./modules/...",
+    "test-race": "go test -race . ./cmd/... ./common/... ./internal/... ./modules/...",
+    "test-mongo": "node .husky/test-mongo.mjs",
+    "vet": "go vet . ./cmd/... ./common/... ./internal/... ./modules/...",
+    "fmt-check": "node .husky/fmt-check.mjs",
+    "lint": "golangci-lint run . ./cmd/... ./common/... ./internal/... ./modules/...",
+    "cover": "go test -covermode=atomic -coverprofile=coverage.out . ./cmd/... ./common/... ./internal/... ./modules/... && go tool cover -func=coverage.out"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

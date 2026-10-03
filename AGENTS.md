@@ -7,15 +7,43 @@
 
 ## Build Commands
 ```bash
-go build ./...        # build all packages
 go run ./cmd/pos      # run the CLI
+npm install           # installs dev tooling (husky) and git hooks
+npm run test          # run tests against the embedded FerretDB backend
+npm run test-race
+npm run test-mongo    # run against external MongoDB (TEST_MONGO_URI, default mongodb://127.0.0.1:27017)
+npm run lint          # golangci-lint (config: .golangci.yml)
+npm run build vet fmt-check cover  # other targets, see package.json scripts
 ```
+
+The npm scripts use an explicit package list instead of `./...`, because a local
+docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
+`./...` pattern fail. Add any new top-level Go directory to the package list in
+`package.json` (and `.husky/test-mongo.mjs`).
+
+## Git hooks
+- Husky (from root `package.json`) installs hooks on `npm install`.
+- Hooks are thin Node scripts (no shell logic): `.husky/pre-commit` runs
+  `.husky/pre-commit.mjs`, `.husky/pre-push` runs `.husky/pre-push.mjs`.
+- `pre-commit` (Go changes only): `gofmt -w` + `git add` (auto-stage), then `npm run vet test`.
+- `pre-push`: `npm run test-race`.
+- Bypass with `git commit -n` / `git push --no-verify`, or `HUSKY=0`.
+- Keep the package lists in `package.json` and the hook scripts in sync.
 
 ## Architecture
 - `/cmd/` - CLI entrypoints
 - `/modules/` - business logic (core, hubsync modules)
 - `/common/` - shared utilities (database, config, logger)
-- No tests in this repo
+- `/internal/testutil/` - test-only DB harness (never imported by production code)
+
+## Testing
+- Use `internal/testutil.NewTestEnv(t, testutil.BackendFromEnv())` for an isolated database:
+  embedded FerretDB with a temp dir by default, or external Mongo when `TEST_MONGO_URI` is set.
+- The DB client is a process-wide singleton: never call `t.Parallel()` in tests that use a database,
+  and create at most one `TestEnv` per test.
+- Integration tests in `modules/core/services` cover materials, purchase orders (including
+  rollback via the `testHookAfterPOUpdate` seam), sales and order display ids, on both backends.
+- CI gates: gofmt, `go vet`, `go build`, `go test -race` (both backends), golangci-lint, govulncheck.
 
 ## Database
 - Use `common.GetDatabaseClient()` singleton - never create new `mongo.Connect()` connections

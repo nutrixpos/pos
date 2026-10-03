@@ -1,0 +1,201 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/nutrixpos/pos/internal/testutil"
+	"github.com/nutrixpos/pos/modules/core/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+func newPOService(env *testutil.TestEnv) *PurchaseOrderService {
+	return &PurchaseOrderService{Logger: env.Logger, Config: env.Config, Settings: models.Settings{}}
+}
+
+func countDocs(t *testing.T, env *testutil.TestEnv, collection string, filter bson.M) int64 {
+	t.Helper()
+	n, err := env.Client.Database(env.Config.Databases[0].Database).Collection(collection).CountDocuments(context.Background(), filter)
+	require.NoError(t, err)
+	return n
+}
+
+func makeAutoPO(materialId string, quantity float64) models.PurchaseOrder {
+	return models.PurchaseOrder{
+		AutoReceive: true,
+		Supplier:    "test-supplier",
+		Items: []models.PurchaseOrderItem{{
+			MaterialId:    materialId,
+			Quantity:      quantity,
+			PurchasePrice: 2,
+		}},
+	}
+}
+
+func insertMaterialForPO(t *testing.T, env *testutil.TestEnv, id string) {
+	t.Helper()
+	_, err := env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		InsertOne(context.Background(), models.Material{Id: id, Name: "Flour", Unit: "kg", Entries: []models.MaterialEntry{}})
+	require.NoError(t, err)
+}
+
+func TestCreatePurchaseOrder_AutoReceiveSuccess(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-1")
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(makeAutoPO("mat-1", 5), "user-1")
+	require.NoError(t, err)
+
+	assert.Equal(t, models.PurchaseOrderStatusReceived, po.Status)
+	require.Len(t, po.Items, 1)
+	assert.Equal(t, 5.0, po.Items[0].ReceivedQuantity)
+	assert.NotEmpty(t, po.Items[0].EntryIds)
+
+	// Material got one entry of 5 units.
+	var material models.Material
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		FindOne(context.Background(), bson.M{"id": "mat-1"}).Decode(&material)
+	require.NoError(t, err)
+	require.Len(t, material.Entries, 1)
+	assert.Equal(t, 5.0, material.Entries[0].Quantity)
+
+	assert.Equal(t, int64(1), countDocs(t, env, "grns", bson.M{"purchase_order_id": po.Id}))
+	assert.Equal(t, int64(1), countDocs(t, env, "logs", bson.M{"type": models.LogTypeMaterialGRNReceive}))
+}
+
+func TestCreatePurchaseOrder_AutoReceiveFailureRollsBack(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-2")
+
+	testHookAfterPOUpdate = func() error { return fmt.Errorf("injected failure") }
+	t.Cleanup(func() { testHookAfterPOUpdate = nil })
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(makeAutoPO("mat-2", 5), "user-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "injected failure")
+
+	// The purchase order is deleted by the caller.
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("purchase_orders").
+		FindOne(context.Background(), bson.M{"id": po.Id}).Decode(&models.PurchaseOrder{})
+	assert.ErrorIs(t, err, mongo.ErrNoDocuments)
+
+	// No partial receipt data: material has no entries, no logs, no GRNs.
+	var material models.Material
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		FindOne(context.Background(), bson.M{"id": "mat-2"}).Decode(&material)
+	require.NoError(t, err)
+	assert.Empty(t, material.Entries)
+
+	assert.Equal(t, int64(0), countDocs(t, env, "logs", bson.M{"type": models.LogTypeMaterialGRNReceive}))
+	assert.Equal(t, int64(0), countDocs(t, env, "grns", bson.M{}))
+}
+
+func TestReceivePurchaseOrder_FailureRestoresPO(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-3")
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(models.PurchaseOrder{
+		Supplier: "test-supplier",
+		Items: []models.PurchaseOrderItem{{
+			MaterialId:    "mat-3",
+			Quantity:      5,
+			PurchasePrice: 2,
+		}},
+	}, "user-1")
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusOpen, po.Status)
+
+	testHookAfterPOUpdate = func() error { return fmt.Errorf("injected failure") }
+	t.Cleanup(func() { testHookAfterPOUpdate = nil })
+
+	_, err = svc.ReceivePurchaseOrder(po.Id, "user-1", nil)
+	require.Error(t, err)
+
+	// The purchase order is restored to its pre-receipt state, not deleted.
+	var stored models.PurchaseOrder
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("purchase_orders").
+		FindOne(context.Background(), bson.M{"id": po.Id}).Decode(&stored)
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusOpen, stored.Status)
+	assert.Equal(t, 0.0, stored.Items[0].ReceivedQuantity)
+	assert.Empty(t, stored.Items[0].EntryIds)
+
+	var material models.Material
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		FindOne(context.Background(), bson.M{"id": "mat-3"}).Decode(&material)
+	require.NoError(t, err)
+	assert.Empty(t, material.Entries)
+
+	assert.Equal(t, int64(0), countDocs(t, env, "logs", bson.M{"type": models.LogTypeMaterialGRNReceive}))
+	assert.Equal(t, int64(0), countDocs(t, env, "grns", bson.M{}))
+}
+
+func TestReceivePurchaseOrder_PartialThenFull(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-a")
+	insertMaterialForPO(t, env, "mat-b")
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(models.PurchaseOrder{
+		Supplier: "test-supplier",
+		Items: []models.PurchaseOrderItem{
+			{MaterialId: "mat-a", Quantity: 10, PurchasePrice: 1},
+			{MaterialId: "mat-b", Quantity: 10, PurchasePrice: 1},
+		},
+	}, "user-1")
+	require.NoError(t, err)
+
+	// Partial receive of one item.
+	grn, err := svc.ReceivePurchaseOrder(po.Id, "user-1", []ReceiveItem{{ItemId: po.Items[0].ItemId, Quantity: 4}})
+	require.NoError(t, err)
+	assert.NotEmpty(t, grn.Id)
+
+	var stored models.PurchaseOrder
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("purchase_orders").
+		FindOne(context.Background(), bson.M{"id": po.Id}).Decode(&stored)
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusPartial, stored.Status)
+	assert.Equal(t, 4.0, stored.Items[0].ReceivedQuantity)
+
+	// Full receive of the remainder.
+	_, err = svc.ReceivePurchaseOrder(po.Id, "user-1", nil)
+	require.NoError(t, err)
+
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("purchase_orders").
+		FindOne(context.Background(), bson.M{"id": po.Id}).Decode(&stored)
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusReceived, stored.Status)
+	assert.Equal(t, 10.0, stored.Items[0].ReceivedQuantity)
+	assert.Equal(t, 10.0, stored.Items[1].ReceivedQuantity)
+
+	var materialA models.Material
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		FindOne(context.Background(), bson.M{"id": "mat-a"}).Decode(&materialA)
+	require.NoError(t, err)
+	var sum float64
+	for _, e := range materialA.Entries {
+		sum += e.Quantity
+	}
+	assert.Equal(t, 10.0, sum)
+}
+
+func TestReceivePurchaseOrder_AlreadyReceived(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-4")
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(makeAutoPO("mat-4", 5), "user-1")
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusReceived, po.Status)
+
+	_, err = svc.ReceivePurchaseOrder(po.Id, "user-1", nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already fully received")
+}

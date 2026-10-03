@@ -1,59 +1,28 @@
-name: GitHub Actions Demo
+name: CD
 run-name: Packaging a new nutrixpos version 🚀
 on:
   push:
-    tags: 
+    tags:
       - "v*.*.*"
 
 # required to create releases
 permissions:
   contents: write
 
+env:
+  HUSKY: "0"
+
 jobs:
   ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install dependencies
-        run: npm install
-        working-directory: ./frontend
+    uses: ./.github/workflows/ci.yaml
 
-      - name: Build frontend
-        env:
-          NODE_OPTIONS: --max_old_space_size=2048
-        run: |
-          cp .env.example .env
-          sed -i "s/VITE_APP_APP_VERSION=v0.0.1/VITE_APP_APP_VERSION=${GITHUB_REF_NAME}/g" .env
-          npm run build-only
-        working-directory: ./frontend
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend
-          path: ./frontend/dist
-
-      - name: Build golang app
-        env:
-          NODE_OPTIONS: --max_old_space_size=2048
-        run: export GOOS=windows; go build -o nutrixpos64.exe .
-        working-directory: ./
-
-      - name: Upload backend windows64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-windows64
-          path: ./nutrixpos64.exe
-
-  
   package-windows:
     runs-on: windows-latest
     needs: ci
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: create nsis-runtime directory
         run: |
@@ -67,13 +36,13 @@ jobs:
         with:
           name: frontend
           path: ./nsis-runtime/frontend
-      
+
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
           name: backend-windows64
           path: ./nsis-runtime
-      
+
       - name: Install NSIS using Chocolatey
         run: choco install nsis -y
 
@@ -85,7 +54,7 @@ jobs:
           dir
           cd ..\
           tree /f assets
-          
+
           # Download files using PowerShell
           Invoke-WebRequest -Uri "https://elmawardy.sirv.com/nutrix-icon-0.ico" -OutFile "./nsis-runtime/icon.ico"
           Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.2.1-signed.msi" -OutFile "./nsis-runtime/mongodb-windows-x86_64-8.2.1-signed.msi"

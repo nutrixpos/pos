@@ -78,33 +78,32 @@ func (root *RootProcess) Execute() error {
 			// Create a new HTTP router
 			root.Router = mux.NewRouter()
 
-		root.Router.Handle("/api/setup/status", middlewares.AllowCors(
-			func() http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					w.Header().Set("Content-Type", "application/json")
+			root.Router.Handle("/api/setup/status", middlewares.AllowCors(
+				func() http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
 
-					if root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret" {
-						w.Write([]byte(`{"setup":false}`))
-						return
-					}
+						if root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret" {
+							w.Write([]byte(`{"setup":false}`))
+							return
+						}
 
-					if root.Config.Auth.Enabled {
-						client, err := common.GetDatabaseClient(root.Logger, &root.Config)
-						if err == nil {
-							usersColl := client.Database(root.Config.Databases[0].Database).Collection("users")
-							count, err := usersColl.CountDocuments(r.Context(), bson.M{"roles": "superuser"})
-							if err == nil && count == 0 {
-								w.Write([]byte(`{"setup":true,"needsAdminSetup":true}`))
-								return
+						if root.Config.Auth.Enabled {
+							client, err := common.GetDatabaseClient(root.Logger, &root.Config)
+							if err == nil {
+								usersColl := client.Database(root.Config.Databases[0].Database).Collection("users")
+								count, err := usersColl.CountDocuments(r.Context(), bson.M{"roles": "superuser"})
+								if err == nil && count == 0 {
+									w.Write([]byte(`{"setup":true,"needsAdminSetup":true}`))
+									return
+								}
 							}
 						}
-					}
 
-					w.Write([]byte(`{"setup":true}`))
-					return
-				}
-			}(),
-		)).Methods("GET", "OPTIONS")
+						w.Write([]byte(`{"setup":true}`))
+					}
+				}(),
+			)).Methods("GET", "OPTIONS")
 
 			// If no database host is configured, serve a setup endpoint so the user
 			// can provide connection details via the browser (Setup.vue). The process

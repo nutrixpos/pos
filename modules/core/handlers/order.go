@@ -24,6 +24,7 @@ import (
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
@@ -174,7 +175,7 @@ func WasteOrderItem(config config.Config, logger logger.ILogger, settings models
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = order_svc.WasteOrderItem(request.Data.OrderItem, order_id_param, quantity, reason, request.Data.Other, user_id)
@@ -225,7 +226,7 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = order_svc.RefundItem(request.Data, user_id)
@@ -493,7 +494,7 @@ func FinishOrder(config config.Config, logger logger.ILogger, settings models.Se
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		params := mux.Vars(r)
@@ -596,7 +597,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 
 			user_id := "0"
 			if config.Zitadel.Enabled {
-				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+				user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 			}
 
 			err = orderService.StartOrder(order.Id, request.Data.Items, user_id)
@@ -863,7 +864,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = orderService.StartOrder(id_param, request_body.Data, user_id)

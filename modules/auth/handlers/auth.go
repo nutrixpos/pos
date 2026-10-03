@@ -84,7 +84,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defaultRoles := []string{}
+	var defaultRoles []string
 	if count == 0 {
 		defaultRoles = []string{"superuser"}
 	} else {
@@ -144,7 +144,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -200,7 +200,7 @@ func (h *AuthHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -257,7 +257,7 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -320,7 +320,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

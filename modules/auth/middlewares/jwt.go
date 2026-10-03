@@ -23,13 +23,13 @@ type Claims struct {
 }
 
 type JWTUtil struct {
-	Secret     []byte
+	Secret      []byte
 	ExpireHours int
 }
 
 func NewJWTUtil(secret string, expireHours int) *JWTUtil {
 	return &JWTUtil{
-		Secret:     []byte(secret),
+		Secret:      []byte(secret),
 		ExpireHours: expireHours,
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -229,7 +230,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		request := struct {
@@ -255,9 +256,8 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		// Return a success response
-		fmt.Fprint(w, "component adding saved successfully")
-
 		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, "component adding saved successfully")
 
 	}
 }

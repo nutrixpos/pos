@@ -19,10 +19,10 @@ import (
 
 func userIDFromContext(config config.Config, r *http.Request) string {
 	if config.Zitadel.Enabled {
-		return r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+		return r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 	}
 	if config.Auth.Enabled {
-		if claims, ok := r.Context().Value("auth_ctx").(*middlewares.Claims); ok {
+		if claims, ok := r.Context().Value(middlewares.AuthContextKey).(*middlewares.Claims); ok {
 			return claims.UserID
 		}
 	}
