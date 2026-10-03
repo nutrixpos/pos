@@ -29,7 +29,10 @@ type AppManager struct {
 func (manager *AppManager) Run() (err error) {
 
 	for _, saved_module_builder := range saved_module_builders {
-		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder)
+		if runErr := manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder); runErr != nil {
+			manager.Logger.Error(runErr.Error())
+			err = runErr
+		}
 	}
 
 	return err

@@ -77,6 +77,6 @@ func GetSettings(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
+		_, _ = w.Write(response)
 	}
 }

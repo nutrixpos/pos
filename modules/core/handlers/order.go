@@ -459,7 +459,7 @@ func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 
 	}
 }
@@ -507,7 +507,7 @@ func FinishOrder(config config.Config, logger logger.ILogger, settings models.Se
 		settings, err := settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -558,7 +558,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 		settings, err = settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -578,7 +578,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			product, err := product_svc.GetProduct(item.Product.Id)
 			if err != nil {
 				logger.Error(err.Error())
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -722,10 +722,10 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			return
 		}
 
-		notifications_svc.SendToTopic("order_submitted", string(msgJson))
+		_ = notifications_svc.SendToTopic("order_submitted", string(msgJson))
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 
 }
@@ -851,7 +851,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 		settings, err = settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -885,7 +885,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 				return
 			}
 
-			w.Write(json_response)
+			_, _ = w.Write(json_response)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -921,7 +921,7 @@ func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Write the JSON to the response
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonOrder)
+		_, _ = w.Write(jsonOrder)
 	}
 }
 

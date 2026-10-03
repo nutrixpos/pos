@@ -79,9 +79,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run
       - name: govulncheck
         uses: golang/govulncheck-action@v1
         with:

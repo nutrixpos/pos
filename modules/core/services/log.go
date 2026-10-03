@@ -72,7 +72,7 @@ func (l *LogService) GetMaterialLogs(component_id string, page_number, page_size
 		l.Logger.Error(err.Error())
 		return logs, total_records, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 
 	if err = cur.All(ctx, &logs); err != nil {
 		l.Logger.Error(err.Error())
@@ -106,7 +106,7 @@ func (l *LogService) GetSalesLogs() []models.SalesLogs {
 		l.Logger.Error(err.Error())
 		return nil
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	sales_logs := []models.SalesLogs{}
 	if err = cursor.All(ctx, &sales_logs); err != nil {
@@ -140,7 +140,7 @@ func (l *LogService) GetOrderItemsRefundLogs(order_items_ids [][]string) (logs [
 		l.Logger.Error(err.Error())
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	refund_logs := []models.LogOrderItemRefund{}
 	if err = cursor.All(ctx, &refund_logs); err != nil {

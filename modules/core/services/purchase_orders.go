@@ -211,7 +211,7 @@ func (ps *PurchaseOrderService) GetPurchaseOrders(params GetPurchaseOrdersParams
 	if err != nil {
 		return pos, totalRecords, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	if err = cursor.All(ctx, &pos); err != nil {
 		return pos, totalRecords, err
@@ -636,7 +636,7 @@ func (ps *PurchaseOrderService) GetGRNs(params GetGRNsParams) (grns []models.GRN
 	if err != nil {
 		return grns, totalRecords, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	if err = cursor.All(ctx, &grns); err != nil {
 		return grns, totalRecords, err

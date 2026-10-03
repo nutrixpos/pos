@@ -54,7 +54,7 @@ func UpdateDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 

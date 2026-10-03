@@ -268,7 +268,7 @@ func (rs *RecipeService) GetProducts(params GetProductsParams) (products []model
 		rs.Logger.Error(err.Error())
 		return products, totalRecords, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 	for cursor.Next(context.Background()) {
 		var product models.Product
 		if err := cursor.Decode(&product); err != nil {

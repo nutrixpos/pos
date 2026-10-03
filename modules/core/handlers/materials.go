@@ -118,7 +118,7 @@ func CalculateMaterialAverageCost(config config.Config, logger logger.ILogger) h
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -170,7 +170,7 @@ func CalculateMaterialExactCost(config config.Config, logger logger.ILogger) htt
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -217,7 +217,7 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 		// Write the JSON to the response
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonMaterials)
+		_, _ = w.Write(jsonMaterials)
 	}
 
 }
@@ -257,7 +257,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Return a success response
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, "component adding saved successfully")
+		_, _ = fmt.Fprint(w, "component adding saved successfully")
 
 	}
 }
@@ -381,6 +381,6 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonLogs)
+		_, _ = w.Write(jsonLogs)
 	}
 }

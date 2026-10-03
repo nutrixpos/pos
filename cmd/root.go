@@ -84,7 +84,7 @@ func (root *RootProcess) Execute() error {
 						w.Header().Set("Content-Type", "application/json")
 
 						if root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret" {
-							w.Write([]byte(`{"setup":false}`))
+							_, _ = w.Write([]byte(`{"setup":false}`))
 							return
 						}
 
@@ -94,13 +94,13 @@ func (root *RootProcess) Execute() error {
 								usersColl := client.Database(root.Config.Databases[0].Database).Collection("users")
 								count, err := usersColl.CountDocuments(r.Context(), bson.M{"roles": "superuser"})
 								if err == nil && count == 0 {
-									w.Write([]byte(`{"setup":true,"needsAdminSetup":true}`))
+									_, _ = w.Write([]byte(`{"setup":true,"needsAdminSetup":true}`))
 									return
 								}
 							}
 						}
 
-						w.Write([]byte(`{"setup":true}`))
+						_, _ = w.Write([]byte(`{"setup":true}`))
 					}
 				}(),
 			)).Methods("GET", "OPTIONS")
@@ -178,7 +178,7 @@ func (root *RootProcess) Execute() error {
 							}
 
 							w.WriteHeader(http.StatusOK)
-							w.Write([]byte(`{"success":true}`))
+							_, _ = w.Write([]byte(`{"success":true}`))
 						}
 					}(),
 				)).Methods("POST", "OPTIONS")
@@ -341,7 +341,9 @@ func (root *RootProcess) Execute() error {
 			}, "hubsync").RegisterBackgroundWorkers().RegisterHttpHandlers(root.Router).Save()
 
 			// Ignite the app manager to start all modules
-			appmanager.Run()
+			if err := appmanager.Run(); err != nil {
+				root.Logger.Error(err.Error())
+			}
 
 			// Retrieve all registered modules
 			modules, err := appmanager.GetModules()

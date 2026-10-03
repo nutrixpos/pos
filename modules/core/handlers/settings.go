@@ -70,7 +70,7 @@ func GetSettings(conf config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 
 }

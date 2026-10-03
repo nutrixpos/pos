@@ -71,7 +71,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		random_string := helpers.RandStringBytesMaskImprSrc(20)
 
@@ -82,7 +82,7 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer dst.Close()
+		defer func() { _ = dst.Close() }()
 
 		// Copy the uploaded file to the server file
 		_, err = io.Copy(dst, file)
@@ -105,7 +105,11 @@ func UpdateProductImage(config config.Config, logger logger.ILogger) http.Handle
 
 		product.ImageURL = random_string + file_extension
 
-		product_svc.UpdateProduct(id_param, product)
+		if err := product_svc.UpdateProduct(id_param, product); err != nil {
+			logger.Error(fmt.Sprintf("Error updating product: %s", err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -159,7 +163,7 @@ func UpdateProduct(config config.Config, logger logger.ILogger) http.HandlerFunc
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -392,7 +396,7 @@ func GetRecipeAvailability(config config.Config, logger logger.ILogger) http.Han
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 
 }

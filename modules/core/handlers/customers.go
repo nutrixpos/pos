@@ -80,7 +80,7 @@ func GetCustomers(config config.Config, logger logger.ILogger, settings models.S
 			return
 		}
 
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -119,7 +119,7 @@ func AddCustomer(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 
 	}
 }
@@ -159,7 +159,7 @@ func UpdateCustomer(config config.Config, logger logger.ILogger) http.HandlerFun
 			return
 		}
 
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -188,6 +188,6 @@ func GetCustomer(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
