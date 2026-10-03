@@ -9,10 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"net/url"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/nutrixpos/pos/common"
@@ -23,6 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
 // Backend selects which database backend a test should run against.
@@ -162,16 +160,12 @@ func mongoConfigFromEnv(t testing.TB) (config.Config, bool) {
 		return config.Config{}, false
 	}
 
-	u, err := url.Parse(uri)
-	require.NoError(t, err, "invalid TEST_MONGO_URI %q", uri)
-
-	port := 27017
-	if p := u.Port(); p != "" {
-		port, err = strconv.Atoi(p)
-		require.NoError(t, err, "invalid port in TEST_MONGO_URI %q", uri)
+	cs, err := connstring.ParseAndValidate(uri)
+	if err != nil {
+		t.Fatalf("invalid TEST_MONGO_URI: %v", err)
 	}
 
-	dbName := strings.TrimPrefix(u.Path, "/")
+	dbName := cs.Database
 	if dbName == "" {
 		dbName = "nutrix_test_" + randomSuffix()
 	} else {
@@ -182,8 +176,7 @@ func mongoConfigFromEnv(t testing.TB) (config.Config, bool) {
 		Env: "dev",
 		Databases: []config.Database{{
 			Type:     "mongo",
-			Host:     u.Hostname(),
-			Port:     port,
+			URI:      uri,
 			Database: dbName,
 			Tables:   map[string]string{"sales": "sales"},
 		}},

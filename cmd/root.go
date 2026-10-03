@@ -83,7 +83,8 @@ func (root *RootProcess) Execute() error {
 					return func(w http.ResponseWriter, r *http.Request) {
 						w.Header().Set("Content-Type", "application/json")
 
-						if root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret" {
+						if len(root.Config.Databases) == 0 || (root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret") {
+
 							_, _ = w.Write([]byte(`{"setup":false}`))
 							return
 						}

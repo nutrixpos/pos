@@ -26,6 +26,7 @@ docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
 - Hooks are thin Node scripts (no shell logic): `.husky/pre-commit` runs
   `.husky/pre-commit.mjs`, `.husky/pre-push` runs `.husky/pre-push.mjs`.
 - `pre-commit` (Go changes only): `gofmt -w` + `git add` (auto-stage), then `npm run vet test`.
+  It aborts with an error if a staged Go file also has unstaged changes, to preserve partial staging.
 - `pre-push`: `npm run test-race`.
 - Bypass with `git commit -n` / `git push --no-verify`, or `HUSKY=0`.
 - Keep the package lists in `package.json` and the hook scripts in sync.
