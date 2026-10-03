@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+
+jobs:
+  backend:
+    name: backend (ferret)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Check formatting
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "The following files are not gofmt-compliant:"
+            echo "$out"
+            exit 1
+          fi
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build .
+      - name: Test (embedded FerretDB, race detector)
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          flags: backend-ferret
+          fail_ci_if_error: false
+
+  backend-mongo:
+    name: backend (mongo)
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Test (external MongoDB, race detector)
+        env:
+          TEST_MONGO_URI: mongodb://127.0.0.1:27017
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          flags: backend-mongo
+          fail_ci_if_error: false
+
+  lint:
+    name: lint + vuln
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: golangci-lint
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run
+      - name: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: 1.26.x
+
+  build:
+    name: build frontend + windows binary
+    # Only runs for version tags (cd.yaml calls this workflow on tag pushes);
+    # normal branch/PR runs skip the release build.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./frontend
+
+      - name: Build frontend
+        env:
+          NODE_OPTIONS: --max_old_space_size=2048
+        run: |
+          cp .env.example .env
+          sed -i "s/VITE_APP_APP_VERSION=v0.0.1/VITE_APP_APP_VERSION=${GITHUB_REF_NAME}/g" .env
+          npm run build-only
+        working-directory: ./frontend
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend
+          path: ./frontend/dist
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build golang app
+        run: export GOOS=windows; go build -o nutrixpos64.exe .
+        working-directory: ./
+
+      - name: Upload backend windows64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-windows64
+          path: ./nutrixpos64.exe

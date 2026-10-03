@@ -100,7 +100,9 @@ func (sp *SeedProcess) Seed(mods map[string]modules.IBaseModule, prompter userio
 				}
 			}
 
-			seedableModules[selectedSeedableModule.Title].Seed(selected_module_seedables, sp.IsNewOnly)
+			if err := seedableModules[selectedSeedableModule.Title].Seed(selected_module_seedables, sp.IsNewOnly); err != nil {
+				return err
+			}
 		}
 	}
 

@@ -48,7 +48,7 @@ func (cs CustomersService) GetCustomers(params GetCustomersParams) (customers []
 	if err != nil {
 		return customers, customers_count, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	for cursor.Next(context.Background()) {
 		var customer models.Customer

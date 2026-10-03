@@ -38,7 +38,7 @@ func (s *SyncerService) SyncInventory(host string) error {
 		return err
 	}
 
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var materials []core_models.Material
 	if err := cursor.All(ctx, &materials); err != nil {
@@ -81,7 +81,7 @@ func (s *SyncerService) SyncInventory(host string) error {
 	if err != nil {
 		return fmt.Errorf("error sending sync inventories request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("error sending sync inventories request: %v", resp.Status)
@@ -310,7 +310,7 @@ func (s *SyncerService) CopyToBuffer() error {
 		return err
 	}
 
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	return nil
 }
@@ -330,7 +330,7 @@ func (s *SyncerService) UploadSalesToServer(host string) error {
 		return err
 	}
 
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	db_logs := make([]interface{}, 0)
 
@@ -385,7 +385,7 @@ func (s *SyncerService) UploadSalesToServer(host string) error {
 	if err != nil {
 		return fmt.Errorf("error sending request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("error sending request: %v", resp.Status)

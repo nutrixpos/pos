@@ -97,7 +97,7 @@ func (cs *CategoryService) GetCategories(page_number int, page_size int) (catego
 	if err != nil {
 		return categories, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 
 	for cur.Next(ctx) {
 		var category models.Category

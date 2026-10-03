@@ -25,7 +25,7 @@ func (s *SettingsSvc) Get() (settings models.Hubsync, err error) {
 	ctx := context.Background()
 
 	collection := client.Database(s.Config.Databases[0].Database).Collection("hubsync")
-	err = collection.FindOne(ctx, bson.D{{}}).Decode(&settings)
+	err = collection.FindOne(ctx, bson.M{}).Decode(&settings)
 	if err != nil {
 		s.Logger.Error(fmt.Sprintf("error in getting settings: %v", err))
 		return settings, err

@@ -19,6 +19,13 @@ type IAuthService interface {
 	AllowAnyOfRoles(next http.Handler, roles ...string) http.Handler
 }
 
+type authContextKey struct{}
+
+// AuthContextKey is the context key under which authentication data is stored:
+// a *Claims for internal JWT auth, or an oidc.IntrospectionResponse for
+// Zitadel auth.
+var AuthContextKey authContextKey
+
 type NoAuth struct {
 	Config config.Config
 }
@@ -74,7 +81,7 @@ func (ia *InternalAuth) AllowAuthenticated(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "auth_ctx", claims))
+		r = r.WithContext(context.WithValue(r.Context(), AuthContextKey, claims))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -105,7 +112,7 @@ func (ia *InternalAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http
 
 		for _, userRole := range claims.Roles {
 			if userRole == "superuser" {
-				r = r.WithContext(context.WithValue(r.Context(), "auth_ctx", claims))
+				r = r.WithContext(context.WithValue(r.Context(), AuthContextKey, claims))
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -114,7 +121,7 @@ func (ia *InternalAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http
 		for _, role := range roles {
 			for _, userRole := range claims.Roles {
 				if userRole == role {
-					r = r.WithContext(context.WithValue(r.Context(), "auth_ctx", claims))
+					r = r.WithContext(context.WithValue(r.Context(), AuthContextKey, claims))
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -187,7 +194,7 @@ func (za *ZitadelAuth) AllowAnyOfRoles(next http.Handler, roles ...string) http.
 
 			authCtx, err := za.AuthZ.CheckAuthorization(r.Context(), reqToken, authorization.WithRole(role))
 			if err == nil {
-				r = r.WithContext(context.WithValue(r.Context(), "auth_ctx", authCtx.IntrospectionResponse))
+				r = r.WithContext(context.WithValue(r.Context(), AuthContextKey, authCtx.IntrospectionResponse))
 				authorized = true
 				next.ServeHTTP(w, r)
 				break

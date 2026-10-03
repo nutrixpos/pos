@@ -55,7 +55,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		return Config{}, err
 	}
 
-	vc.BindAllEnv()
+	_ = vc.BindAllEnv()
 
 	tables := make(map[string]string)
 
@@ -74,6 +74,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		Name:     vc.v.GetString("databases.0.name"),
 		FilePath: vc.v.GetString("databases.0.file_path"),
 		Tables:   tables,
+		URI:      vc.v.GetString("databases.0.uri"),
 	}
 
 	zitadel_domain := vc.v.GetString("zitadel.domain")

@@ -97,7 +97,7 @@ func (ds *DisposalService) GetDisposals(params GetDisposalsParameters) (disposal
 		return disposals, 0, err
 	}
 
-	defer cursor.Close(context.Background())
+	defer func() { _ = cursor.Close(context.Background()) }()
 
 	for cursor.Next(context.Background()) {
 		var disposal interface{}
@@ -128,8 +128,7 @@ func (cs *DisposalService) UpdateDisposal(id string, disposal interface{}) (upda
 
 	data := bson.M{}
 
-	var idisposal interface{}
-	idisposal = disposal
+	idisposal := disposal
 
 	if material_disposal, ok := idisposal.(models.MaterialDisposal); ok && material_disposal.Type == models.TypeDisposalMaterial {
 

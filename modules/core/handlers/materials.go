@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -117,7 +118,7 @@ func CalculateMaterialAverageCost(config config.Config, logger logger.ILogger) h
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -169,7 +170,7 @@ func CalculateMaterialExactCost(config config.Config, logger logger.ILogger) htt
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -216,7 +217,7 @@ func GetMaterials(config config.Config, logger logger.ILogger) http.HandlerFunc 
 
 		// Write the JSON to the response
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonMaterials)
+		_, _ = w.Write(jsonMaterials)
 	}
 
 }
@@ -229,7 +230,7 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		request := struct {
@@ -255,9 +256,8 @@ func AddMaterial(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		// Return a success response
-		fmt.Fprint(w, "component adding saved successfully")
-
 		w.WriteHeader(http.StatusCreated)
+		_, _ = fmt.Fprint(w, "component adding saved successfully")
 
 	}
 }
@@ -381,6 +381,6 @@ func GetMaterialLogs(config config.Config, logger logger.ILogger) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonLogs)
+		_, _ = w.Write(jsonLogs)
 	}
 }

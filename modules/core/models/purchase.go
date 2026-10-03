@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	PurchaseOrderStatusOpen     = "open"
-	PurchaseOrderStatusPartial  = "partially_received"
-	PurchaseOrderStatusReceived = "received"
+	PurchaseOrderStatusOpen      = "open"
+	PurchaseOrderStatusPartial   = "partially_received"
+	PurchaseOrderStatusReceived  = "received"
 	PurchaseOrderStatusCancelled = "cancelled"
 )
 
@@ -30,18 +30,18 @@ type PurchaseOrderItem struct {
 
 // PurchaseOrder represents an organized order placed with a supplier.
 type PurchaseOrder struct {
-	Id         string              `json:"id" bson:"id" mapstructure:"id"`
-	DisplayId  string              `json:"display_id" bson:"display_id" mapstructure:"display_id"`
-	Supplier   string              `json:"supplier" bson:"supplier" mapstructure:"supplier"`
-	Status     string              `json:"status" bson:"status" mapstructure:"status"`
-	Notes      string              `json:"notes" bson:"notes" mapstructure:"notes"`
-	Items      []PurchaseOrderItem `json:"items" bson:"items" mapstructure:"items"`
-	Total      float64             `json:"total" bson:"total" mapstructure:"total"`
-	AutoReceive bool               `json:"auto_receive" bson:"auto_receive" mapstructure:"auto_receive"`
-	CreatedAt  time.Time           `json:"created_at" bson:"created_at" mapstructure:"created_at"`
-	CreatedBy  string              `json:"created_by" bson:"created_by" mapstructure:"created_by"`
-	ReceivedAt *time.Time          `json:"received_at,omitempty" bson:"received_at,omitempty" mapstructure:"received_at,omitempty"`
-	ReceivedBy string              `json:"received_by,omitempty" bson:"received_by,omitempty" mapstructure:"received_by,omitempty"`
+	Id          string              `json:"id" bson:"id" mapstructure:"id"`
+	DisplayId   string              `json:"display_id" bson:"display_id" mapstructure:"display_id"`
+	Supplier    string              `json:"supplier" bson:"supplier" mapstructure:"supplier"`
+	Status      string              `json:"status" bson:"status" mapstructure:"status"`
+	Notes       string              `json:"notes" bson:"notes" mapstructure:"notes"`
+	Items       []PurchaseOrderItem `json:"items" bson:"items" mapstructure:"items"`
+	Total       float64             `json:"total" bson:"total" mapstructure:"total"`
+	AutoReceive bool                `json:"auto_receive" bson:"auto_receive" mapstructure:"auto_receive"`
+	CreatedAt   time.Time           `json:"created_at" bson:"created_at" mapstructure:"created_at"`
+	CreatedBy   string              `json:"created_by" bson:"created_by" mapstructure:"created_by"`
+	ReceivedAt  *time.Time          `json:"received_at,omitempty" bson:"received_at,omitempty" mapstructure:"received_at,omitempty"`
+	ReceivedBy  string              `json:"received_by,omitempty" bson:"received_by,omitempty" mapstructure:"received_by,omitempty"`
 }
 
 // GRNItem represents a single received line item on a Goods Received Note.
@@ -64,12 +64,12 @@ type GRNItem struct {
 // received quantities into the materials inventory and records them in the
 // materials history.
 type GRN struct {
-	Id                      string    `json:"id" bson:"id" mapstructure:"id"`
-	DisplayId               string    `json:"display_id" bson:"display_id" mapstructure:"display_id"`
-	PurchaseOrderId         string    `json:"purchase_order_id" bson:"purchase_order_id" mapstructure:"purchase_order_id"`
-	PurchaseOrderDisplayId  string    `json:"purchase_order_display_id" bson:"purchase_order_display_id" mapstructure:"purchase_order_display_id"`
-	Supplier                string    `json:"supplier" bson:"supplier" mapstructure:"supplier"`
-	Items                   []GRNItem `json:"items" bson:"items" mapstructure:"items"`
-	ReceivedAt              time.Time `json:"received_at" bson:"received_at" mapstructure:"received_at"`
-	ReceivedBy              string    `json:"received_by" bson:"received_by" mapstructure:"received_by"`
+	Id                     string    `json:"id" bson:"id" mapstructure:"id"`
+	DisplayId              string    `json:"display_id" bson:"display_id" mapstructure:"display_id"`
+	PurchaseOrderId        string    `json:"purchase_order_id" bson:"purchase_order_id" mapstructure:"purchase_order_id"`
+	PurchaseOrderDisplayId string    `json:"purchase_order_display_id" bson:"purchase_order_display_id" mapstructure:"purchase_order_display_id"`
+	Supplier               string    `json:"supplier" bson:"supplier" mapstructure:"supplier"`
+	Items                  []GRNItem `json:"items" bson:"items" mapstructure:"items"`
+	ReceivedAt             time.Time `json:"received_at" bson:"received_at" mapstructure:"received_at"`
+	ReceivedBy             string    `json:"received_by" bson:"received_by" mapstructure:"received_by"`
 }

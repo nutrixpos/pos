@@ -34,7 +34,7 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 	if err != nil {
 		return err
 	}
-	defer socket.Close()
+	defer func() { _ = socket.Close() }()
 
 	p := escpos.New(socket)
 
@@ -206,10 +206,10 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		return err
 	}
 
-	p.Size(1, 1).PrintImage(img)
-	p.LineFeed()
+	_, _ = p.Size(1, 1).PrintImage(img)
+	_, _ = p.LineFeed()
 
-	p.PrintAndCut()
+	_ = p.PrintAndCut()
 
 	return nil
 }
@@ -219,7 +219,7 @@ func (rs *ReceiptService) OpenCashDrawer(printer_host string) error {
 	if err != nil {
 		return err
 	}
-	defer socket.Close()
+	defer func() { _ = socket.Close() }()
 
 	p := escpos.New(socket)
 	err = p.OpenCashDrawer()

@@ -7,6 +7,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/nutrixpos/pos/cmd"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
@@ -33,5 +35,8 @@ func main() {
 	}
 
 	// Execute the root command to start the application
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 }

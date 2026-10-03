@@ -44,7 +44,7 @@ func GetLanguage(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonLanguage)
+		_, _ = w.Write(jsonLanguage)
 
 	}
 }
@@ -82,14 +82,18 @@ func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.Han
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			defer jsonFile.Close()
+			defer func() { _ = jsonFile.Close() }()
 
 			byteValue, _ := io.ReadAll(jsonFile)
 			var languageFile struct {
 				Language string `json:"language"`
 				Code     string `json:"code"`
 			}
-			json.Unmarshal(byteValue, &languageFile)
+			if err := json.Unmarshal(byteValue, &languageFile); err != nil {
+				logger.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			availableLanguages = append(availableLanguages, languageFile)
 		}
 
@@ -109,6 +113,6 @@ func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.Han
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }

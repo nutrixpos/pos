@@ -724,7 +724,7 @@ func (cs *MaterialService) GetMaterials(page_number int, page_size int) (materia
 		return materials, err
 	}
 
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 
 	// Iterate over the documents and print them as JSON
 	for cur.Next(ctx) {

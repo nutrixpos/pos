@@ -66,4 +66,8 @@ type Database struct {
 	Database string            `mapstructure:"database" yaml:"database"`
 	FilePath string            `mapstructure:"file_path" yaml:"file_path"`
 	Tables   map[string]string `mapstructure:"tables" yaml:"tables"`
+	// URI is an optional full MongoDB connection string. When set it takes
+	// precedence over Host/Port and preserves authentication, TLS and
+	// multiple-host settings.
+	URI string `mapstructure:"uri" yaml:"uri"`
 }
