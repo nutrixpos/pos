@@ -9,7 +9,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/nutrixpos/pos/common"
@@ -20,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
 // Backend selects which database backend a test should run against.
@@ -160,12 +162,26 @@ func mongoConfigFromEnv(t testing.TB) (config.Config, bool) {
 		return config.Config{}, false
 	}
 
-	cs, err := connstring.ParseAndValidate(uri)
+	u, err := url.Parse(uri)
 	if err != nil {
 		t.Fatalf("invalid TEST_MONGO_URI: %v", err)
 	}
 
-	dbName := cs.Database
+	// The test config only carries host/port, so fail fast instead of silently
+	// dropping credentials, TLS options or additional hosts.
+	if u.Scheme != "mongodb" || u.User != nil || strings.Contains(u.Host, ",") || u.RawQuery != "" {
+		t.Fatalf("TEST_MONGO_URI %q uses features (credentials, mongodb+srv, multiple hosts or options) that are not supported; use a plain mongodb://host:port[/db] URI", uri)
+	}
+
+	port := 27017
+	if p := u.Port(); p != "" {
+		port, err = strconv.Atoi(p)
+		if err != nil {
+			t.Fatalf("invalid port in TEST_MONGO_URI: %v", err)
+		}
+	}
+
+	dbName := strings.TrimPrefix(u.Path, "/")
 	if dbName == "" {
 		dbName = "nutrix_test_" + randomSuffix()
 	} else {
@@ -176,7 +192,8 @@ func mongoConfigFromEnv(t testing.TB) (config.Config, bool) {
 		Env: "dev",
 		Databases: []config.Database{{
 			Type:     "mongo",
-			URI:      uri,
+			Host:     u.Hostname(),
+			Port:     port,
 			Database: dbName,
 			Tables:   map[string]string{"sales": "sales"},
 		}},

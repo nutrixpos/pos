@@ -39,11 +39,7 @@ func GetDatabaseClient(logger logger.ILogger, conf *config.Config) (*mongo.Clien
 				}
 				clientOptions = options.Client().ApplyURI(uri)
 			default:
-				uri := dbConf.URI
-				if uri == "" {
-					uri = fmt.Sprintf("mongodb://%s:%v", dbConf.Host, dbConf.Port)
-				}
-				clientOptions = options.Client().ApplyURI(uri)
+				clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", dbConf.Host, dbConf.Port))
 			}
 
 			deadline := 5 * time.Second

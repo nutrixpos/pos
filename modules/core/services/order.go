@@ -195,6 +195,11 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 	ctx := context.Background()
 
 	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
+		current_order, err := os.GetOrder(request.OrderId)
+		if err != nil {
+			return err
+		}
+
 		for _, material_refund := range request.MaterialRefunds {
 			material_svc := MaterialService{
 				Config:   os.Config,
@@ -203,9 +208,29 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 			}
 
 			if material_refund.InventoryReturnQty > 0 {
-				err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true, user_id)
-				if err != nil {
-					return err
+				// Skip the inventory return when a previous attempt already
+				// completed it (InventoryReturn marks the order item material
+				// as refunded), so a retry after a later failure (e.g. the
+				// disposal below) does not add the same quantity twice.
+				already_returned := false
+				for _, item := range current_order.Items {
+					if item.Id != request.ItemId {
+						continue
+					}
+					for _, item_material := range item.Materials {
+						if item_material.Material.Id == material_refund.MaterialId &&
+							item_material.Entry.Id == material_refund.EntryId &&
+							item_material.IsRefunded {
+							already_returned = true
+						}
+					}
+				}
+
+				if !already_returned {
+					err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true, user_id)
+					if err != nil {
+						return err
+					}
 				}
 			}
 

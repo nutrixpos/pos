@@ -5,10 +5,6 @@ databases:
     type: mongo
     host: 127.0.0.1
     port: 27017
-    # uri is optional; when set it takes precedence over host/port and may
-    # include authentication, TLS options and multiple hosts, e.g.
-    #   uri: mongodb://user:pass@host1:27017,host2:27017/?replicaSet=rs0&tls=true
-    uri: ""
     database: nutrix
     username: ""
     password: ""
