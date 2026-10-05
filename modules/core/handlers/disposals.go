@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -53,7 +54,7 @@ func UpdateDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 
@@ -131,7 +132,7 @@ func InsertDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 
 			user_id := "0"
 			if config.Zitadel.Enabled {
-				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+				user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 			}
 
 			err = recipeService.AddMaterialDisposal(material_disposal, user_id)
@@ -152,7 +153,7 @@ func InsertDisposal(config config.Config, logger logger.ILogger) http.HandlerFun
 
 			user_id := "0"
 			if config.Zitadel.Enabled {
-				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+				user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 			}
 
 			err = recipeService.AddProductDisposal(product_disposal, user_id)

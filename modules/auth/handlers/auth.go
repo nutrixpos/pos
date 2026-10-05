@@ -62,7 +62,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(models.LoginResponse{
+	_ = json.NewEncoder(w).Encode(models.LoginResponse{
 		Token: token,
 		User:  user.ToResponse(),
 	})
@@ -84,7 +84,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defaultRoles := []string{}
+	var defaultRoles []string
 	if count == 0 {
 		defaultRoles = []string{"superuser"}
 	} else {
@@ -137,14 +137,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(models.LoginResponse{
+	_ = json.NewEncoder(w).Encode(models.LoginResponse{
 		Token: token,
 		User:  user.ToResponse(),
 	})
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -171,7 +171,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user.ToResponse())
+	_ = json.NewEncoder(w).Encode(user.ToResponse())
 }
 
 func (h *AuthHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +183,7 @@ func (h *AuthHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to get users", http.StatusInternalServerError)
 		return
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var users []models.UserResponse
 	for cursor.Next(ctx) {
@@ -196,11 +196,11 @@ func (h *AuthHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	_ = json.NewEncoder(w).Encode(users)
 }
 
 func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -253,11 +253,11 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "user deleted"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "user deleted"})
 }
 
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -316,11 +316,11 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
 }
 
 func (h *AuthHandler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
-	authCtx := r.Context().Value("auth_ctx")
+	authCtx := r.Context().Value(middlewares.AuthContextKey)
 	if authCtx == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -383,5 +383,5 @@ func (h *AuthHandler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "password changed"})
 }

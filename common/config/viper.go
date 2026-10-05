@@ -55,7 +55,7 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 		return Config{}, err
 	}
 
-	vc.BindAllEnv()
+	_ = vc.BindAllEnv()
 
 	tables := make(map[string]string)
 

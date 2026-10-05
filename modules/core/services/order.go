@@ -143,7 +143,7 @@ func (os *OrderService) GetLogs(order_id string) (logs []bson.M, err error) {
 		return logs, err
 	}
 
-	defer cursor.Close(context.Background())
+	defer func() { _ = cursor.Close(context.Background()) }()
 
 	if err = cursor.All(ctx, &logs); err != nil {
 		return logs, err
@@ -194,6 +194,20 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 
 	ctx := context.Background()
 
+	current_order, err := os.GetOrder(request.OrderId)
+	if err != nil {
+		return err
+	}
+
+	// A previous attempt that reached the end marks the order item as
+	// refunded; retries after that must not repeat any of the refund's
+	// effects (disposals, waste, daily refund recording and totals).
+	for _, item := range current_order.Items {
+		if item.Id == request.ItemId && item.Status == "refunded" {
+			return nil
+		}
+	}
+
 	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
 		for _, material_refund := range request.MaterialRefunds {
 			material_svc := MaterialService{
@@ -203,9 +217,29 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 			}
 
 			if material_refund.InventoryReturnQty > 0 {
-				err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true, user_id)
-				if err != nil {
-					return err
+				// Skip the inventory return when a previous attempt already
+				// completed it (InventoryReturn marks the order item material
+				// as refunded), so a retry after a later failure (e.g. the
+				// disposal below) does not add the same quantity twice.
+				already_returned := false
+				for _, item := range current_order.Items {
+					if item.Id != request.ItemId {
+						continue
+					}
+					for _, item_material := range item.Materials {
+						if item_material.Material.Id == material_refund.MaterialId &&
+							item_material.Entry.Id == material_refund.EntryId &&
+							item_material.IsRefunded {
+							already_returned = true
+						}
+					}
+				}
+
+				if !already_returned {
+					err = material_svc.InventoryReturn(material_refund.EntryId, material_refund.MaterialId, material_refund.InventoryReturnQty, request.OrderId, request.Reason, true, user_id)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -216,7 +250,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 					Settings: os.Settings,
 				}
 
-				disposal_svc.AddMaterialDisposal(models.MaterialDisposal{
+				err = disposal_svc.AddMaterialDisposal(models.MaterialDisposal{
 					Disposal: models.Disposal{
 						Id:       primitive.NilObjectID.Hex(),
 						OrderId:  request.OrderId,
@@ -227,6 +261,9 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 					MaterialId: material_refund.MaterialId,
 					EntryId:    material_refund.EntryId,
 				}, user_id)
+				if err != nil {
+					return err
+				}
 			}
 
 			if material_refund.WasteQty > 0 {
@@ -289,7 +326,7 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 			Settings: os.Settings,
 		}
 
-		disposal_svc.AddProductDisposal(models.ProductDisposal{
+		err = disposal_svc.AddProductDisposal(models.ProductDisposal{
 			Disposal: models.Disposal{
 				Id:       primitive.NilObjectID.Hex(),
 				OrderId:  request.OrderId,
@@ -299,6 +336,9 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 			},
 			Item: orderItem,
 		}, user_id)
+		if err != nil {
+			return err
+		}
 	}
 
 	if request.Destination == dto.DTOOrderItemRefundDestination_Waste {
@@ -307,7 +347,23 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 			Config: os.Config,
 		}
 
-		product_svc.Waste(request.ProductId, orderItem.Quantity, request.OrderId, request.Reason, false, orderItem, user_id)
+		err = product_svc.Waste(request.ProductId, orderItem.Quantity, request.OrderId, request.Reason, false, orderItem, user_id)
+		if err != nil {
+			return err
+		}
+	}
+
+	sales_svc := SalesService{
+		Logger: os.Logger,
+		Config: os.Config,
+	}
+
+	// Record the daily refund before marking the item as refunded, so the
+	// "refunded" marker is the last effect and a retry after a partial
+	// failure can still complete this step.
+	err = sales_svc.AddOrderItemToDayRefund(request, user_id)
+	if err != nil {
+		return err
 	}
 
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
@@ -342,16 +398,6 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 		if err != nil {
 			return err
 		}
-	}
-
-	sales_svc := SalesService{
-		Logger: os.Logger,
-		Config: os.Config,
-	}
-
-	err = sales_svc.AddOrderItemToDayRefund(request, user_id)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -759,7 +805,7 @@ func (os *OrderService) FinishOrder(order_id string, user_id string) (err error)
 		return err
 	}
 
-	notifications_svc.SendToTopic("order_finished", string(msgJson))
+	_ = notifications_svc.SendToTopic("order_finished", string(msgJson))
 
 	return err
 }
@@ -880,7 +926,7 @@ func (os *OrderService) SubmitOrder(order models.Order) (models.Order, error) {
 	order.SubmittedAt = time.Now()
 	order.Id = primitive.NewObjectID().Hex()
 
-	for index, _ := range order.Items {
+	for index := range order.Items {
 		order.Items[index].Id = primitive.NewObjectID().Hex()
 	}
 
@@ -993,9 +1039,10 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		filter["$and"] = stateFilters
 	}
 
-	if params.IsPayLater == 1 {
+	switch params.IsPayLater {
+	case 1:
 		filter["is_pay_later"] = bson.M{"$eq": true}
-	} else if params.IsPayLater == 0 {
+	case 0:
 		filter["is_pay_later"] = bson.M{"$eq": false}
 	}
 
@@ -1010,7 +1057,7 @@ func (os *OrderService) GetOrders(params GetOrdersParameters) (orders []models.O
 		return orders, 0, err
 	}
 
-	defer cursor.Close(context.Background())
+	defer func() { _ = cursor.Close(context.Background()) }()
 
 	for cursor.Next(context.Background()) {
 		var order models.Order
@@ -1081,7 +1128,7 @@ func (os *OrderService) ConsumeOrderComponents(order models.Order, user_id strin
 					return err
 				}
 
-				notificationService.SendToTopic(notification.TopicName, string(json_notification))
+				_ = notificationService.SendToTopic(notification.TopicName, string(json_notification))
 			}
 		}
 

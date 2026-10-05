@@ -70,7 +70,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int) (salesPer
 		return salesPerDay, totalRecords, err
 	}
 
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	for cursor.Next(context.Background()) {
 		var spd models.SalesPerDay

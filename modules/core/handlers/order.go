@@ -24,6 +24,7 @@ import (
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
+	"github.com/nutrixpos/pos/modules/auth/middlewares"
 	"github.com/nutrixpos/pos/modules/core/dto"
 	"github.com/nutrixpos/pos/modules/core/models"
 	"github.com/nutrixpos/pos/modules/core/services"
@@ -174,7 +175,7 @@ func WasteOrderItem(config config.Config, logger logger.ILogger, settings models
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = order_svc.WasteOrderItem(request.Data.OrderItem, order_id_param, quantity, reason, request.Data.Other, user_id)
@@ -225,7 +226,7 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = order_svc.RefundItem(request.Data, user_id)
@@ -458,7 +459,7 @@ func GetUnpaidOrders(config config.Config, logger logger.ILogger) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 
 	}
 }
@@ -493,7 +494,7 @@ func FinishOrder(config config.Config, logger logger.ILogger, settings models.Se
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		params := mux.Vars(r)
@@ -506,7 +507,7 @@ func FinishOrder(config config.Config, logger logger.ILogger, settings models.Se
 		settings, err := settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -557,7 +558,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 		settings, err = settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -577,7 +578,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			product, err := product_svc.GetProduct(item.Product.Id)
 			if err != nil {
 				logger.Error(err.Error())
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -596,7 +597,7 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 
 			user_id := "0"
 			if config.Zitadel.Enabled {
-				user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+				user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 			}
 
 			err = orderService.StartOrder(order.Id, request.Data.Items, user_id)
@@ -721,10 +722,10 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			return
 		}
 
-		notifications_svc.SendToTopic("order_submitted", string(msgJson))
+		_ = notifications_svc.SendToTopic("order_submitted", string(msgJson))
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 
 }
@@ -850,7 +851,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 		settings, err = settings_Svc.GetSettings()
 		if err != nil {
 			logger.Error(err.Error())
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -863,7 +864,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 
 		user_id := "0"
 		if config.Zitadel.Enabled {
-			user_id = r.Context().Value("auth_ctx").(oidc.IntrospectionResponse).Subject
+			user_id = r.Context().Value(middlewares.AuthContextKey).(oidc.IntrospectionResponse).Subject
 		}
 
 		err = orderService.StartOrder(id_param, request_body.Data, user_id)
@@ -884,7 +885,7 @@ func StartOrder(config config.Config, logger logger.ILogger, settings models.Set
 				return
 			}
 
-			w.Write(json_response)
+			_, _ = w.Write(json_response)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -920,7 +921,7 @@ func GetOrder(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Write the JSON to the response
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonOrder)
+		_, _ = w.Write(jsonOrder)
 	}
 }
 

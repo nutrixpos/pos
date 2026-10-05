@@ -235,16 +235,14 @@ func (m *BubbleTeaSeedablesPrompter) UpdateConfirmation(msg tea.Msg) (tea.Model,
 		switch msg.String() {
 
 		case "enter":
-			if m.UserInputText == "y" || m.UserInputText == "Y" {
+			switch m.UserInputText {
+			case "y", "Y", "":
 				m.ConfirmationResult = true
 				return m, tea.Quit
-			} else if m.UserInputText == "n" || m.UserInputText == "N" {
+			case "n", "N":
 				m.ConfirmationResult = false
 				return m, tea.Quit
-			} else if m.UserInputText == "" {
-				m.ConfirmationResult = true
-				return m, tea.Quit
-			} else {
+			default:
 				m.UserInputText = ""
 			}
 

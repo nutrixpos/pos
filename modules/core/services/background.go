@@ -46,7 +46,7 @@ func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_s
 		log.Error(err.Error())
 		return
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	// Iterate over the documents and print them as JSON
 	for cursor.Next(ctx) {
@@ -79,7 +79,7 @@ func CheckExpirationDates(log logger.ILogger, conf config.Config, notification_s
 					return
 				}
 
-				notification_svc.SendToTopic("expire_soon", string(jsonstr))
+				_ = notification_svc.SendToTopic("expire_soon", string(jsonstr))
 			}
 		}
 	}

@@ -115,7 +115,7 @@ func UpdateCategory(config config.Config, logger logger.ILogger) http.HandlerFun
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		w.Write(jsonResponse)
+		_, _ = w.Write(jsonResponse)
 	}
 }
 

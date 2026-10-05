@@ -68,7 +68,7 @@ func (ws *MelodyWebsocket) SendToTopic(topic_name string, message string) error 
 // SendToSession sends a message to a specific session.
 func (ws *MelodyWebsocket) SendToSession(msg string, session_id string) {
 
-	ws.melody.BroadcastFilter([]byte(msg), func(q *melody.Session) bool {
+	_ = ws.melody.BroadcastFilter([]byte(msg), func(q *melody.Session) bool {
 
 		if sessionId, exists := q.Get("sessionID"); exists {
 			return sessionId.(string) == session_id
@@ -158,13 +158,13 @@ func (ws *MelodyWebsocket) HandleMessages() {
 					return
 				}
 
-				ws.SendToTopic("order_finish", string(order_finish_topic_message_json))
+				_ = ws.SendToTopic("order_finish", string(order_finish_topic_message_json))
 				ws.SendToSession("{state:\"success\"}", session_id.(string))
 			}
 		}
 
 		if message.Type == "chat_message" {
-			ws.SendToTopic("chat_message", string(msg))
+			_ = ws.SendToTopic("chat_message", string(msg))
 		}
 
 	})

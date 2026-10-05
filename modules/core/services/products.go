@@ -166,8 +166,8 @@ func (rs *RecipeService) UpdateProduct(product_id string, product models.Product
 				"price":                        product.Price,
 				"image_url":                    product.ImageURL,
 				"enable_inventory_consumption": product.EnableInventoryConsumption,
-				"enable_fixed_cost":           product.EnableFixedCost,
-				"fixed_cost":                 product.FixedCost,
+				"enable_fixed_cost":            product.EnableFixedCost,
+				"fixed_cost":                   product.FixedCost,
 			},
 		},
 	)
@@ -268,7 +268,7 @@ func (rs *RecipeService) GetProducts(params GetProductsParams) (products []model
 		rs.Logger.Error(err.Error())
 		return products, totalRecords, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 	for cursor.Next(context.Background()) {
 		var product models.Product
 		if err := cursor.Decode(&product); err != nil {
