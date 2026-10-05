@@ -194,12 +194,21 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 
 	ctx := context.Background()
 
-	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
-		current_order, err := os.GetOrder(request.OrderId)
-		if err != nil {
-			return err
-		}
+	current_order, err := os.GetOrder(request.OrderId)
+	if err != nil {
+		return err
+	}
 
+	// A previous attempt that reached the end marks the order item as
+	// refunded; retries after that must not repeat any of the refund's
+	// effects (disposals, waste, daily refund recording and totals).
+	for _, item := range current_order.Items {
+		if item.Id == request.ItemId && item.Status == "refunded" {
+			return nil
+		}
+	}
+
+	if request.Destination == dto.DTOOrderItemRefundDestination_Custom {
 		for _, material_refund := range request.MaterialRefunds {
 			material_svc := MaterialService{
 				Config:   os.Config,
@@ -344,6 +353,19 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 		}
 	}
 
+	sales_svc := SalesService{
+		Logger: os.Logger,
+		Config: os.Config,
+	}
+
+	// Record the daily refund before marking the item as refunded, so the
+	// "refunded" marker is the last effect and a retry after a partial
+	// failure can still complete this step.
+	err = sales_svc.AddOrderItemToDayRefund(request, user_id)
+	if err != nil {
+		return err
+	}
+
 	order_collection := client.Database(os.Config.Databases[0].Database).Collection("orders")
 
 	refund_item_found := false
@@ -376,16 +398,6 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 		if err != nil {
 			return err
 		}
-	}
-
-	sales_svc := SalesService{
-		Logger: os.Logger,
-		Config: os.Config,
-	}
-
-	err = sales_svc.AddOrderItemToDayRefund(request, user_id)
-	if err != nil {
-		return err
 	}
 
 	return nil

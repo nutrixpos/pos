@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/nutrixpos/pos/internal/testutil"
 	"github.com/nutrixpos/pos/modules/core/dto"
@@ -82,6 +83,7 @@ func TestRefundItem_RetrySkipsInventoryReturn(t *testing.T) {
 		OrderId:     "order-1",
 		ItemId:      "item-1",
 		Reason:      "damaged",
+		RefundValue: 5,
 		Destination: dto.DTOOrderItemRefundDestination_Custom,
 		MaterialRefunds: []dto.OrderItemRefundMaterialDTO{{
 			MaterialId:         "mat-refund",
@@ -104,9 +106,34 @@ func TestRefundItem_RetrySkipsInventoryReturn(t *testing.T) {
 		return m.Entries[0].Quantity
 	}
 
-	assert.Equal(t, 7.0, entryQuantity()) // 5 + 2 returned once
+	disposalCount := func() int64 {
+		n, err := env.Client.Database(env.Config.Databases[0].Database).Collection("disposals").
+			CountDocuments(context.Background(), bson.M{"disposal.order_id": "order-1", "disposal.type": models.TypeDisposalMaterial})
+		require.NoError(t, err)
+		return n
+	}
 
-	// Simulate a client retry: the inventory return must not be applied again.
+	salesDay := func() models.SalesPerDay {
+		var s models.SalesPerDay
+		err := env.Client.Database(env.Config.Databases[0].Database).Collection(env.Config.Databases[0].Tables["sales"]).
+			FindOne(context.Background(), bson.M{"date": time.Now().Format("2006-01-02")}).Decode(&s)
+		require.NoError(t, err)
+		return s
+	}
+
+	assert.Equal(t, 7.0, entryQuantity()) // 5 + 2 returned once
+	assert.Equal(t, int64(1), disposalCount())
+
+	day := salesDay()
+	assert.Len(t, day.Refunds, 1)
+	assert.Equal(t, 5.0, day.RefundsValue)
+
+	// Simulate a client retry after a completed refund: no effect may repeat.
 	require.NoError(t, svc.RefundItem(request, "user-1"))
 	assert.Equal(t, 7.0, entryQuantity())
+	assert.Equal(t, int64(1), disposalCount())
+
+	day = salesDay()
+	assert.Len(t, day.Refunds, 1)
+	assert.Equal(t, 5.0, day.RefundsValue)
 }
