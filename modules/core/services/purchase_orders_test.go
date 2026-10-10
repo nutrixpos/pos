@@ -232,6 +232,32 @@ func TestReceivePurchaseOrder_PartialThenFull(t *testing.T) {
 	assert.Equal(t, 10.0, sum)
 }
 
+func TestPurchaseOrder_ValidationErrors(t *testing.T) {
+	env := newServiceEnv(t)
+	svc := newPOService(env)
+
+	_, err := svc.CreatePurchaseOrder(models.PurchaseOrder{Items: []models.PurchaseOrderItem{{MaterialId: "", Quantity: 1}}}, "u")
+	assert.Error(t, err)
+	_, err = svc.CreatePurchaseOrder(models.PurchaseOrder{Items: []models.PurchaseOrderItem{{MaterialId: "x", Quantity: 0}}}, "u")
+	assert.Error(t, err)
+	_, err = svc.CreatePurchaseOrder(models.PurchaseOrder{Items: []models.PurchaseOrderItem{{MaterialId: "x", Quantity: 1, PurchasePrice: -1}}}, "u")
+	assert.Error(t, err)
+	_, err = svc.CreatePurchaseOrder(models.PurchaseOrder{Items: []models.PurchaseOrderItem{{MaterialId: "nope", Quantity: 1}}}, "u")
+	assert.Error(t, err)
+
+	_, err = svc.ReceivePurchaseOrder("missing", "u", nil)
+	assert.Error(t, err)
+}
+
+func TestCancelPurchaseOrder_ReceivedError(t *testing.T) {
+	env := newServiceEnv(t)
+	insertMaterialForPO(t, env, "mat-cancel-rec")
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(makeAutoPO("mat-cancel-rec", 1), "u")
+	require.NoError(t, err)
+	assert.Error(t, svc.CancelPurchaseOrder(po.Id))
+}
+
 func TestReceivePurchaseOrder_AlreadyReceived(t *testing.T) {
 	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
 	insertMaterialForPO(t, env, "mat-4")

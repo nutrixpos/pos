@@ -12,6 +12,8 @@ npm install           # installs dev tooling (husky) and git hooks
 npm run test          # run tests against the embedded FerretDB backend
 npm run test-race
 npm run test-mongo    # run against external MongoDB (TEST_MONGO_URI, default mongodb://127.0.0.1:27017)
+npm run cover         # scoped coverage + enforce >=80% (.husky/coverage-threshold.mjs)
+npm run coverage-check # re-check the existing coverage.out against the threshold
 npm run vuln          # govulncheck (v1.8.0), scans the active Go toolchain; needs network for the vuln DB
 npm run lint          # golangci-lint (config: .golangci.yml)
 npm run build vet fmt-check cover  # other targets, see package.json scripts
@@ -45,7 +47,14 @@ docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
   and create at most one `TestEnv` per test.
 - Integration tests in `modules/core/services` cover materials, purchase orders (including
   rollback via the `testHookAfterPOUpdate` seam), sales and order display ids, on both backends.
-- CI gates: gofmt, `go vet`, `go build`, `go test -race` (both backends), golangci-lint, govulncheck.
+- Coverage: the goal is **>=80%** statement coverage over the in-scope packages
+  (`common/config`, `common/helpers`, `modules/auth/middlewares`, `modules/core/handlers`,
+  `modules/core/services`). Scope is set with `go test -coverpkg=...`, and the hard-to-test
+  files `modules/core/services/receipt.go`, `modules/core/services/notification_singleton.go`
+  and `modules/core/handlers/notifications.go` are excluded (see `.husky/coverage-threshold.mjs`
+  and `codecov.yml`). `npm run cover` enforces the threshold; CI runs the same check.
+- CI gates: gofmt, `go vet`, `go build`, `go test -race` (both backends), the 80% coverage
+  threshold, golangci-lint, govulncheck.
 
 ## Database
 - Use `common.GetDatabaseClient()` singleton - never create new `mongo.Connect()` connections

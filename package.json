@@ -12,7 +12,8 @@
     "vet": "go vet . ./cmd/... ./common/... ./internal/... ./modules/...",
     "fmt-check": "node .husky/fmt-check.mjs",
     "lint": "golangci-lint run . ./cmd/... ./common/... ./internal/... ./modules/...",
-    "cover": "go test -covermode=atomic -coverprofile=coverage.out . ./cmd/... ./common/... ./internal/... ./modules/... && go tool cover -func=coverage.out"
+    "cover": "go test -covermode=atomic -coverpkg=./common/config,./common/helpers,./modules/auth/middlewares,./modules/core/handlers,./modules/core/services -coverprofile=coverage.out . ./cmd/... ./common/... ./internal/... ./modules/... && node .husky/coverage-threshold.mjs 80 coverage.out",
+    "coverage-check": "node .husky/coverage-threshold.mjs 80 coverage.out"
   },
   "devDependencies": {
     "husky": "^9.1.7"

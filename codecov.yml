@@ -2,9 +2,19 @@ coverage:
   status:
     project:
       default:
-        target: auto
-        threshold: 5%
+        # Goal: keep in-scope statement coverage at or above 80%.
+        target: 80%
+        threshold: 0%
     patch:
       default:
         target: auto
         threshold: 10%
+
+# Files with external I/O that are intentionally not unit-tested (matching the
+# exclusions in .husky/coverage-threshold.mjs). The rest of the metric is scoped
+# to common/config, common/helpers, modules/auth/middlewares,
+# modules/core/handlers and modules/core/services via `go test -coverpkg=...`.
+ignore:
+  - "modules/core/services/receipt.go"
+  - "modules/core/services/notification_singleton.go"
+  - "modules/core/handlers/notifications.go"

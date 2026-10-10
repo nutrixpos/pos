@@ -39,3 +39,10 @@ func TestResolveOsEnvPath_UnsetVarExpandsToEmpty(t *testing.T) {
 	// yields ".".
 	assert.Equal(t, ".", ResolveOsEnvPath("$UNSET_NUTRIX_VAR"))
 }
+
+func TestOpenURL_CommandNotFound(t *testing.T) {
+	// With an empty PATH the launcher binary cannot be found, which exercises
+	// the command-construction branches without actually opening anything.
+	t.Setenv("PATH", "")
+	assert.Error(t, OpenURL("http://example.com"))
+}

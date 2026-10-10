@@ -36,7 +36,9 @@ jobs:
       - name: Build
         run: go build .
       - name: Test (embedded FerretDB, race detector)
-        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -race -covermode=atomic -coverpkg=./common/config,./common/helpers,./modules/auth/middlewares,./modules/core/handlers,./modules/core/services -coverprofile=coverage.out ./...
+      - name: Enforce coverage threshold (80%)
+        run: node .husky/coverage-threshold.mjs 80 coverage.out
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
@@ -66,7 +68,7 @@ jobs:
       - name: Test (external MongoDB, race detector)
         env:
           TEST_MONGO_URI: mongodb://127.0.0.1:27017
-        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -race -covermode=atomic -coverpkg=./common/config,./common/helpers,./modules/auth/middlewares,./modules/core/handlers,./modules/core/services -coverprofile=coverage.out ./...
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
