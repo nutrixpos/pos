@@ -21,6 +21,7 @@ const includePackages = [
   '/common/helpers/',
   '/modules/auth/middlewares/',
   '/modules/core/handlers/',
+  '/modules/core/middlewares/',
   '/modules/core/services/',
 ]
 

@@ -10,4 +10,5 @@ function run(script) {
 }
 
 run('test-race')
+run('lint')
 run('vuln')

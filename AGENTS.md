@@ -15,7 +15,7 @@ npm run test-mongo    # run against external MongoDB (TEST_MONGO_URI, default mo
 npm run cover         # scoped coverage + enforce >=80% (.husky/coverage-threshold.mjs)
 npm run coverage-check # re-check the existing coverage.out against the threshold
 npm run vuln          # govulncheck (v1.8.0), scans the active Go toolchain; needs network for the vuln DB
-npm run lint          # golangci-lint (config: .golangci.yml)
+npm run lint          # golangci-lint v2.14.0 (config: .golangci.yml); runs via `go run`, needs network first time
 npm run build vet fmt-check cover  # other targets, see package.json scripts
 ```
 
@@ -30,7 +30,7 @@ docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
   `.husky/pre-commit.mjs`, `.husky/pre-push` runs `.husky/pre-push.mjs`.
 - `pre-commit` (Go changes only): `gofmt -w` + `git add` (auto-stage), then `npm run vet test`.
   It aborts with an error if a staged Go file also has unstaged changes, to preserve partial staging.
-- `pre-push`: `npm run test-race` then `npm run vuln` (govulncheck).
+- `pre-push`: `npm run test-race` then `npm run lint` (golangci-lint) then `npm run vuln` (govulncheck).
 - Bypass with `git commit -n` / `git push --no-verify`, or `HUSKY=0`.
 - Keep the package lists in `package.json` and the hook scripts in sync.
 
@@ -49,7 +49,7 @@ docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
   rollback via the `testHookAfterPOUpdate` seam), sales and order display ids, on both backends.
 - Coverage: the goal is **>=80%** statement coverage over the in-scope packages
   (`common/config`, `common/helpers`, `modules/auth/middlewares`, `modules/core/handlers`,
-  `modules/core/services`). Scope is set with `go test -coverpkg=...`, and the hard-to-test
+  `modules/core/middlewares`, `modules/core/services`). Scope is set with `go test -coverpkg=...`, and the hard-to-test
   files `modules/core/services/receipt.go`, `modules/core/services/notification_singleton.go`
   and `modules/core/handlers/notifications.go` are excluded (see `.husky/coverage-threshold.mjs`
   and `codecov.yml`). `npm run cover` enforces the threshold; CI runs the same check.

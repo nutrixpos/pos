@@ -79,21 +79,6 @@ func withUser(req *http.Request, userID string) *http.Request {
 	return req.WithContext(ctx)
 }
 
-// doRequestAs performs a request with an authenticated user in context.
-func doRequestAs(t *testing.T, router *mux.Router, method, path, body, userID string) *httptest.ResponseRecorder {
-	t.Helper()
-	var req *http.Request
-	if body == "" {
-		req = httptest.NewRequest(method, path, nil)
-	} else {
-		req = httptest.NewRequest(method, path, bytes.NewBufferString(body))
-	}
-	req = withUser(req, userID)
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
-	return rec
-}
-
 func newRequestWithBody(method, path string, body []byte) *http.Request {
 	return httptest.NewRequest(method, path, bytes.NewReader(body))
 }
