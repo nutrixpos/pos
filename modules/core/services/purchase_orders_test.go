@@ -63,6 +63,9 @@ func TestCreatePurchaseOrder_AutoReceiveSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, material.Entries, 1)
 	assert.Equal(t, 5.0, material.Entries[0].Quantity)
+	// The entry stores the total paid for the batch (unit price * received qty),
+	// which is what the cost engine divides by PurchaseQuantity.
+	assert.Equal(t, 10.0, material.Entries[0].PurchasePrice)
 
 	assert.Equal(t, int64(1), countDocs(t, env, "grns", bson.M{"purchase_order_id": po.Id}))
 	assert.Equal(t, int64(1), countDocs(t, env, "logs", bson.M{"type": models.LogTypeMaterialGRNReceive}))
@@ -182,6 +185,9 @@ func TestReceivePurchaseOrder_PartialThenFull(t *testing.T) {
 	var sum float64
 	for _, e := range materialA.Entries {
 		sum += e.Quantity
+		// Each received entry must keep the PO unit price (1) as its per-unit cost,
+		// regardless of how the receipt was split.
+		assert.InDelta(t, 1.0, e.PurchasePrice/e.PurchaseQuantity, 0.0001)
 	}
 	assert.Equal(t, 10.0, sum)
 }
@@ -198,4 +204,55 @@ func TestReceivePurchaseOrder_AlreadyReceived(t *testing.T) {
 	_, err = svc.ReceivePurchaseOrder(po.Id, "user-1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already fully received")
+}
+
+// TestReceivedPOEntryProducesCorrectOrderCost guards the seam between purchase
+// order receipt and the order cost engine: a received PO must store the batch
+// total so the derived unit cost equals the PO unit price, otherwise order cost
+// and the profit shown in sales reports are wrong.
+func TestReceivedPOEntryProducesCorrectOrderCost(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-cost")
+
+	posvc := newPOService(env)
+	_, err := posvc.CreatePurchaseOrder(models.PurchaseOrder{
+		AutoReceive: true,
+		Supplier:    "test-supplier",
+		Items: []models.PurchaseOrderItem{{
+			MaterialId:    "mat-cost",
+			Quantity:      5,
+			PurchasePrice: 2,
+		}},
+	}, "user-1")
+	require.NoError(t, err)
+
+	var material models.Material
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("materials").
+		FindOne(context.Background(), bson.M{"id": "mat-cost"}).Decode(&material)
+	require.NoError(t, err)
+	require.Len(t, material.Entries, 1)
+
+	_, err = env.Client.Database(env.Config.Databases[0].Database).Collection("recipes").
+		InsertOne(context.Background(), models.Product{Id: "prod-cost", Name: "Pizza", Price: 20})
+	require.NoError(t, err)
+
+	orderItem := models.OrderItem{
+		Id:       "item-cost",
+		Product:  models.Product{Id: "prod-cost"},
+		Quantity: 2,
+		Materials: []models.OrderItemMaterial{{
+			Material: material,
+			Entry:    material.Entries[0],
+			Quantity: 3,
+		}},
+	}
+
+	svc := &OrderService{Logger: env.Logger, Config: env.Config}
+	costs, err := svc.CalculateCost([]models.OrderItem{orderItem})
+	require.NoError(t, err)
+	require.Len(t, costs, 1)
+
+	// unit price 2 * component qty 3 * item qty 2 = 12.
+	assert.Equal(t, 12.0, costs[0].Cost)
+	assert.Equal(t, 40.0, costs[0].SalePrice)
 }

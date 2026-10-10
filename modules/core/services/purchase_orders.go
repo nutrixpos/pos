@@ -372,7 +372,7 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		entry := models.MaterialEntry{
 			Id:               primitive.NewObjectID().Hex(),
 			PurchaseQuantity: toReceive,
-			PurchasePrice:    poItem.PurchasePrice,
+			PurchasePrice:    poItem.PurchasePrice * toReceive,
 			Quantity:         toReceive,
 			Company:          poItem.Company,
 			SKU:              poItem.SKU,
