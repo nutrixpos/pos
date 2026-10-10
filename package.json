@@ -8,6 +8,7 @@
     "test": "go test . ./cmd/... ./common/... ./internal/... ./modules/...",
     "test-race": "go test -race . ./cmd/... ./common/... ./internal/... ./modules/...",
     "test-mongo": "node .husky/test-mongo.mjs",
+    "vuln": "go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 . ./cmd/... ./common/... ./internal/... ./modules/...",
     "vet": "go vet . ./cmd/... ./common/... ./internal/... ./modules/...",
     "fmt-check": "node .husky/fmt-check.mjs",
     "lint": "golangci-lint run . ./cmd/... ./common/... ./internal/... ./modules/...",

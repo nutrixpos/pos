@@ -1,8 +1,13 @@
 import { spawnSync } from 'node:child_process'
 
-const res = spawnSync('npm', ['run', 'test-race'], { stdio: 'inherit', shell: process.platform === 'win32' })
-if (res.error) {
-  console.error(res.error.message)
-  process.exit(1)
+function run(script) {
+  const res = spawnSync('npm', ['run', script], { stdio: 'inherit', shell: process.platform === 'win32' })
+  if (res.error) {
+    console.error(res.error.message)
+    process.exit(1)
+  }
+  if (res.status !== 0) process.exit(res.status)
 }
-process.exit(res.status ?? 1)
+
+run('test-race')
+run('vuln')

@@ -1,7 +1,7 @@
 # Agent Guidance for NutrixPOS
 
 ## Project Overview
-- Go 1.24 monorepo with MongoDB backend (mongodb-driver v1.16)
+- Go 1.26 monorepo with MongoDB backend (mongodb-driver v1.16)
 - Point-of-sale system for restaurants/shops: inventory, sales, products
 - Active development - no backward compatibility guarantee
 
@@ -12,6 +12,7 @@ npm install           # installs dev tooling (husky) and git hooks
 npm run test          # run tests against the embedded FerretDB backend
 npm run test-race
 npm run test-mongo    # run against external MongoDB (TEST_MONGO_URI, default mongodb://127.0.0.1:27017)
+npm run vuln          # govulncheck (v1.8.0), scans the active Go toolchain; needs network for the vuln DB
 npm run lint          # golangci-lint (config: .golangci.yml)
 npm run build vet fmt-check cover  # other targets, see package.json scripts
 ```
@@ -27,7 +28,7 @@ docker-compose Mongo volume at `data/mongo` can be unreadable and makes the
   `.husky/pre-commit.mjs`, `.husky/pre-push` runs `.husky/pre-push.mjs`.
 - `pre-commit` (Go changes only): `gofmt -w` + `git add` (auto-stage), then `npm run vet test`.
   It aborts with an error if a staged Go file also has unstaged changes, to preserve partial staging.
-- `pre-push`: `npm run test-race`.
+- `pre-push`: `npm run test-race` then `npm run vuln` (govulncheck).
 - Bypass with `git commit -n` / `git push --no-verify`, or `HUSKY=0`.
 - Keep the package lists in `package.json` and the hook scripts in sync.
 
