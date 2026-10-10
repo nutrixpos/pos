@@ -262,3 +262,52 @@ func TestConcurrentWaste_NoLostUpdates(t *testing.T) {
 	require.Len(t, got.Entries, 1)
 	assert.Equal(t, 90.0, got.Entries[0].Quantity)
 }
+
+func TestDeleteEntry_RemovesEntryAndReducesQuantity(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterial(t, env, models.Material{
+		Id:   "mat-del-entry",
+		Name: "Flour",
+		Entries: []models.MaterialEntry{
+			{Id: "entry-1", Quantity: 4, PurchaseQuantity: 4, PurchasePrice: 8},
+			{Id: "entry-2", Quantity: 6, PurchaseQuantity: 6, PurchasePrice: 12},
+		},
+	})
+
+	svc := newMaterialService(env, models.Settings{})
+	require.NoError(t, svc.DeleteEntry("entry-1", "mat-del-entry"))
+
+	got := getMaterial(t, env, "mat-del-entry")
+	require.Len(t, got.Entries, 1)
+	assert.Equal(t, "entry-2", got.Entries[0].Id)
+	assert.Equal(t, 6.0, got.Entries[0].Quantity)
+
+	materials, err := svc.GetMaterials(1, 10)
+	require.NoError(t, err)
+	var quantity float64
+	for _, m := range materials {
+		if m.Id == "mat-del-entry" {
+			quantity = m.Quantity
+		}
+	}
+	assert.Equal(t, 6.0, quantity)
+}
+
+func TestDeleteEntry_Idempotent(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterial(t, env, models.Material{
+		Id:      "mat-del-noop",
+		Entries: []models.MaterialEntry{{Id: "entry-1", Quantity: 3}},
+	})
+
+	svc := newMaterialService(env, models.Settings{})
+
+	// Deleting a missing entry is a no-op rather than an error.
+	require.NoError(t, svc.DeleteEntry("does-not-exist", "mat-del-noop"))
+	require.NoError(t, svc.DeleteEntry("entry-1", "mat-del-noop"))
+	// A repeated delete stays a no-op.
+	require.NoError(t, svc.DeleteEntry("entry-1", "mat-del-noop"))
+
+	got := getMaterial(t, env, "mat-del-noop")
+	assert.Empty(t, got.Entries)
+}

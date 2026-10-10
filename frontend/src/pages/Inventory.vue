@@ -321,10 +321,6 @@ const confirmDeleteMaterial = (material_id: string) => {
             label: 'Yes'
         },
         accept: () => {
-
-
-
-
             axios.delete(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/materials/${material_id}/entries/${entry_id}`,{
                 headers: {
                     Authorization: `Bearer ${auth.accessToken.value}`
@@ -332,11 +328,20 @@ const confirmDeleteMaterial = (material_id: string) => {
             })
             .then(() => {
                     toast.add({ severity: 'success', summary: 'Done', detail: "Entry deleted !",life: 3000,group:'br' });
-                    inventory_components.value.forEach((component) => {
-                        if (component.id == expanded_component_id.value){
-                            component.entries.splice(component.entries.findIndex(el => el.id == data), 1)
+
+                    const entries = entries_dialog_material.value?.entries;
+                    if (entries) {
+                        const index = entries.findIndex(el => el.id == entry_id);
+                        if (index !== -1) {
+                            entries.splice(index, 1);
+                            entriesTableTotalRecords.value = Math.max(0, entriesTableTotalRecords.value - 1);
                         }
-                    })
+                    }
+
+                    loadInventory();
+            })
+            .catch((error) => {
+                    toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 3000 });
             })
         },
         reject: () => {

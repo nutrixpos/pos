@@ -832,12 +832,27 @@ func (cs *MaterialService) AddComponent(material models.Material, user_id string
 	return nil
 }
 
+// removeMaterialEntryFromMaterialObject drops the entry with the given id from material in place.
+func removeMaterialEntryFromMaterialObject(material *models.Material, entryID string) {
+	filtered := make([]models.MaterialEntry, 0, len(material.Entries))
+	for _, entry := range material.Entries {
+		if entry.Id != entryID {
+			filtered = append(filtered, entry)
+		}
+	}
+	material.Entries = filtered
+}
+
 // DeleteEntry deletes an entry from a material in the database.
 //
 // The function takes a entry ID and a component ID as parameters. It then finds
 // the material with the given component ID and removes the entry with the given
-// entry ID from the material's entries array. If the material or the entry is not
-// found, the function will return an error.
+// entry ID from the material's entries array. Deleting an entry that does not
+// exist is a no-op, so repeated deletes are idempotent.
+//
+// The ferret backend does not support $pull with a query predicate (it only
+// removes elements strictly equal to the operand), so the whole entries array
+// is rewritten from Go instead.
 func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error {
 	client, err := common.GetDatabaseClient(cs.Logger, &cs.Config)
 	if err != nil {
@@ -848,16 +863,8 @@ func (cs *MaterialService) DeleteEntry(entryid string, componentid string) error
 
 	collection := client.Database(cs.Config.Databases[0].Database).Collection("materials")
 
-	// Find the component document and update the entries array
-	materialEntriesMu.Lock()
-	defer materialEntriesMu.Unlock()
-
-	filter := bson.M{"id": componentid}
-	update := bson.M{"$pull": bson.M{"entries": bson.M{"id": entryid}}, "$inc": bson.M{"version": 1}}
-	_, err = collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cs.mutateMaterialEntries(ctx, collection, componentid, func(material *models.Material) error {
+		removeMaterialEntryFromMaterialObject(material, entryid)
+		return nil
+	})
 }

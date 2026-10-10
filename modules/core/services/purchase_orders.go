@@ -26,6 +26,11 @@ var purchaseOrderReceiveMu sync.Mutex
 // deterministically exercise the failure rollback path.
 var testHookAfterPOUpdate func() error
 
+// testHookAfterMaterialPush is a test-only hook invoked right after the material
+// entries and logs are written in ReceivePurchaseOrder. It is nil in production
+// and lets tests exercise the rollback of already-pushed entries.
+var testHookAfterMaterialPush func() error
+
 // PurchaseOrderService provides methods to manage purchase orders and their
 // automated goods received notes (GRNs). Receiving a purchase order pushes the
 // received quantities into the materials inventory and records them in the
@@ -473,13 +478,11 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 		}
 
 		for _, pe := range pushedEntries {
-			materialEntriesMu.Lock()
-			_, rollbackErr := materialsCollection.UpdateOne(
-				ctx,
-				bson.M{"id": pe.materialId},
-				bson.M{"$pull": bson.M{"entries": bson.M{"id": pe.entryId}}, "$inc": bson.M{"version": 1}},
-			)
-			materialEntriesMu.Unlock()
+			materialSvc := MaterialService{Logger: ps.Logger, Config: ps.Config}
+			rollbackErr := materialSvc.mutateMaterialEntries(ctx, materialsCollection, pe.materialId, func(material *models.Material) error {
+				removeMaterialEntryFromMaterialObject(material, pe.entryId)
+				return nil
+			})
 			if rollbackErr != nil {
 				ps.Logger.Error(fmt.Sprintf("failed to roll back material entry %s: %s", pe.entryId, rollbackErr.Error()))
 			}
@@ -579,6 +582,12 @@ func (ps *PurchaseOrderService) ReceivePurchaseOrder(purchase_order_id string, u
 			return grn, err
 		}
 		insertedLogIds = append(insertedLogIds, p.logId)
+	}
+
+	if testHookAfterMaterialPush != nil {
+		if hookErr := testHookAfterMaterialPush(); hookErr != nil {
+			return grn, hookErr
+		}
 	}
 
 	_, err = grnsCollection.InsertOne(ctx, grn)

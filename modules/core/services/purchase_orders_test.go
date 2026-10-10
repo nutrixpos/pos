@@ -140,6 +140,46 @@ func TestReceivePurchaseOrder_FailureRestoresPO(t *testing.T) {
 	assert.Equal(t, int64(0), countDocs(t, env, "grns", bson.M{}))
 }
 
+func TestReceivePurchaseOrder_RollbackRemovesPushedEntries(t *testing.T) {
+	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
+	insertMaterialForPO(t, env, "mat-push")
+	insertMaterialForPO(t, env, "mat-push-2")
+
+	svc := newPOService(env)
+	po, err := svc.CreatePurchaseOrder(models.PurchaseOrder{
+		Supplier: "test-supplier",
+		Items: []models.PurchaseOrderItem{
+			{MaterialId: "mat-push", Quantity: 5, PurchasePrice: 2},
+			{MaterialId: "mat-push-2", Quantity: 3, PurchasePrice: 4},
+		},
+	}, "user-1")
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusOpen, po.Status)
+
+	testHookAfterMaterialPush = func() error { return fmt.Errorf("injected failure after push") }
+	t.Cleanup(func() { testHookAfterMaterialPush = nil })
+
+	_, err = svc.ReceivePurchaseOrder(po.Id, "user-1", nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "injected failure after push")
+
+	// The entries already pushed to each material were rolled back.
+	assert.Empty(t, getMaterial(t, env, "mat-push").Entries)
+	assert.Empty(t, getMaterial(t, env, "mat-push-2").Entries)
+
+	// No logs or GRNs survived, and the purchase order was restored.
+	assert.Equal(t, int64(0), countDocs(t, env, "logs", bson.M{"type": models.LogTypeMaterialGRNReceive}))
+	assert.Equal(t, int64(0), countDocs(t, env, "grns", bson.M{}))
+
+	var stored models.PurchaseOrder
+	err = env.Client.Database(env.Config.Databases[0].Database).Collection("purchase_orders").
+		FindOne(context.Background(), bson.M{"id": po.Id}).Decode(&stored)
+	require.NoError(t, err)
+	assert.Equal(t, models.PurchaseOrderStatusOpen, stored.Status)
+	assert.Equal(t, 0.0, stored.Items[0].ReceivedQuantity)
+	assert.Empty(t, stored.Items[0].EntryIds)
+}
+
 func TestReceivePurchaseOrder_PartialThenFull(t *testing.T) {
 	env := testutil.NewTestEnv(t, testutil.BackendFromEnv())
 	insertMaterialForPO(t, env, "mat-a")
