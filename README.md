@@ -6,6 +6,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/nutrixpos/pos.svg)](https://pkg.go.dev/github.com/nutrixpos/pos)
 [![Badge Name](https://img.shields.io/badge/docs-nutrixpos.com-teal)](https://nutrixpos.com/userguide/installation.html)
+[![codecov](https://codecov.io/gh/nutrixpos/pos/graph/badge.svg?token=O8PA9K0B5Z)](https://codecov.io/gh/nutrixpos/pos)
 
 
 Nutrix is a point of sale management system. It allows you to manage inventory, sales and products for your restaurant or shop.

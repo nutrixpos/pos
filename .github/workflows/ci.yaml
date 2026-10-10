@@ -43,6 +43,11 @@ jobs:
           files: coverage.out
           flags: backend-ferret
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: nutrixpos/pos
+
+
+
 
   backend-mongo:
     name: backend (mongo)
@@ -68,6 +73,8 @@ jobs:
           files: coverage.out
           flags: backend-mongo
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: nutrixpos/pos
 
   lint:
     name: lint + vuln
