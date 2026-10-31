@@ -224,7 +224,7 @@
     "backups_preview": "Preview",
     "backups_preview_loading": "Loading backup preview...",
     "backups_preview_failed": "Could not read the backup archive.",
-    "backups_import_warning": "This import deletes your current inventory items, products, and categories before restoring the selected sections.",
+    "backups_import_warning": "Only the selected sections are wiped before their data is restored.",
     "backups_sales_wipe_warning": "Sales & Orders are selected: current sales and orders will also be deleted and replaced.",
     "backups_notice": "A full backup ZIP is created automatically before any data is deleted.",
     "backups_sections": "Sections to restore",

@@ -224,7 +224,7 @@
     "backups_preview": "Visualizar",
     "backups_preview_loading": "Carregando pré-visualização do backup...",
     "backups_preview_failed": "Não foi possível ler o arquivo de backup.",
-    "backups_import_warning": "Esta importação exclui os itens de inventário, produtos e categorias atuais antes de restaurar as seções selecionadas.",
+    "backups_import_warning": "Apenas as seções selecionadas são excluídas antes de restaurar os dados.",
     "backups_sales_wipe_warning": "Vendas e Pedidos estão selecionados: as vendas e os pedidos atuais também serão excluídos e substituídos.",
     "backups_notice": "Um ZIP de backup completo é criado automaticamente antes de qualquer exclusão.",
     "backups_sections": "Seções a restaurar",

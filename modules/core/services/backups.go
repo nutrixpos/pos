@@ -419,7 +419,10 @@ func (cs *BackupService) replaceBackup(ctx context.Context, pkg *BackupPackage, 
 		return err
 	}
 
-	wipes := []string{"materials", "recipes", "categories"}
+	wipes := make([]string, 0, 5)
+	if opts.Has(backupSectionMaterials) {
+		wipes = append(wipes, "materials", "recipes", "categories")
+	}
 	if opts.Has(backupSectionSales) {
 		wipes = append(wipes, cs.salesCollectionName(), "orders")
 	}

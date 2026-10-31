@@ -275,6 +275,34 @@ func TestBackupImportWithoutStockOrImages(t *testing.T) {
 	assert.True(t, os.IsNotExist(err))
 }
 
+func TestBackupSalesOnlyImportKeepsCatalog(t *testing.T) {
+	env, svc := newBackupTestService(t)
+	seedBackupTestData(t, env)
+
+	pkg, err := svc.BuildExport(context.Background())
+	require.NoError(t, err)
+
+	exportPath := filepath.Join(t.TempDir(), "export.zip")
+	require.NoError(t, svc.WriteBackupZIP(context.Background(), &pkg, exportPath))
+
+	result, err := svc.ImportZip(context.Background(), exportPath, BackupImportOptions{
+		Sections: map[string]bool{backupSectionSales: true},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.Imported.Materials)
+	assert.Equal(t, 0, result.Imported.Products)
+	assert.Equal(t, 0, result.Imported.Categories)
+	assert.Equal(t, 1, result.Imported.Sales)
+	assert.Equal(t, 1, result.Imported.Orders)
+
+	// Only Sales & Orders were selected, so the catalog must stay untouched.
+	assert.Equal(t, int64(2), countServiceDocs(t, env, "materials", bson.M{}))
+	assert.Equal(t, int64(2), countServiceDocs(t, env, "recipes", bson.M{}))
+	assert.Equal(t, int64(1), countServiceDocs(t, env, "categories", bson.M{}))
+	assert.Equal(t, int64(1), countServiceDocs(t, env, "sales", bson.M{}))
+	assert.Equal(t, int64(1), countServiceDocs(t, env, "orders", bson.M{}))
+}
+
 func TestBackupImportMissingImageWarning(t *testing.T) {
 	env, svc := newBackupTestService(t)
 	seedBackupTestData(t, env)
