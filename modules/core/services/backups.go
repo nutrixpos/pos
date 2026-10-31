@@ -917,8 +917,8 @@ func validateBackupImportSelection(opts BackupImportOptions, pkg *BackupPackage)
 	if opts.Has(backupSectionCategories) && pkg.Categories == nil {
 		return fmt.Errorf("%w: archive has no categories section", ErrInvalidBackup)
 	}
-	if opts.Has(backupSectionSales) && pkg.Sales == nil && pkg.Orders == nil {
-		return fmt.Errorf("%w: archive has no sales or orders section", ErrInvalidBackup)
+	if opts.Has(backupSectionSales) && (pkg.Sales == nil || pkg.Orders == nil) {
+		return fmt.Errorf("%w: archive must contain both sales and orders sections", ErrInvalidBackup)
 	}
 
 	return nil

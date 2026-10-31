@@ -336,6 +336,40 @@ func TestBackupImportMissingImageWarning(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestBackupImportSalesRequiresBothCollections(t *testing.T) {
+	salesOnly := &BackupPackage{
+		Format:  BackupFormat,
+		Version: BackupVersion,
+		Sales:   []models.SalesPerDay{},
+	}
+	ordersOnly := &BackupPackage{
+		Format:  BackupFormat,
+		Version: BackupVersion,
+		Orders:  []models.Order{},
+	}
+	both := &BackupPackage{
+		Format:  BackupFormat,
+		Version: BackupVersion,
+		Sales:   []models.SalesPerDay{},
+		Orders:  []models.Order{},
+	}
+
+	opts := BackupImportOptions{Sections: map[string]bool{backupSectionSales: true}}
+
+	for name, pkg := range map[string]*BackupPackage{
+		"missing orders": salesOnly,
+		"missing sales":  ordersOnly,
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := validateBackupImportSelection(opts, pkg)
+			require.Error(t, err)
+			assert.True(t, errors.Is(err, ErrInvalidBackup))
+		})
+	}
+
+	require.NoError(t, validateBackupImportSelection(opts, both))
+}
+
 func TestBackupImportDependencies(t *testing.T) {
 	pkg := &BackupPackage{
 		Format:     BackupFormat,
