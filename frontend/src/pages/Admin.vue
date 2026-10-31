@@ -161,6 +161,16 @@ const menu_tree =ref([
         link:'/admin/categories',
     },
     {
+        key: '10',
+        label: {
+            title: 'backups',
+            plural: false
+        },
+        data: 'Backups',
+        icon: 'pi pi-database',
+        link: '/admin/backups',
+    },
+    {
         key: '3',
         label: {
             title :'order',

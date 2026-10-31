@@ -52,6 +52,7 @@ type Config struct {
 	Env           string        `mapstructure:"env" yaml:"env"`
 	TimeZone      string        `mapstructure:"timezone" yaml:"timezone"`
 	UploadsPath   string        `mapstructure:"uploads_path" yaml:"uploads_path"`
+	BackupsPath   string        `mapstructure:"backups_path" yaml:"backups_path"`
 	ServeFrontEnd bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
 }
 
