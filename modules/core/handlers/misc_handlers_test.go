@@ -159,8 +159,61 @@ func TestLanguageHandlers(t *testing.T) {
 
 	rec := doRequest(t, router, http.MethodGet, "/api/languages/en", "")
 	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "no-store, no-cache, must-revalidate", rec.Header().Get("Cache-Control"))
+	assert.Equal(t, "no-cache", rec.Header().Get("Pragma"))
+
+	requiredBackupKeys := []string{
+		"backups",
+		"backups_description",
+		"export_backups",
+		"backups_export_description",
+		"backups_export_ready",
+		"backups_export_failed",
+		"import_backups",
+		"backups_import_description",
+		"select_zip_file",
+		"backups_preview",
+		"backups_preview_loading",
+		"backups_preview_failed",
+		"backups_import_warning",
+		"backups_sales_wipe_warning",
+		"backups_notice",
+		"backups_sections",
+		"backups_section",
+		"backups_section_materials",
+		"backups_section_stock",
+		"backups_section_products",
+		"backups_section_images",
+		"backups_section_categories",
+		"backups_incoming",
+		"backups_current",
+		"backups_dependency_note",
+		"backups_confirm_ack",
+		"backups_replace_warning",
+		"backups_imported_success",
+		"backups_imported_counts",
+		"backups_import_failed",
+		"backups_no_sections",
+		"backups_file_too_large",
+		"backups_unknown_error",
+		"backups_download_failed",
+		"confirm_backups_import",
+	}
+
+	for _, code := range []string{"en", "ar", "pt-br"} {
+		rec := doRequest(t, router, http.MethodGet, "/api/languages/"+code, "")
+		require.Equal(t, http.StatusOK, rec.Code)
+
+		var language models.LanguageData
+		decodeData(t, rec, &language)
+		for _, key := range requiredBackupKeys {
+			_, ok := language.Pack[key]
+			assert.Truef(t, ok, "%s language pack is missing %q", code, key)
+		}
+	}
 
 	rec = doRequest(t, router, http.MethodGet, "/api/languages", "")
 	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "no-store, no-cache, must-revalidate", rec.Header().Get("Cache-Control"))
 	assert.Contains(t, rec.Body.String(), `"en"`)
 }

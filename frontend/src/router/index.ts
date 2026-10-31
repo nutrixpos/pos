@@ -69,6 +69,7 @@ const router = createRouter({
           {path: 'sales', component: () => import('@/pages/Sales.vue')},
           {path: 'products', component: ()=> import('@/pages/Products.vue')},
           {path: 'categories', component: () => import('@/pages/Categories.vue')},
+          {path: 'backups', component: () => import('@/pages/BackupsManager.vue')},
           {path: 'orders',
           children:[
             {path: '', component: () => import('@/pages/Orders.vue')},

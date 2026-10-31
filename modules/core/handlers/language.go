@@ -43,10 +43,17 @@ func GetLanguage(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
+		setLanguageNoCacheHeaders(w)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(jsonLanguage)
 
 	}
+}
+
+func setLanguageNoCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 }
 
 // GetAvailableLanguages reads available language files in the /assets/core/languages folder
@@ -97,6 +104,7 @@ func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.Han
 			availableLanguages = append(availableLanguages, languageFile)
 		}
 
+		setLanguageNoCacheHeaders(w)
 		w.Header().Set("Content-Type", "application/json")
 		response := struct {
 			Data []struct {
