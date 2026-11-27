@@ -248,6 +248,9 @@
     "backups_unknown_error": "Erro inesperado.",
     "backups_download_failed": "Não foi possível baixar o backup.",
     "download_backup": "Baixar backup",
-    "confirm_backups_import": "Restaurar backup"
+    "confirm_backups_import": "Restaurar backup",
+    "close": "Fechar",
+    "backend_unreachable_title": "Backend inacessível",
+    "backend_unreachable_message": "O NutrixPOS não consegue alcançar o backend. Feche e reabra o programa."
   }
 }

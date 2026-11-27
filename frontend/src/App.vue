@@ -1,5 +1,31 @@
 <template>
   <main :style="`height:100%;direction:${orientation};`">
+      <Teleport to="body">
+        <div
+          v-if="backend_unreachable"
+          class="backend-unreachable-overlay"
+          role="alertdialog"
+          aria-modal="true"
+          :aria-label="$t('backend_unreachable_title')"
+        >
+          <div class="backend-unreachable-card">
+            <button
+              type="button"
+              class="backend-unreachable-close"
+              :aria-label="$t('close')"
+              @click="dismissBackendDialog"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+            <div class="backend-unreachable-icon">
+              <i class="pi pi-exclamation-triangle"></i>
+            </div>
+            <h2 class="backend-unreachable-title">{{ $t('backend_unreachable_title') }}</h2>
+            <p class="backend-unreachable-message">{{ $t('backend_unreachable_message') }}</p>
+          </div>
+        </div>
+      </Teleport>
+
       <RouterView v-if="!setting_up && !show_mode_modal" />
       <!-- First-run shop mode selection modal -->
       <div v-if="show_mode_modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #14977B, #9CBF34);"></div>
@@ -91,7 +117,8 @@
 </template>
 
 <script setup>
-import { computed, getCurrentInstance, ref, onMounted } from 'vue';
+import { computed, getCurrentInstance, ref, onMounted, onUnmounted } from 'vue';
+import { checkBackendHealth } from '@/services/health';
 import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -103,10 +130,8 @@ import { useI18n } from 'vue-i18n'
 import auth from '@/services/auth';
 
 
-onMounted(() => {
-    store.applyDarkModeClass();
-})
-
+const HEALTH_CHECK_INTERVAL_MS = 5000
+const HEALTH_FAILURES_BEFORE_DIALOG = 2
 
 const { t } = useI18n() 
 const toast = useToast();
@@ -115,6 +140,55 @@ const setting_up = ref(true)
 const show_mode_modal = ref(false)
 const selected_mode = ref('')
 const saving_mode = ref(false)
+
+const backend_unreachable = ref(false)
+const backend_dialog_dismissed = ref(false)
+let backend_failures = 0
+let health_timer = null
+
+const dismissBackendDialog = () => {
+    backend_dialog_dismissed.value = true
+    backend_unreachable.value = false
+}
+
+const pollBackendHealth = async () => {
+    const healthy = await checkBackendHealth()
+
+    if (healthy) {
+        backend_failures = 0
+        backend_unreachable.value = false
+        backend_dialog_dismissed.value = false
+        return
+    }
+
+    backend_failures += 1
+
+    if (backend_failures < HEALTH_FAILURES_BEFORE_DIALOG) {
+        return
+    }
+
+    // Let the user close the dialog and keep using the UI for one interval
+    // before it is allowed to reappear.
+    if (backend_dialog_dismissed.value) {
+        backend_dialog_dismissed.value = false
+        return
+    }
+
+    backend_unreachable.value = true
+}
+
+onMounted(() => {
+    store.applyDarkModeClass();
+    pollBackendHealth();
+    health_timer = setInterval(pollBackendHealth, HEALTH_CHECK_INTERVAL_MS);
+})
+
+onUnmounted(() => {
+    if (health_timer) {
+        clearInterval(health_timer)
+        health_timer = null
+    }
+})
 
 const { proxy } = getCurrentInstance();
 const store = globalStore()
@@ -385,5 +459,90 @@ body {
 .mode-modal-footer {
     display: flex;
     justify-content: center;
+}
+
+/* ── Backend unreachable overlay ─────────────────────────────── */
+.backend-unreachable-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(8, 13, 20, 0.9);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.backend-unreachable-card {
+    position: relative;
+    width: 100%;
+    max-width: 34rem;
+    padding: 3rem 2.5rem 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.5rem;
+    background: linear-gradient(145deg, #222222 0%, #181f19 60%, #1a1a2e 100%);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+    color: #fff;
+    text-align: center;
+    animation: backend-unreachable-in 0.25s ease both;
+}
+
+@keyframes backend-unreachable-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.backend-unreachable-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+
+    &:hover,
+    &:focus-visible {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.35);
+        outline: none;
+    }
+}
+
+.backend-unreachable-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    box-shadow: 0 0 32px rgba(239, 68, 68, 0.35);
+    font-size: 2rem;
+    color: #fff;
+}
+
+.backend-unreachable-title {
+    margin: 0 0 0.75rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.backend-unreachable-message {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #dce4dc;
 }
 </style>

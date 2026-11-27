@@ -1,8 +1,9 @@
 databases:
   - name: core
-    # type: mongo  -> connect to an external/centralized mongodb server (host/port)
     # type: ferret -> embedded local database (FerretDB + SQLite), no server install needed
-    type: mongo
+    # type: mongo  -> connect to an external/centralized mongodb server (host/port)
+    type: ferret
+    # host, port, username and password are only used when type is "mongo"
     host: 127.0.0.1
     port: 27017
     database: nutrix

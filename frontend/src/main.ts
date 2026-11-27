@@ -75,7 +75,10 @@ const i18n = createI18n({
       "report":"Report | Reports",
       "settings":"Settings",
       "language":"Language | Languages",
-      "sales":"Sales"
+      "sales":"Sales",
+      "close":"Close",
+      "backend_unreachable_title":"Backend unreachable",
+      "backend_unreachable_message":"NutrixPOS cannot reach the backend. Please close and reopen the program."
     }
   }
 })
