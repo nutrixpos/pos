@@ -248,6 +248,9 @@
     "backups_unknown_error": "Unexpected error.",
     "backups_download_failed": "Could not download the backup.",
     "download_backup": "Download backup",
-    "confirm_backups_import": "Restore backups"
+    "confirm_backups_import": "Restore backups",
+    "close": "Close",
+    "backend_unreachable_title": "Backend unreachable",
+    "backend_unreachable_message": "NutrixPOS cannot reach the backend. Please close and reopen the program."
   }
 }

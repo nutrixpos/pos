@@ -106,6 +106,43 @@ func (root *RootProcess) Execute() error {
 				}(),
 			)).Methods("GET", "OPTIONS")
 
+			// Health endpoint polled by the frontend to detect an unreachable
+			// backend or database. It is intentionally unauthenticated.
+			root.Router.Handle("/api/health", middlewares.AllowCors(
+				func() http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+
+						if len(root.Config.Databases) == 0 || (root.Config.Databases[0].Host == "" && root.Config.Databases[0].Type != "ferret") {
+							w.WriteHeader(http.StatusOK)
+							_, _ = w.Write([]byte(`{"status":"setup"}`))
+							return
+						}
+
+						client, err := common.GetDatabaseClient(root.Logger, &root.Config)
+						if err != nil {
+							root.Logger.Error("health check: failed to get database client: " + err.Error())
+							w.WriteHeader(http.StatusServiceUnavailable)
+							_, _ = w.Write([]byte(`{"status":"unreachable"}`))
+							return
+						}
+
+						ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+						defer cancel()
+
+						if err := client.Ping(ctx, nil); err != nil {
+							root.Logger.Error("health check: database ping failed: " + err.Error())
+							w.WriteHeader(http.StatusServiceUnavailable)
+							_, _ = w.Write([]byte(`{"status":"unreachable"}`))
+							return
+						}
+
+						w.WriteHeader(http.StatusOK)
+						_, _ = w.Write([]byte(`{"status":"ok"}`))
+					}
+				}(),
+			)).Methods("GET", "OPTIONS")
+
 			// If no database host is configured, serve a setup endpoint so the user
 			// can provide connection details via the browser (Setup.vue). The process
 			// exits with code 0 after writing the config so the process manager can

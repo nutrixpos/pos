@@ -247,6 +247,9 @@
     "backups_unknown_error": "خطأ غير متوقع.",
     "backups_download_failed": "تعذر تنزيل النسخة الاحتياطية.",
     "download_backup": "تنزيل النسخة الاحتياطية",
-    "confirm_backups_import": "استعادة النسخة الاحتياطية"
+    "confirm_backups_import": "استعادة النسخة الاحتياطية",
+    "close": "إغلاق",
+    "backend_unreachable_title": "تعذر الوصول إلى الخادم",
+    "backend_unreachable_message": "لا يمكن لـ NutrixPOS الوصول إلى الخادم. يرجى إغلاق البرنامج وإعادة فتحه."
   }
 }

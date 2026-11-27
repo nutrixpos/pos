@@ -10,6 +10,7 @@ public
 .devcontainer/.env
 mnt
 config.yaml
+data/db
 
 # local env files
 .env.local
