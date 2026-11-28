@@ -8,6 +8,10 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o ./pos
 
 # Stage 2: Final
 FROM alpine
+RUN apk add --no-cache chromium font-noto font-noto-arabic
+# Receipt rendering needs a headless Chromium browser. The container runs as
+# root, where Chromium's sandbox cannot initialize.
+ENV PRINTING_NO_SANDBOX=true
 WORKDIR /app
 COPY --from=build /go/src/app/pos .
 COPY --from=build /go/src/app/assets ./assets/

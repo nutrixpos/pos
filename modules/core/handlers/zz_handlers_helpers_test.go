@@ -32,7 +32,13 @@ func testHandlerSettings() models.Settings {
 		},
 		Language:           models.LanguageSettings{Code: "en", Language: "English"},
 		AutoOpenCashDrawer: false,
-		PaymentSources:     []models.PaymentSource{{Name: "Cash"}, {Name: "Card"}},
+		ClientReceiptPrinter: models.PrinterSettings{
+			ConnectionType: models.PrinterConnectionTypeNetwork,
+		},
+		KitchenReceiptPrinter: models.PrinterSettings{
+			ConnectionType: models.PrinterConnectionTypeNetwork,
+		},
+		PaymentSources: []models.PaymentSource{{Name: "Cash"}, {Name: "Card"}},
 	}
 }
 

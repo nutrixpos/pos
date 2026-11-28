@@ -13,12 +13,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/pos/common/config"
@@ -30,6 +32,32 @@ import (
 	"github.com/nutrixpos/pos/modules/core/services"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
+
+// sendPrintFailureNotification publishes a websocket notification so the UI can
+// show receipt printing failures that happen asynchronously.
+func sendPrintFailureNotification(config config.Config, logger logger.ILogger, message string) {
+	msg := models.WebsocketTopicServerMessage{
+		Type:      "topic_message",
+		TopicName: "print_failed",
+		Severity:  "error",
+		Message:   message,
+		Date:      time.Now(),
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	notifications_svc, err := services.SpawnNotificationSingletonSvc("melody", logger, config)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	_ = notifications_svc.SendToTopic("print_failed", string(payload))
+}
 
 func OrderRemoveTip(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +272,15 @@ func RefundOrderItem(config config.Config, logger logger.ILogger, settings model
 func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		settings_svc := services.SettingsService{Config: config}
+		current_settings, err := settings_svc.GetSettings()
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		settings := current_settings
+
 		params := mux.Vars(r)
 		id_param := params["id"]
 
@@ -292,7 +329,7 @@ func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings m
 			return
 		}
 
-		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", lang, settings.KitchenReceiptPrinter.Host)
+		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", lang, settings.KitchenReceiptPrinter)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -304,6 +341,15 @@ func PrintKitchenReceipt(config config.Config, logger logger.ILogger, settings m
 func PrintClientReceipt(config config.Config, logger logger.ILogger, settings models.Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		settings_svc := services.SettingsService{Config: config}
+		current_settings, err := settings_svc.GetSettings()
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		settings := current_settings
+
 		params := mux.Vars(r)
 		id_param := params["id"]
 
@@ -352,7 +398,7 @@ func PrintClientReceipt(config config.Config, logger logger.ILogger, settings mo
 			return
 		}
 
-		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/order_receipt_0.handlebars", lang, settings.ClientReceiptPrinter.Host)
+		err = orderService.PrintReceipt(order, pwd+"/assets/core/templates/order_receipt_0.handlebars", lang, settings.ClientReceiptPrinter)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -673,9 +719,10 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 			if !order.IsPayLater {
 
 				if request.Meta.IsPrintClientReceipt {
-					err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/order_receipt_0.handlebars", settings.ClientReceiptPrinter.Host, settings.ShopMode)
+					err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/order_receipt_0.handlebars", settings.ClientReceiptPrinter, settings.ShopMode)
 					if err != nil {
 						logger.Error(err.Error())
+						sendPrintFailureNotification(config, logger, fmt.Sprintf("Failed to print client receipt for order %s: %v", order.DisplayId, err))
 
 						if !request.Meta.IsPrintKitchenReceipt {
 							return
@@ -684,16 +731,17 @@ func SubmitOrder(config config.Config, logger logger.ILogger, settings models.Se
 				}
 
 				if settings.AutoOpenCashDrawer {
-					if err := receipt_svc.OpenCashDrawer(settings.ClientReceiptPrinter.Host); err != nil {
+					if err := receipt_svc.OpenCashDrawer(settings.ClientReceiptPrinter); err != nil {
 						logger.Error("Failed to open cash drawer:", err)
 					}
 				}
 			}
 
 			if request.Meta.IsPrintKitchenReceipt {
-				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", settings.KitchenReceiptPrinter.Host, settings.ShopMode)
+				err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang, pwd+"/assets/core/templates/kitchen_receipt_0.handlebars", settings.KitchenReceiptPrinter, settings.ShopMode)
 				if err != nil {
 					logger.Error(err.Error())
+					sendPrintFailureNotification(config, logger, fmt.Sprintf("Failed to print kitchen receipt for order %s: %v", order.DisplayId, err))
 					return
 				}
 			}

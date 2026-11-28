@@ -44,16 +44,24 @@ type AuthConfig struct {
 	Enabled      bool   `mapstructure:"enabled" yaml:"enabled"`
 }
 
+// PrintingConfig holds deployment-level settings for receipt rendering.
+type PrintingConfig struct {
+	// NoSandbox disables the browser sandbox, which is required in some
+	// container/root environments.
+	NoSandbox bool `mapstructure:"no_sandbox" yaml:"no_sandbox"`
+}
+
 // Config represents the overall configuration structure
 type Config struct {
-	Databases     []Database    `mapstructure:"databases" yaml:"databases"`
-	Auth          AuthConfig    `mapstructure:"auth" yaml:"auth"`
-	Zitadel       ZitadelConfig `mapstructure:"zitadel" yaml:"zitadel"`
-	Env           string        `mapstructure:"env" yaml:"env"`
-	TimeZone      string        `mapstructure:"timezone" yaml:"timezone"`
-	UploadsPath   string        `mapstructure:"uploads_path" yaml:"uploads_path"`
-	BackupsPath   string        `mapstructure:"backups_path" yaml:"backups_path"`
-	ServeFrontEnd bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Databases     []Database     `mapstructure:"databases" yaml:"databases"`
+	Auth          AuthConfig     `mapstructure:"auth" yaml:"auth"`
+	Zitadel       ZitadelConfig  `mapstructure:"zitadel" yaml:"zitadel"`
+	Env           string         `mapstructure:"env" yaml:"env"`
+	TimeZone      string         `mapstructure:"timezone" yaml:"timezone"`
+	UploadsPath   string         `mapstructure:"uploads_path" yaml:"uploads_path"`
+	BackupsPath   string         `mapstructure:"backups_path" yaml:"backups_path"`
+	ServeFrontEnd bool           `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Printing      PrintingConfig `mapstructure:"printing" yaml:"printing"`
 }
 
 // Database holds the configuration for database connections

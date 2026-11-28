@@ -75,10 +75,12 @@ func (s *Seeder) SeedSettings() error {
 			},
 			AutoOpenCashDrawer: true,
 			ClientReceiptPrinter: models.PrinterSettings{
-				Host: "192.168.123.123",
+				ConnectionType: models.PrinterConnectionTypeNetwork,
+				Host:           "192.168.123.123",
 			},
 			KitchenReceiptPrinter: models.PrinterSettings{
-				Host: "192.168.123.123",
+				ConnectionType: models.PrinterConnectionTypeNetwork,
+				Host:           "192.168.123.123",
 			},
 			PaymentSources: []models.PaymentSource{
 				{

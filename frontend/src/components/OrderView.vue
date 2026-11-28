@@ -407,6 +407,15 @@ const collectedMoney = () => {
     });
 }
 
+const printErrorDetail = (err: unknown) => {
+    const response = (err as { response?: { data?: unknown } })?.response
+    const data = response?.data
+    if (typeof data === 'string' && data.trim() !== '') {
+        return data.trim()
+    }
+    return 'Failed to perform the request'
+}
+
 const PrintKitchenReceipt = () => {
     axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/printkitchenreceipt`,{}, {
         headers: {
@@ -417,8 +426,14 @@ const PrintKitchenReceipt = () => {
     .then(()=>{
         toast.add({ severity: 'success', summary: 'Success', detail: 'Print signal sent',group:'br' });
     })
-    .catch(() => {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to perform the request',group:'br' });
+    .catch((err) => {
+        toast.add({
+            severity: 'error',
+            summary: proxy.$t('print_failed'),
+            detail: printErrorDetail(err),
+            life: 10000,
+            group: 'br'
+        });
     });
 }
 
@@ -432,8 +447,14 @@ const PrintClientReceipt = () => {
     .then(()=>{
         toast.add({ severity: 'success', summary: 'Success', detail: 'Print signal sent',group:'br' });
     })
-    .catch(() => {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to perform the request',group:'br' });
+    .catch((err) => {
+        toast.add({
+            severity: 'error',
+            summary: proxy.$t('print_failed'),
+            detail: printErrorDetail(err),
+            life: 10000,
+            group: 'br'
+        });
     });
 }
 

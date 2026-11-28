@@ -19,6 +19,14 @@ uploads_path: "./mnt/public"
 # outside uploads_path so backups are never served publicly.
 backups_path: "./mnt/backups"
 
+# Receipt rendering uses a headless Chromium-based browser to turn the receipt
+# template into an image before sending it to the printer. The browser
+# executable is configured from the Settings page in the UI.
+printing:
+  # Disable the browser sandbox. Needed in containers or when running as root.
+  # Can also be set with PRINTING_NO_SANDBOX.
+  no_sandbox: false
+
 auth:
   jwt_secret: "your-super-secret-jwt-key-change-in-production"
   jwt_expire_hrs: 24

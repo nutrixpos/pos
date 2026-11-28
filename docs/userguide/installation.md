@@ -9,6 +9,25 @@ NutrixPOS loves **MongoDB** 🍃 for storing all your delicious orders, inventor
 You'll need to have a running MongoDB server instance before we start. 
 👉 Grab it from their official download page: [http://mongodb.com/try/download/community](http://mongodb.com/try/download/community)
 
+### 🖨️ Receipt printing
+
+Receipts are rendered to an image with a headless Chromium-based browser before
+being sent to the printer. If you run the backend from source or a binary
+(rather than the Windows installer or the Docker image), install a
+Chromium-based browser first (Chromium, Google Chrome, Microsoft Edge, Brave,
+Vivaldi, or Opera). NutrixPOS auto-detects common installations; you can also
+select or type the browser executable in **Settings → Printer**.
+
+In containers or when running as root, disable the browser sandbox in
+`config.yaml`:
+
+```yaml
+printing:
+  no_sandbox: true
+```
+
+The `PRINTING_NO_SANDBOX` environment variable overrides this setting.
+
 ## 📥 Download
 
 Time to get the goods! Visit our [Download Page](https://github.com/nutrixpos/pos/releases/latest) to find the latest and greatest version of NutrixPOS. ✨

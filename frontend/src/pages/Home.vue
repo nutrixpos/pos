@@ -983,16 +983,18 @@ const startWebsocket = () => {
 
                 getCurrentOrders()
             }else {
+                const topicTitle = data.topic_name === 'print_failed' ? t('print_failed') : data.topic_name
+
                 const notification = new Notification();
                 notification.description = data.message
                 notification.severity = data.severity
-                notification.topic_name = data.topic_name
+                notification.topic_name = topicTitle
                 notification.type = data.type
                 notification.date = data.date
                 notifications.value.push(notification);
 
                 toast.removeGroup('br')
-                toast.add({ severity: data.severity, summary: data.topic_name, detail: data.message, life: 30000,group:'br' });
+                toast.add({ severity: data.severity, summary: topicTitle, detail: data.message, life: 30000,group:'br' });
             }
         }
 
