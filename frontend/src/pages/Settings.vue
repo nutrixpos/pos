@@ -52,15 +52,46 @@
                         <Divider />
                         <div class="flex flex-column">
                             <h4><span class="pi pi-print"></span> {{ t('printer',2) }}</h4>
+                            <span class="mt-2 font-bold">{{ $t('receipt_renderer') }}</span>
+                            <div class="flex flex-column gap-2 mt-3 mb-4">
+                                <div class="flex align-items-center gap-2">
+                                    <span>{{ t('receipt_browser') }}:</span>
+                                    <Select v-model="receipt_browser_path" :options="availableBrowsers" editable :placeholder="t('auto_detect_browser')" class="mx-2 w-full md:w-20rem" />
+                                    <Button severity="secondary" icon="pi pi-refresh" @click="getAvailablePrinters" />
+                                </div>
+                                <small style="color:#94a3b8">{{ $t('auto_detect_browser_hint') }}</small>
+                            </div>
                             <span class="mt-2 font-bold">{{$t('client_receipt_printer')}}</span>
-                            <div class="flex align-items-center mt-3">
+                            <div class="flex flex-column gap-2 mt-3">
+                                <div class="flex align-items-center gap-2">
+                                    <span>{{t('connection_type')}}:</span>
+                                    <SelectButton v-model="client_receipt_printer_connection_type" :options="connectionTypeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
+                                </div>
+                                <div v-if="client_receipt_printer_connection_type === 'usb'" class="flex align-items-center gap-2">
+                                    <span>{{t('printer_name')}}:</span>
+                                    <Select v-model="client_receipt_printer_name" :options="availablePrinters" editable :placeholder="t('select_printer')" class="mx-2 w-full md:w-20rem" />
+                                    <Button severity="secondary" icon="pi pi-refresh" @click="getAvailablePrinters" />
+                                </div>
+                                <div v-else class="flex align-items-center gap-2">
                                     <span>{{t("host",1)}}:</span>
                                     <InputText v-model="client_receipt_printer_host"  class="mx-2" />
+                                </div>
                             </div>
                             <span class="mt-5 font-bold">{{ $t('kitchen_receipt_printer') }}</span>
-                            <div class="flex align-items-center mt-3">
+                            <div class="flex flex-column gap-2 mt-3">
+                                <div class="flex align-items-center gap-2">
+                                    <span>{{t('connection_type')}}:</span>
+                                    <SelectButton v-model="kitchen_receipt_printer_connection_type" :options="connectionTypeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
+                                </div>
+                                <div v-if="kitchen_receipt_printer_connection_type === 'usb'" class="flex align-items-center gap-2">
+                                    <span>{{t('printer_name')}}:</span>
+                                    <Select v-model="kitchen_receipt_printer_name" :options="availablePrinters" editable :placeholder="t('select_printer')" class="mx-2 w-full md:w-20rem" />
+                                    <Button severity="secondary" icon="pi pi-refresh" @click="getAvailablePrinters" />
+                                </div>
+                                <div v-else class="flex align-items-center gap-2">
                                     <span>{{t("host",1)}}:</span>
                                     <InputText v-model="kitchen_receipt_printer_host"  class="mx-2" />
+                                </div>
                             </div>
                             <div class="flex align-items-center mt-5 gap-2">
                                 <ToggleSwitch v-model="auto_open_cash_drawer" />
@@ -131,11 +162,11 @@ import InputText from 'primevue/inputtext';
 import Divider from 'primevue/divider';
 import Button from 'primevue/button';
 import { useToast } from "primevue/usetoast";
-import {getCurrentInstance,ref} from 'vue'
+import {computed,getCurrentInstance,ref} from 'vue'
 import Dropdown from 'primevue/dropdown';
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '../stores';
-import {RadioButton,Avatar,Badge, Select, ToggleSwitch} from 'primevue';
+import {RadioButton,Avatar,Badge, Select, SelectButton, ToggleSwitch} from 'primevue';
 import auth from '../services/auth';
 
 const { proxy } = getCurrentInstance();
@@ -147,6 +178,13 @@ const new_queue_prefix = ref("")
 const new_queue_next = ref(1)
 const client_receipt_printer_host = ref()
 const kitchen_receipt_printer_host = ref()
+const client_receipt_printer_connection_type = ref('network')
+const kitchen_receipt_printer_connection_type = ref('network')
+const client_receipt_printer_name = ref('')
+const kitchen_receipt_printer_name = ref('')
+const availablePrinters = ref<Array<string>>([])
+const availableBrowsers = ref<Array<string>>([])
+const receipt_browser_path = ref('')
 
 const default_cost_calculation_method = ref("average")
 const shop_mode = ref('')
@@ -166,6 +204,28 @@ const payment_sources = ref<Array<any>>([
 const changedLang = ref(false)
 
 const { t,locale,setLocaleMessage } = useI18n({ useScope: 'global' }) 
+
+const connectionTypeOptions = computed(() => [
+    { label: t('host_network'), value: 'network' },
+    { label: t('usb'), value: 'usb' },
+])
+
+const getAvailablePrinters = () => {
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/printers`, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken.value}`
+        }
+    })
+    .then((response) => {
+        availablePrinters.value = response.data.data?.printers || []
+        availableBrowsers.value = response.data.data?.browsers || []
+    })
+    .catch((err) => {
+        console.log(err)
+        availablePrinters.value = []
+        availableBrowsers.value = []
+    })
+}
 
 const selectedLang : any = ref({"language":"English","code":"en"})
 const languages = ref([
@@ -197,10 +257,17 @@ const saveSettings = () => {
                     language: selectedLang.value.language
                 },
                 client_receipt_printer: {
-                    host: client_receipt_printer_host.value
+                    connection_type: client_receipt_printer_connection_type.value,
+                    host: client_receipt_printer_host.value,
+                    name: client_receipt_printer_name.value
                 },
                 kitchen_receipt_printer: {
-                    host: kitchen_receipt_printer_host.value
+                    connection_type: kitchen_receipt_printer_connection_type.value,
+                    host: kitchen_receipt_printer_host.value,
+                    name: kitchen_receipt_printer_name.value
+                },
+                printing: {
+                    browser_path: receipt_browser_path.value
                 },
                 auto_open_cash_drawer: auto_open_cash_drawer.value,
                 payment_sources: payment_sources.value == null ? [] : payment_sources.value,
@@ -237,6 +304,11 @@ const getSettings = () => {
         selectedLang.value = response.data.data.language
         client_receipt_printer_host.value = response.data.data.client_receipt_printer?.host || ''
         kitchen_receipt_printer_host.value = response.data.data.kitchen_receipt_printer?.host || ''
+        client_receipt_printer_connection_type.value = response.data.data.client_receipt_printer?.connection_type || 'network'
+        kitchen_receipt_printer_connection_type.value = response.data.data.kitchen_receipt_printer?.connection_type || 'network'
+        client_receipt_printer_name.value = response.data.data.client_receipt_printer?.name || ''
+        kitchen_receipt_printer_name.value = response.data.data.kitchen_receipt_printer?.name || ''
+        receipt_browser_path.value = response.data.data.printing?.browser_path || ''
         payment_sources.value = response.data.data.payment_sources == null ? [] : response.data.data.payment_sources
         shop_mode.value = response.data.data.shop_mode || ''
         auto_open_cash_drawer.value = response.data.data.auto_open_cash_drawer
@@ -284,5 +356,6 @@ const getAvailableLanguages = () => {
 
 getAvailableLanguages();
 getSettings()
+getAvailablePrinters()
 
 </script>

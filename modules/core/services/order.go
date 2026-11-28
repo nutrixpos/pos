@@ -403,14 +403,14 @@ func (os *OrderService) RefundItem(request dto.OrderItemRefundRequest, user_id s
 	return nil
 }
 
-func (os *OrderService) PrintReceipt(order models.Order, template string, lang_code string, printer_host string) (err error) {
+func (os *OrderService) PrintReceipt(order models.Order, template string, lang_code string, printer models.PrinterSettings) (err error) {
 	receipt_svc := ReceiptService{
 		Config:   os.Config,
 		Logger:   os.Logger,
 		Settings: os.Settings,
 	}
 
-	err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang_code, template, printer_host, os.Settings.ShopMode)
+	err = receipt_svc.Print(order, order.Discount, 0, order.SubmittedAt, lang_code, template, printer, os.Settings.ShopMode)
 	if err != nil {
 		return err
 	}

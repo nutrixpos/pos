@@ -47,6 +47,8 @@ zitadel:
 serve_frontend: true
 timezone: Africa/Cairo
 env: dev
+printing:
+  no_sandbox: true
 `)
 
 	cfg := ConfigFactory("viper", path, discardLogger{})
@@ -66,6 +68,27 @@ env: dev
 	assert.True(t, cfg.ServeFrontEnd)
 	assert.Equal(t, "Africa/Cairo", cfg.TimeZone)
 	assert.Equal(t, "dev", cfg.Env)
+	assert.True(t, cfg.Printing.NoSandbox)
+}
+
+func TestViperConfig_PrintingEnvOverrides(t *testing.T) {
+	path := writeConfig(t, `
+databases:
+  - name: core
+    type: mongo
+    host: 127.0.0.1
+    port: 27017
+    database: nutrix
+    tables:
+      sales: sales
+printing:
+  no_sandbox: false
+`)
+	t.Setenv("PRINTING_NO_SANDBOX", "true")
+
+	cfg := ConfigFactory("viper", path, discardLogger{})
+
+	assert.True(t, cfg.Printing.NoSandbox)
 }
 
 func TestViperConfig_MissingFile(t *testing.T) {

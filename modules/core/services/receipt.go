@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image/png"
-	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -27,16 +26,7 @@ type ReceiptService struct {
 }
 
 // Print is used to print a 80mm receipt
-func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template_path string, printer_host string, shop_mode string) error {
-
-	socket, err := net.Dial("tcp", fmt.Sprintf("%s:9100", printer_host))
-
-	if err != nil {
-		return err
-	}
-	defer func() { _ = socket.Close() }()
-
-	p := escpos.New(socket)
+func (rs *ReceiptService) Print(order models.Order, discount float64, service_cost float64, d time.Time, lang_code string, template_path string, printer models.PrinterSettings, shop_mode string) error {
 
 	lang_svc := LanguageService{
 		Config:   rs.Config,
@@ -155,11 +145,10 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		return err
 	}
 
-	// create context
-	ctx, cancel := chromedp.NewContext(
-		context.Background(),
-		// chromedp.WithDebugf(log.Printf),
-	)
+	ctx, cancel, err := newBrowserContext(rs.Config, rs.Settings.Printing)
+	if err != nil {
+		return err
+	}
 	defer cancel()
 
 	// Base64 encode the HTML
@@ -206,27 +195,51 @@ func (rs *ReceiptService) Print(order models.Order, discount float64, service_co
 		return err
 	}
 
-	_, _ = p.Size(1, 1).PrintImage(img)
-	_, _ = p.LineFeed()
+	conn, err := openPrinter(printer)
+	if err != nil {
+		return err
+	}
+	closed := false
+	defer func() {
+		if !closed {
+			_ = conn.Close()
+		}
+	}()
 
-	_ = p.PrintAndCut()
+	p := escpos.New(conn)
+
+	if _, err := p.Size(1, 1).PrintImage(img); err != nil {
+		return err
+	}
+	if _, err := p.LineFeed(); err != nil {
+		return err
+	}
+
+	if err := p.PrintAndCut(); err != nil {
+		return err
+	}
+
+	if err := conn.Close(); err != nil {
+		return err
+	}
+	closed = true
 
 	return nil
 }
 
-func (rs *ReceiptService) OpenCashDrawer(printer_host string) error {
-	socket, err := net.Dial("tcp", fmt.Sprintf("%s:9100", printer_host))
+func (rs *ReceiptService) OpenCashDrawer(printer models.PrinterSettings) error {
+	conn, err := openPrinter(printer)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = socket.Close() }()
 
-	p := escpos.New(socket)
+	p := escpos.New(conn)
 	err = p.OpenCashDrawer()
 	if err != nil {
+		_ = conn.Close()
 		rs.Logger.Error("Failed to open cash drawer:", err)
 		return err
 	}
 
-	return nil
+	return conn.Close()
 }

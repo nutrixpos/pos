@@ -114,7 +114,7 @@ func TestOrderService_PrintReceipt_Error(t *testing.T) {
 	env := newServiceEnv(t)
 	svc := newOrderSvc(env, "average")
 	// No printer reachable on the configured host.
-	assert.Error(t, svc.PrintReceipt(models.Order{Id: "o-1"}, "template", "en", "127.0.0.1:1"))
+	assert.Error(t, svc.PrintReceipt(models.Order{Id: "o-1"}, "template", "en", models.PrinterSettings{ConnectionType: models.PrinterConnectionTypeNetwork, Host: "127.0.0.1:1"}))
 }
 
 func TestOrderService_ConsumeOrderComponents_NoConsumption(t *testing.T) {

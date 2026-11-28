@@ -90,5 +90,9 @@ func (vc *ViperConfig) GetConfig() (Config, error) {
 	config.Zitadel.Domain = zitadel_domain
 	config.Zitadel.Port = zitadel_port
 
+	// Read this explicitly so PRINTING_NO_SANDBOX is honored even when the
+	// YAML file omits it.
+	config.Printing.NoSandbox = vc.v.GetBool("printing.no_sandbox")
+
 	return config, nil
 }
